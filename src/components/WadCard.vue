@@ -4,10 +4,15 @@ import type { WadEntry } from "../lib/schema";
 
 const props = defineProps<{
   wad: WadEntry;
+  isDownloaded: boolean;
+  isDownloading: boolean;
+  progress: number | null;
 }>();
 
 const emit = defineEmits<{
   play: [wad: WadEntry];
+  download: [wad: WadEntry];
+  delete: [wad: WadEntry];
   select: [wad: WadEntry];
 }>();
 
@@ -31,6 +36,11 @@ const displayImage = computed(() => {
 
 const hasVideo = computed(() => props.wad.youtubeVideos.length > 0);
 
+const progressPercent = computed(() => {
+  if (props.progress === null) return 0;
+  return Math.round(props.progress);
+});
+
 function getTypeLabel(type: WadEntry["type"]): string {
   const labels: Record<WadEntry["type"], string> = {
     "single-level": "Single Level",
@@ -46,6 +56,15 @@ function getTypeLabel(type: WadEntry["type"]): string {
 function openVideo() {
   if (props.wad.youtubeVideos.length > 0) {
     window.open(`https://www.youtube.com/watch?v=${props.wad.youtubeVideos[0].id}`, "_blank");
+  }
+}
+
+function handleMainAction() {
+  if (props.isDownloading) return;
+  if (props.isDownloaded) {
+    emit("play", props.wad);
+  } else {
+    emit("download", props.wad);
   }
 }
 </script>
@@ -72,7 +91,7 @@ function openVideo() {
         @click.stop="openVideo"
       >
         <span class="rounded-full bg-red-600 px-3 py-1.5 text-sm font-medium text-white shadow-lg">
-          ▶ Watch
+          Watch
         </span>
       </div>
       <!-- Type badge -->
@@ -86,14 +105,14 @@ function openVideo() {
         v-if="wad.awards.length > 0"
         class="absolute right-2 top-2 rounded bg-yellow-600/90 px-2 py-0.5 text-xs font-medium text-yellow-100"
       >
-        🏆 {{ wad.awards[0].year }}
+        {{ wad.awards[0].year }}
       </span>
       <!-- Video indicator -->
       <span
         v-if="hasVideo"
         class="absolute bottom-2 right-2 rounded bg-red-600/90 px-1.5 py-0.5 text-xs text-white"
       >
-        ▶ Video
+        Video
       </span>
     </div>
 
@@ -106,7 +125,7 @@ function openVideo() {
         {{ wad.title }}
       </h3>
       <p class="text-sm text-zinc-400">
-        {{ wad.authors.map((a) => a.name).join(", ") }} • {{ wad.year }}
+        {{ wad.authors.map((a) => a.name).join(", ") }} - {{ wad.year }}
       </p>
       <p class="mt-1 line-clamp-2 text-sm text-zinc-500">
         {{ wad.description }}
@@ -123,13 +142,67 @@ function openVideo() {
         </span>
       </div>
 
-      <!-- Play button -->
-      <button
-        class="mt-3 w-full rounded bg-red-600 px-3 py-2 font-medium text-white transition-colors hover:bg-red-500"
-        @click.stop="emit('play', wad)"
-      >
-        ▶ Play
-      </button>
+      <!-- Action buttons -->
+      <div class="mt-3 flex gap-1">
+        <!-- Main action button (Download / Downloading / Play) -->
+        <button
+          class="relative flex-1 overflow-hidden rounded-l px-3 py-2 font-medium text-white transition-colors"
+          :class="[
+            isDownloading
+              ? 'cursor-wait bg-blue-700'
+              : isDownloaded
+                ? 'bg-red-600 hover:bg-red-500'
+                : 'bg-zinc-600 hover:bg-zinc-500',
+          ]"
+          :disabled="isDownloading"
+          @click.stop="handleMainAction"
+        >
+          <!-- Progress bar background (when downloading) -->
+          <div
+            v-if="isDownloading"
+            class="absolute inset-0 bg-blue-500 transition-all duration-150"
+            :style="{ width: progressPercent + '%' }"
+          ></div>
+          <!-- Button text -->
+          <span class="relative">
+            <template v-if="isDownloading">
+              {{ progressPercent }}%
+            </template>
+            <template v-else-if="isDownloaded">
+              Play
+            </template>
+            <template v-else>
+              Download
+            </template>
+          </span>
+        </button>
+
+        <!-- Delete button (only when downloaded) -->
+        <button
+          v-if="isDownloaded && !isDownloading"
+          class="rounded-r bg-zinc-700 px-3 py-2 text-zinc-400 transition-colors hover:bg-red-900 hover:text-red-200"
+          title="Delete downloaded file"
+          @click.stop="emit('delete', wad)"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
+          </svg>
+        </button>
+
+        <!-- Rounded corner fix when no delete button -->
+        <span v-else class="w-0"></span>
+      </div>
     </div>
   </div>
 </template>

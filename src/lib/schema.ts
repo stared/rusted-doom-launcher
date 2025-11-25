@@ -152,3 +152,22 @@ export function safeValidateWadEntry(
   }
   return { success: false, error: result.error };
 }
+
+// Launcher Downloads State Schema
+export const DownloadedWadSchema = z.object({
+  filename: z.string().min(1),
+  downloadedAt: z.string().datetime(),
+  size: z.number().int().nonnegative(),
+});
+
+export const LauncherDownloadsSchema = z.object({
+  version: z.literal(1),
+  downloads: z.record(z.string(), DownloadedWadSchema),
+});
+
+export type DownloadedWad = z.infer<typeof DownloadedWadSchema>;
+export type LauncherDownloads = z.infer<typeof LauncherDownloadsSchema>;
+
+export function createEmptyLauncherDownloads(): LauncherDownloads {
+  return { version: 1, downloads: {} };
+}

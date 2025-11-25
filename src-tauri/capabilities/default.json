@@ -12,6 +12,8 @@
     "fs:allow-read-dir",
     "fs:allow-mkdir",
     "fs:allow-write-file",
+    "fs:allow-remove",
+    "fs:allow-stat",
     {
       "identifier": "fs:scope",
       "allow": [
