@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import type { WadEntry } from "../lib/schema";
 
 const TYPE_LABELS: Record<WadEntry["type"], string> = {
@@ -15,27 +15,22 @@ const props = defineProps<{
 
 const emit = defineEmits<{ play: [wad: WadEntry]; delete: [wad: WadEntry] }>();
 
-const playerContainerRef = ref<HTMLDivElement | null>(null);
 const hasVideo = computed(() => props.wad.youtubeVideos.length > 0);
 const videoId = computed(() => props.wad.youtubeVideos[0]?.id);
 
-// Lazy loading state
-const playerLoaded = ref(false);
+// State
+const playerReady = ref(false);
 const isPlaying = ref(false);
-
-// YouTube thumbnail URL (high quality)
-const thumbnailUrl = computed(() => {
-  if (hasVideo.value) {
-    return `https://img.youtube.com/vi/${videoId.value}/hqdefault.jpg`;
-  }
-  return props.wad.thumbnail || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Crect fill='%23991b1b' width='320' height='180'/%3E%3Ctext x='160' y='95' text-anchor='middle' fill='%23fca5a5' font-size='24' font-family='sans-serif'%3EDOOM%3C/text%3E%3C/svg%3E`;
-});
+const playerContainerRef = ref<HTMLDivElement | null>(null);
 
 let player: YT.Player | null = null;
-let playerReady = false;
 
-// Load YouTube API once globally
-const ytWindow = window as Window & { onYouTubeIframeAPIReady?: () => void };
+// Load YouTube API globally
+const ytWindow = window as Window & {
+  onYouTubeIframeAPIReady?: () => void;
+  ytApiLoaded?: boolean;
+  ytApiCallbacks?: (() => void)[];
+};
 
 function loadYouTubeAPI(): Promise<void> {
   return new Promise((resolve) => {
@@ -43,12 +38,20 @@ function loadYouTubeAPI(): Promise<void> {
       resolve();
       return;
     }
-    const existingCallback = ytWindow.onYouTubeIframeAPIReady;
-    ytWindow.onYouTubeIframeAPIReady = () => {
-      existingCallback?.();
-      resolve();
-    };
-    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+
+    if (!ytWindow.ytApiCallbacks) {
+      ytWindow.ytApiCallbacks = [];
+    }
+    ytWindow.ytApiCallbacks.push(resolve);
+
+    if (!ytWindow.ytApiLoaded) {
+      ytWindow.ytApiLoaded = true;
+      const existingCallback = ytWindow.onYouTubeIframeAPIReady;
+      ytWindow.onYouTubeIframeAPIReady = () => {
+        existingCallback?.();
+        ytWindow.ytApiCallbacks?.forEach(cb => cb());
+        ytWindow.ytApiCallbacks = [];
+      };
       const tag = document.createElement("script");
       tag.src = "https://www.youtube.com/iframe_api";
       document.head.appendChild(tag);
@@ -75,12 +78,9 @@ function initPlayer() {
     },
     events: {
       onReady: () => {
-        playerReady = true;
-        // Auto-play immediately after loading (click was the gesture that triggered load)
-        player?.playVideo();
+        playerReady.value = true;
       },
       onStateChange: (e: YT.OnStateChangeEvent) => {
-        // Track playing state: 1 = playing
         isPlaying.value = e.data === 1;
       },
       onError: (e: YT.OnErrorEvent) => {
@@ -90,32 +90,29 @@ function initPlayer() {
   });
 }
 
+// Pre-load player on mount so it's ready when user clicks
+onMounted(async () => {
+  if (hasVideo.value) {
+    await loadYouTubeAPI();
+    initPlayer();
+  }
+});
+
 onUnmounted(() => {
   player?.destroy();
   player = null;
 });
 
-async function handleVideoClick(e: MouseEvent) {
+function handleVideoClick(e: MouseEvent) {
   if (!hasVideo.value) {
-    // No video - emit play to launch the WAD
     emit('play', props.wad);
     return;
   }
 
   e.stopPropagation();
 
-  // First click: load the player
-  if (!playerLoaded.value) {
-    playerLoaded.value = true;
-    await loadYouTubeAPI();
-    // Need to wait for next tick for the ref to be available
-    await new Promise(resolve => setTimeout(resolve, 0));
-    initPlayer();
-    return;
-  }
-
-  // Subsequent clicks: toggle play/pause
-  if (playerReady && player) {
+  // Player should be ready (pre-loaded on mount)
+  if (playerReady.value && player) {
     if (isPlaying.value) {
       player.pauseVideo();
     } else {
@@ -123,28 +120,18 @@ async function handleVideoClick(e: MouseEvent) {
     }
   }
 }
-
-// Mouse leave no longer pauses - only click toggles play/pause
 </script>
 
 <template>
   <div class="overflow-hidden rounded-lg bg-zinc-800 shadow-lg">
-    <!-- 16:9 aspect ratio thumbnail -->
+    <!-- 16:9 aspect ratio video area -->
     <div
-      class="relative aspect-video cursor-pointer overflow-hidden"
+      class="relative aspect-video cursor-pointer overflow-hidden bg-zinc-900"
       @click="handleVideoClick"
     >
-      <!-- Static thumbnail (shown before player loads) -->
-      <img
-        v-if="!playerLoaded"
-        :src="thumbnailUrl"
-        :alt="wad.title"
-        class="h-full w-full object-cover"
-      />
-
-      <!-- YouTube player container (created on click) -->
+      <!-- YouTube player (always present, loaded on mount) -->
       <div
-        v-if="playerLoaded && hasVideo"
+        v-if="hasVideo"
         ref="playerContainerRef"
         class="absolute inset-0 w-full h-full"
       />
@@ -152,7 +139,7 @@ async function handleVideoClick(e: MouseEvent) {
       <!-- Play button overlay - shown when not playing -->
       <div
         v-if="hasVideo && !isPlaying"
-        class="absolute inset-0 flex items-center justify-center bg-black/20 z-20 pointer-events-none"
+        class="absolute inset-0 flex items-center justify-center bg-black/30 z-20 pointer-events-none"
       >
         <div class="w-16 h-16 rounded-full bg-red-600/90 flex items-center justify-center shadow-lg">
           <svg class="w-8 h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
@@ -161,12 +148,20 @@ async function handleVideoClick(e: MouseEvent) {
         </div>
       </div>
 
+      <!-- Fallback for WADs without video -->
+      <div
+        v-if="!hasVideo"
+        class="absolute inset-0 flex items-center justify-center bg-red-900"
+      >
+        <span class="text-2xl text-red-300 font-bold">DOOM</span>
+      </div>
+
       <!-- Type badge -->
-      <span class="absolute bottom-2 left-2 rounded bg-zinc-900/80 px-2 py-0.5 text-xs text-zinc-300 pointer-events-none z-10">
+      <span class="absolute bottom-2 left-2 rounded bg-zinc-900/80 px-2 py-0.5 text-xs text-zinc-300 pointer-events-none z-30">
         {{ TYPE_LABELS[wad.type] }}
       </span>
       <!-- Award badge -->
-      <span v-if="wad.awards.length" class="absolute top-2 right-2 text-lg pointer-events-none z-10">🏆</span>
+      <span v-if="wad.awards.length" class="absolute top-2 right-2 text-lg pointer-events-none z-30">🏆</span>
     </div>
 
     <div class="p-3">
