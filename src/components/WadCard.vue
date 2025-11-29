@@ -7,6 +7,14 @@ const TYPE_LABELS: Record<WadEntry["type"], string> = {
   "gameplay-mod": "Mod", "total-conversion": "TC", "resource-pack": "Resources",
 };
 
+const DIFFICULTY_CONFIG: Record<WadEntry["difficulty"], { label: string; color: string }> = {
+  easy: { label: "Easy", color: "bg-green-600" },
+  medium: { label: "Medium", color: "bg-yellow-600" },
+  hard: { label: "Hard", color: "bg-orange-600" },
+  slaughter: { label: "Slaughter", color: "bg-red-600" },
+  unknown: { label: "", color: "" },
+};
+
 const props = defineProps<{
   wad: WadEntry;
   isDownloaded: boolean;
@@ -156,17 +164,13 @@ function handleVideoClick(e: MouseEvent) {
         <span class="text-2xl text-red-300 font-bold">DOOM</span>
       </div>
 
-      <!-- Type badge -->
-      <span class="absolute bottom-2 left-2 rounded bg-zinc-900/80 px-2 py-0.5 text-xs text-zinc-300 pointer-events-none z-30">
-        {{ TYPE_LABELS[wad.type] }}
-      </span>
-      <!-- Award badge -->
+            <!-- Award badge -->
       <span v-if="wad.awards.length" class="absolute top-2 right-2 text-lg pointer-events-none z-30">🏆</span>
     </div>
 
     <div class="p-3">
       <h3 class="truncate font-semibold text-zinc-100">{{ wad.title }}</h3>
-      <p class="truncate text-sm text-zinc-400">{{ wad.authors.map(a => a.name).join(", ") }} • {{ wad.year }}</p>
+      <p class="truncate text-sm text-zinc-400">{{ wad.authors.map(a => a.name).join(", ") }} • {{ wad.year }} • {{ TYPE_LABELS[wad.type] }}<template v-if="wad.difficulty !== 'unknown'"> • {{ DIFFICULTY_CONFIG[wad.difficulty].label }}</template></p>
 
       <div class="mt-3 flex gap-2">
         <button
