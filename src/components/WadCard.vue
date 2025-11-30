@@ -144,18 +144,7 @@ function handleVideoClick(e: MouseEvent) {
         class="absolute inset-0 w-full h-full"
       />
 
-      <!-- Play button overlay - shown when not playing -->
-      <div
-        v-if="hasVideo && !isPlaying"
-        class="absolute inset-0 flex items-center justify-center bg-black/30 z-20 pointer-events-none"
-      >
-        <div class="w-16 h-16 rounded-full bg-red-600/90 flex items-center justify-center shadow-lg">
-          <svg class="w-8 h-8 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </div>
-      </div>
-
+      
       <!-- Fallback for WADs without video -->
       <div
         v-if="!hasVideo"
