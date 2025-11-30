@@ -55,3 +55,6 @@ The app has `tauri-plugin-mcp` integrated for AI debugging via Claude Code.
 - If tools timeout: ensure `setupPluginListeners()` is called in frontend
 - Socket errors: remove stale socket file from `$TMPDIR/tauri-mcp.sock`
 - Screenshot fails: ensure app window is visible (not minimized)
+
+### Scripts
+Python exploration scripts live in `scripts/`. Run with `uv run scripts/<script>.py`.

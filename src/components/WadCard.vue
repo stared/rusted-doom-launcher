@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import type { WadEntry } from "../lib/schema";
 import type { WadSaveInfo } from "../composables/useSaves";
+import { useLevelNames } from "../composables/useLevelNames";
+
+const { loadLevelNames, getLevelDisplayName } = useLevelNames();
 
 const TYPE_LABELS: Record<WadEntry["type"], string> = {
   "single-level": "Level", episode: "Episode", megawad: "Megawad",
@@ -33,6 +36,15 @@ const playerReady = ref(false);
 const isPlaying = ref(false);
 const playerContainerRef = ref<HTMLDivElement | null>(null);
 const showStatsModal = ref(false);
+const levelNamesLoaded = ref(false);
+
+// Load level names when stats modal opens
+watch(showStatsModal, async (isOpen) => {
+  if (isOpen && !levelNamesLoaded.value) {
+    await loadLevelNames(props.wad.slug);
+    levelNamesLoaded.value = true;
+  }
+});
 
 // Format time from tics (35 tics = 1 second) to MM:SS
 function formatTime(tics: number): string {
@@ -243,7 +255,7 @@ function handleVideoClick(e: MouseEvent) {
                 :key="level.levelname"
                 class="border-b border-zinc-700/50 text-zinc-300"
               >
-                <td class="py-2 pr-4 font-medium">{{ level.levelname }}</td>
+                <td class="py-2 pr-4 font-medium">{{ getLevelDisplayName(wad.slug, level.levelname) }}</td>
                 <td class="py-2 pr-4 text-center">
                   <span :class="level.killcount === level.totalkills ? 'text-green-400' : ''">
                     {{ level.killcount }}/{{ level.totalkills }}
