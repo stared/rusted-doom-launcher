@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import WadList from "./components/WadList.vue";
 import { useWads } from "./composables/useWads";
 import { useGZDoom } from "./composables/useGZDoom";
 import { useDownload } from "./composables/useDownload";
 import { useSettings } from "./composables/useSettings";
+import { useSaves } from "./composables/useSaves";
 import type { WadEntry } from "./lib/schema";
 
 declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unknown };
@@ -14,10 +15,14 @@ const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning, isGZDoomFound, gzdoomDetectedPath } = useGZDoom();
 const { loadState: loadDownloadState, isDownloaded, isDownloading, downloadWithDeps, deleteWad } = useDownload();
 const { loadSettings, setGZDoomPath, setLibraryPath, getLibraryPath } = useSettings();
+const { loadAllSaveInfo, getCachedSaveInfo, refreshSaveInfo } = useSaves();
 
 const settingsOpen = ref(false);
 const errorMsg = ref("");
 const libraryPathDisplay = ref("");
+
+// Track last played WAD to refresh its save info when game closes
+const lastPlayedSlug = ref<string | null>(null);
 
 onMounted(async () => {
   if (!window.__TAURI_INTERNALS__) {
@@ -34,6 +39,20 @@ onMounted(async () => {
   }
 });
 
+// Load save info once WADs are available
+watch(wads, async (newWads) => {
+  if (newWads.length > 0) {
+    await loadAllSaveInfo(newWads.map(w => w.slug));
+  }
+}, { immediate: true });
+
+// Refresh save info for the played WAD when game closes
+watch(isRunning, async (running, wasRunning) => {
+  if (wasRunning && !running && lastPlayedSlug.value) {
+    await refreshSaveInfo(lastPlayedSlug.value);
+  }
+});
+
 async function handlePlay(wad: WadEntry) {
   errorMsg.value = "";
   if (!isGZDoomFound()) {
@@ -46,7 +65,8 @@ async function handlePlay(wad: WadEntry) {
   }
   try {
     const { wadPath, depPaths } = await downloadWithDeps(wad, wads.value);
-    await launch(wadPath, wad.iwad, depPaths);
+    lastPlayedSlug.value = wad.slug;
+    await launch(wadPath, wad.iwad, depPaths, wad.slug);
   } catch (e) {
     errorMsg.value = e instanceof Error ? e.message : "Failed to launch";
   }
@@ -176,6 +196,7 @@ function shortenPath(path: string | null): string {
           :wads="wads"
           :is-downloaded="isDownloaded"
           :is-downloading="isDownloading"
+          :get-save-info="getCachedSaveInfo"
           @play="handlePlay"
           @delete="handleDelete"
         />
