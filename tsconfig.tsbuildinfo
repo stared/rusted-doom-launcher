@@ -1,1 +1,0 @@
-{"root":["./src/main.ts","./src/vite-env.d.ts","./src/composables/usedownload.ts","./src/composables/usegzdoom.ts","./src/composables/usewads.ts","./src/lib/schema.test.ts","./src/lib/schema.ts","./src/app.vue","./src/components/wadcard.vue","./src/components/wadlist.vue"],"version":"5.6.3"}
