@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+// Dynamic max year - allows current year + 1 for upcoming releases
+const MAX_YEAR = new Date().getFullYear() + 1;
+
 // IWADs
 const IwadEnum = z.enum(["doom", "doom2", "plutonia", "tnt", "heretic", "hexen", "freedoom1", "freedoom2"]);
 export type Iwad = z.infer<typeof IwadEnum>;
@@ -16,7 +19,7 @@ export const WadEntrySchema = z.object({
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   title: z.string().min(1).max(200),
   authors: z.array(z.object({ name: z.string().min(1) })).min(1),
-  year: z.number().int().min(1993).max(2030),
+  year: z.number().int().min(1993).max(MAX_YEAR),
   description: z.string().min(1),
   iwad: IwadEnum,
   type: z.enum(["single-level", "episode", "megawad", "gameplay-mod", "total-conversion", "resource-pack"]),
@@ -36,7 +39,7 @@ export const WadEntrySchema = z.object({
   youtubeVideos: z.array(YouTubeVideoSchema),
   awards: z.array(z.object({
     type: z.enum(["cacoward", "runner-up", "mention"]),
-    year: z.number().int().min(1994).max(2030),
+    year: z.number().int().min(1994).max(MAX_YEAR),
   })),
   tags: z.array(z.string()),
   difficulty: z.enum(["easy", "medium", "hard", "slaughter", "unknown"]),

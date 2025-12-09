@@ -70,6 +70,59 @@ describe("WAD Entry Schema", () => {
     });
   });
 
+  describe("year validation", () => {
+    const baseWad = {
+      slug: "test-wad",
+      title: "Test",
+      authors: [{ name: "Test" }],
+      description: "Test",
+      iwad: "doom2",
+      type: "megawad",
+      sourcePort: "gzdoom",
+      requires: [],
+      downloads: [{ type: "idgames", url: "https://example.com", filename: "test.zip" }],
+      thumbnail: "",
+      screenshots: [],
+      youtubeVideos: [],
+      awards: [],
+      tags: [],
+      difficulty: "unknown",
+      notes: "",
+      _schemaVersion: 1,
+      _source: "manual",
+    };
+
+    it("should accept current year", () => {
+      expect(() =>
+        WadEntrySchema.parse({ ...baseWad, year: new Date().getFullYear() })
+      ).not.toThrow();
+    });
+
+    it("should accept next year (for upcoming releases)", () => {
+      expect(() =>
+        WadEntrySchema.parse({ ...baseWad, year: new Date().getFullYear() + 1 })
+      ).not.toThrow();
+    });
+
+    it("should reject year too far in the future", () => {
+      expect(() =>
+        WadEntrySchema.parse({ ...baseWad, year: new Date().getFullYear() + 2 })
+      ).toThrow();
+    });
+
+    it("should accept 1993 (Doom release year)", () => {
+      expect(() =>
+        WadEntrySchema.parse({ ...baseWad, year: 1993 })
+      ).not.toThrow();
+    });
+
+    it("should reject year before Doom existed", () => {
+      expect(() =>
+        WadEntrySchema.parse({ ...baseWad, year: 1992 })
+      ).toThrow();
+    });
+  });
+
   describe("slug validation", () => {
     it("should accept valid kebab-case slugs", () => {
       expect(() =>
