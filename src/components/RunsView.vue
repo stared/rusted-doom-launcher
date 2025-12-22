@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { History } from "lucide-vue-next";
+import { History, Skull, KeyRound, Package, Clock } from "lucide-vue-next";
 import { useStats } from "../composables/useStats";
 import { useLevelNames } from "../composables/useLevelNames";
 import type { SkillLevel } from "../lib/statsSchema";
@@ -49,6 +49,15 @@ function formatTime(tics: number): string {
   if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
+
+// Full skill names
+const SKILL_NAMES: Record<SkillLevel, string> = {
+  ITYTD: "I'm too young to die!",
+  HNTR: "Hey, not too rough!",
+  HMP: "Hurt me plenty!",
+  UV: "Ultra-Violence!",
+  NM: "Nightmare!",
+};
 
 // Get local date key for grouping (YYYY-MM-DD in local timezone)
 function getDateKey(isoString: string): string {
@@ -181,24 +190,34 @@ onMounted(async () => {
               </div>
 
               <!-- Skill -->
-              <span class="text-[10px] font-mono text-zinc-500 w-8">{{ level.skill }}</span>
+              <span class="text-[10px] text-zinc-500 truncate max-w-28" :title="level.skill">{{ SKILL_NAMES[level.skill] }}</span>
 
-              <!-- Stats with colors -->
-              <div class="flex items-center gap-4 font-mono text-xs tabular-nums">
+              <!-- Stats with colors and icons -->
+              <div class="flex items-center gap-3 font-mono text-xs tabular-nums">
                 <!-- Kills (red) -->
-                <div class="w-12 text-right" title="Kills">
-                  <span class="text-red-400">{{ level.kills }}</span><span class="text-zinc-700">/</span><span class="text-zinc-600">{{ level.totalKills }}</span>
+                <div class="flex items-center gap-1" title="Kills">
+                  <Skull :size="12" class="text-red-400/70" />
+                  <span :class="level.kills === level.totalKills ? 'text-red-400' : 'text-red-400'">{{ level.kills }}</span>
+                  <span class="text-zinc-700">/</span>
+                  <span :class="level.kills === level.totalKills ? 'text-red-400' : 'text-zinc-600'">{{ level.totalKills }}</span>
                 </div>
                 <!-- Secrets (amber) -->
-                <div class="w-8 text-right" title="Secrets">
-                  <span class="text-amber-400">{{ level.secrets }}</span><span class="text-zinc-700">/</span><span class="text-zinc-600">{{ level.totalSecrets }}</span>
+                <div class="flex items-center gap-1" title="Secrets">
+                  <KeyRound :size="12" class="text-amber-400/70" />
+                  <span class="text-amber-400">{{ level.secrets }}</span>
+                  <span class="text-zinc-700">/</span>
+                  <span :class="level.secrets === level.totalSecrets ? 'text-amber-400' : 'text-zinc-600'">{{ level.totalSecrets }}</span>
                 </div>
                 <!-- Items (blue) -->
-                <div class="w-10 text-right" title="Items">
-                  <span class="text-sky-400">{{ level.items }}</span><span class="text-zinc-700">/</span><span class="text-zinc-600">{{ level.totalItems }}</span>
+                <div class="flex items-center gap-1" title="Items">
+                  <Package :size="12" class="text-sky-400/70" />
+                  <span class="text-sky-400">{{ level.items }}</span>
+                  <span class="text-zinc-700">/</span>
+                  <span :class="level.items === level.totalItems ? 'text-sky-400' : 'text-zinc-600'">{{ level.totalItems }}</span>
                 </div>
                 <!-- Time -->
-                <div class="w-12 text-right text-zinc-400">
+                <div class="flex items-center gap-1 text-zinc-400">
+                  <Clock :size="12" class="text-zinc-500" />
                   {{ formatTime(level.timeTics) }}
                 </div>
               </div>
