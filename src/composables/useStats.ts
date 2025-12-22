@@ -38,6 +38,28 @@ export function useStats() {
     return `${libraryPath}/saves/${slug}`;
   }
 
+  // Load or create level names mapping for a WAD
+  async function loadLevelNames(statsDir: string): Promise<Map<string, string>> {
+    const filepath = `${statsDir}/level-names.json`;
+    try {
+      if (await exists(filepath)) {
+        const content = await readTextFile(filepath);
+        const data = JSON.parse(content) as Record<string, string>;
+        return new Map(Object.entries(data));
+      }
+    } catch {
+      // Ignore errors, return empty map
+    }
+    return new Map();
+  }
+
+  // Save level names mapping
+  async function saveLevelNames(statsDir: string, names: Map<string, string>): Promise<void> {
+    const filepath = `${statsDir}/level-names.json`;
+    const data = Object.fromEntries(names);
+    await writeTextFile(filepath, JSON.stringify(data, null, 2));
+  }
+
   // Parse a single .zds save file and extract session data
   async function parseSaveForStats(
     savePath: string,
@@ -169,6 +191,10 @@ export function useStats() {
       }
     }
 
+    // Load existing level names mapping
+    const levelNames = await loadLevelNames(statsDir);
+    let levelNamesUpdated = false;
+
     // Read all save files
     let saveFiles: { name: string; mtime: Date }[];
     try {
@@ -200,6 +226,21 @@ export function useStats() {
 
       if (!session) continue;
 
+      // Accumulate any new level names we discovered
+      for (const level of session.levels) {
+        if (level.name !== level.id && !levelNames.has(level.id)) {
+          levelNames.set(level.id, level.name);
+          levelNamesUpdated = true;
+        }
+      }
+
+      // Apply known level names to session
+      for (const level of session.levels) {
+        if (level.name === level.id && levelNames.has(level.id)) {
+          level.name = levelNames.get(level.id)!;
+        }
+      }
+
       // Use save file mtime as timestamp
       const timestamp = save.mtime.toISOString();
 
@@ -226,6 +267,16 @@ export function useStats() {
       }
     }
 
+    // Save updated level names if changed
+    if (levelNamesUpdated) {
+      try {
+        await saveLevelNames(statsDir, levelNames);
+        console.log(`[Stats] Updated level names for ${slug}`);
+      } catch (e) {
+        console.error(`Error saving level names for ${slug}:`, e);
+      }
+    }
+
     return capturedCount;
   }
 
@@ -241,11 +292,14 @@ export function useStats() {
       return [];
     }
 
+    // Load level names mapping
+    const levelNames = await loadLevelNames(statsDir);
+
     let files: string[];
     try {
       const entries = await readDir(statsDir);
       files = entries
-        .filter((e) => e.name?.endsWith(".json"))
+        .filter((e) => e.name?.endsWith(".json") && e.name !== "level-names.json")
         .map((e) => e.name!)
         .sort(); // Chronological order by filename
     } catch {
@@ -259,7 +313,14 @@ export function useStats() {
         const content = await readTextFile(`${statsDir}/${filename}`);
         const parsed = PlaySessionSchema.safeParse(JSON.parse(content));
         if (parsed.success) {
-          sessions.push(parsed.data);
+          const session = parsed.data;
+          // Apply known level names
+          for (const level of session.levels) {
+            if (level.name === level.id && levelNames.has(level.id)) {
+              level.name = levelNames.get(level.id)!;
+            }
+          }
+          sessions.push(session);
         } else {
           console.warn(`Invalid session file ${filename}:`, parsed.error.format());
         }

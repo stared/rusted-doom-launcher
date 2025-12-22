@@ -4,6 +4,7 @@ import Sidebar from "./components/Sidebar.vue";
 import MainView from "./components/MainView.vue";
 import LibraryView from "./components/LibraryView.vue";
 import ExploreView from "./components/ExploreView.vue";
+import RunsView from "./components/RunsView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import AboutView from "./components/AboutView.vue";
 import { useWads } from "./composables/useWads";
@@ -16,7 +17,7 @@ import type { WadEntry } from "./lib/schema";
 
 declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unknown };
 
-type View = "main" | "library" | "explore" | "settings" | "about";
+type View = "main" | "library" | "explore" | "runs" | "settings" | "about";
 
 const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning, isGZDoomFound } = useGZDoom();
@@ -134,6 +135,10 @@ async function handleDelete(wad: WadEntry) {
         :get-save-info="getCachedSaveInfo"
         @play="handlePlay"
         @delete="handleDelete"
+      />
+      <RunsView
+        v-else-if="activeView === 'runs'"
+        :wads="wads"
       />
       <SettingsView v-else-if="activeView === 'settings'" />
       <AboutView v-else-if="activeView === 'about'" />
