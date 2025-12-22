@@ -115,8 +115,26 @@ async function handleDelete(wad: WadEntry) {
         @play="handlePlay"
         @delete="handleDelete"
       />
-      <LibraryView v-else-if="activeView === 'library'" />
-      <ExploreView v-else-if="activeView === 'explore'" />
+      <LibraryView
+        v-else-if="activeView === 'library'"
+        :wads="wads"
+        :is-downloaded="isDownloaded"
+        :is-downloading="isDownloading"
+        :get-download-progress="getDownloadProgress"
+        :get-save-info="getCachedSaveInfo"
+        @play="handlePlay"
+        @delete="handleDelete"
+      />
+      <ExploreView
+        v-else-if="activeView === 'explore'"
+        :wads="wads"
+        :is-downloaded="isDownloaded"
+        :is-downloading="isDownloading"
+        :get-download-progress="getDownloadProgress"
+        :get-save-info="getCachedSaveInfo"
+        @play="handlePlay"
+        @delete="handleDelete"
+      />
       <SettingsView v-else-if="activeView === 'settings'" />
       <AboutView v-else-if="activeView === 'about'" />
     </main>
