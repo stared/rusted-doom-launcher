@@ -32,5 +32,8 @@
   "difficulty": "unknown",
   "notes": "",
   "_schemaVersion": 1,
-  "_source": "cacowards-scraper"
+  "_source": "cacowards-scraper",
+  "urls": [
+    "https://doomwiki.org/wiki/Erkatt%C3%A4%C3%B1%C3%B1e"
+  ]
 }

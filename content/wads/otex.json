@@ -1,7 +1,11 @@
 {
   "slug": "otex",
   "title": "OTEX Texture Pack",
-  "authors": [{ "name": "Ola Björling (ukiro)" }],
+  "authors": [
+    {
+      "name": "Ola Bj\u00f6rling (ukiro)"
+    }
+  ],
   "year": 2019,
   "description": "A high-quality texture pack for Doom mapping containing over 1500 textures and flats. Used by many modern WADs as a resource dependency. Freely available for mappers.",
   "iwad": "doom2",
@@ -19,9 +23,16 @@
   "screenshots": [],
   "youtubeVideos": [],
   "awards": [],
-  "tags": ["textures", "resource", "mapping"],
+  "tags": [
+    "textures",
+    "resource",
+    "mapping"
+  ],
   "difficulty": "unknown",
-  "notes": "[Official site](https://doom.ukiro.com/) • Resource pack for mappers, not playable standalone.",
+  "notes": "[Official site](https://doom.ukiro.com/) \u2022 Resource pack for mappers, not playable standalone.",
   "_schemaVersion": 1,
-  "_source": "manual"
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/OTEX"
+  ]
 }

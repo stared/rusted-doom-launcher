@@ -1,7 +1,11 @@
 {
   "slug": "ancient-aliens",
   "title": "Ancient Aliens",
-  "authors": [{ "name": "skillsaw" }],
+  "authors": [
+    {
+      "name": "skillsaw"
+    }
+  ],
   "year": 2016,
   "description": "A 32-level megawad with a vibrant purple alien aesthetic. Features unique architecture, custom textures, new enemies, and an original soundtrack. Known for its distinctive visual style and challenging gameplay.",
   "iwad": "doom2",
@@ -25,11 +29,22 @@
     }
   ],
   "awards": [
-    { "type": "cacoward", "year": 2016 }
+    {
+      "type": "cacoward",
+      "year": 2016
+    }
   ],
-  "tags": ["megawad", "custom-textures", "aliens", "purple"],
+  "tags": [
+    "megawad",
+    "custom-textures",
+    "aliens",
+    "purple"
+  ],
   "difficulty": "hard",
-  "notes": "[Forum](https://www.doomworld.com/forum/topic/53857-ancient-aliens-final-version-on-idgames/) • [DoomWiki](https://doomwiki.org/wiki/Ancient_Aliens)",
+  "notes": "[Forum](https://www.doomworld.com/forum/topic/53857-ancient-aliens-final-version-on-idgames/) \u2022 [DoomWiki](https://doomwiki.org/wiki/Ancient_Aliens)",
   "_schemaVersion": 1,
-  "_source": "manual"
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/Ancient_Aliens"
+  ]
 }

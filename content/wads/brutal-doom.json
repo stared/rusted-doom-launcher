@@ -1,7 +1,11 @@
 {
   "slug": "brutal-doom",
   "title": "Brutal Doom",
-  "authors": [{ "name": "Sergeant_Mark_IV" }],
+  "authors": [
+    {
+      "name": "Sergeant_Mark_IV"
+    }
+  ],
   "year": 2012,
   "description": "A gameplay mod that adds enhanced gore, fatalities, new weapons, and modernized mechanics to classic Doom. Features headshots, dual-wielding, executions, and enhanced enemy AI. One of the most popular Doom mods ever created.",
   "iwad": "doom2",
@@ -25,11 +29,22 @@
     }
   ],
   "awards": [
-    { "type": "cacoward", "year": 2012 }
+    {
+      "type": "cacoward",
+      "year": 2012
+    }
   ],
-  "tags": ["gameplay-mod", "gore", "action", "popular"],
+  "tags": [
+    "gameplay-mod",
+    "gore",
+    "action",
+    "popular"
+  ],
   "difficulty": "medium",
-  "notes": "[ModDB](https://www.moddb.com/mods/brutal-doom) • [Forum](https://www.doomworld.com/forum/topic/57406-brutal-doom-version-21-release/) • Load with any IWAD or map pack.",
+  "notes": "[ModDB](https://www.moddb.com/mods/brutal-doom) \u2022 [Forum](https://www.doomworld.com/forum/topic/57406-brutal-doom-version-21-release/) \u2022 Load with any IWAD or map pack.",
   "_schemaVersion": 1,
-  "_source": "manual"
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/Brutal_Doom"
+  ]
 }

@@ -1,7 +1,11 @@
 {
   "slug": "sigil",
   "title": "SIGIL",
-  "authors": [{ "name": "John Romero" }],
+  "authors": [
+    {
+      "name": "John Romero"
+    }
+  ],
   "year": 2019,
   "description": "John Romero's unofficial fifth episode for the original Doom. A free megawad featuring 9 single-player and 9 deathmatch levels, with music by Buckethead. A love letter to classic Doom from one of its original creators.",
   "iwad": "doom",
@@ -25,9 +29,17 @@
     }
   ],
   "awards": [],
-  "tags": ["classic", "episode", "john-romero", "official"],
+  "tags": [
+    "classic",
+    "episode",
+    "john-romero",
+    "official"
+  ],
   "difficulty": "hard",
-  "notes": "[Official site](https://romero.com/sigil) • [DoomWiki](https://doomwiki.org/wiki/SIGIL) • SIGIL II released 2023.",
+  "notes": "[Official site](https://romero.com/sigil) \u2022 [DoomWiki](https://doomwiki.org/wiki/SIGIL) \u2022 SIGIL II released 2023.",
   "_schemaVersion": 1,
-  "_source": "manual"
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/SIGIL"
+  ]
 }

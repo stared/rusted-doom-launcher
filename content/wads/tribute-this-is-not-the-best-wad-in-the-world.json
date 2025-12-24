@@ -32,5 +32,8 @@
   "difficulty": "unknown",
   "notes": "",
   "_schemaVersion": 1,
-  "_source": "cacowards-scraper"
+  "_source": "cacowards-scraper",
+  "urls": [
+    "https://doomwiki.org/wiki/Tribute_-_this_is_not_the_best_wad_in_the_world"
+  ]
 }

@@ -43,6 +43,7 @@ export const WadEntrySchema = z.object({
   })),
   tags: z.array(z.string()),
   difficulty: z.enum(["easy", "medium", "hard", "slaughter", "unknown"]),
+  urls: z.array(z.string().url()).min(1),
   notes: z.string(),
   _schemaVersion: z.literal(1),
   _source: z.enum(["manual", "idgames-scraper", "cacowards-scraper"]),

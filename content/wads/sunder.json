@@ -1,7 +1,11 @@
 {
   "slug": "sunder",
   "title": "Sunder",
-  "authors": [{ "name": "Insane_Gazebo" }],
+  "authors": [
+    {
+      "name": "Insane_Gazebo"
+    }
+  ],
   "year": 2009,
   "description": "A legendary slaughter megawad featuring massive battles in beautifully crafted environments. Known for its challenging gameplay with huge monster counts and intricate level design. Ongoing development with 21+ maps.",
   "iwad": "doom2",
@@ -25,11 +29,22 @@
     }
   ],
   "awards": [
-    { "type": "mention", "year": 2018 }
+    {
+      "type": "mention",
+      "year": 2018
+    }
   ],
-  "tags": ["megawad", "slaughter", "hard", "beautiful"],
+  "tags": [
+    "megawad",
+    "slaughter",
+    "hard",
+    "beautiful"
+  ],
   "difficulty": "slaughter",
-  "notes": "[Forum](https://www.doomworld.com/forum/topic/46002-sunder-map21-actually-exists-right-now/) • Latest version (21+ maps) only on author's OneDrive. DSDA has classic 14-map release.",
+  "notes": "[Forum](https://www.doomworld.com/forum/topic/46002-sunder-map21-actually-exists-right-now/) \u2022 Latest version (21+ maps) only on author's OneDrive. DSDA has classic 14-map release.",
   "_schemaVersion": 1,
-  "_source": "manual"
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/Sunder"
+  ]
 }

@@ -1,7 +1,11 @@
 {
   "slug": "eviternity",
   "title": "Eviternity",
-  "authors": [{ "name": "Dragonfly" }],
+  "authors": [
+    {
+      "name": "Dragonfly"
+    }
+  ],
   "year": 2018,
   "description": "A 32-level megawad spanning 6 themed chapters from ancient civilizations to futuristic hellscapes. Features custom monsters, new weapons, and an original soundtrack. One of the most acclaimed megawads of all time.",
   "iwad": "doom2",
@@ -25,11 +29,22 @@
     }
   ],
   "awards": [
-    { "type": "cacoward", "year": 2018 }
+    {
+      "type": "cacoward",
+      "year": 2018
+    }
   ],
-  "tags": ["megawad", "custom-monsters", "custom-music", "highly-rated"],
+  "tags": [
+    "megawad",
+    "custom-monsters",
+    "custom-music",
+    "highly-rated"
+  ],
   "difficulty": "hard",
-  "notes": "[Forum](https://www.doomworld.com/forum/topic/103425-eviternity-rc1-now-on-idgames/) • [DoomWiki](https://doomwiki.org/wiki/Eviternity) • Sequel Eviternity II released 2023.",
+  "notes": "[Forum](https://www.doomworld.com/forum/topic/103425-eviternity-rc1-now-on-idgames/) \u2022 [DoomWiki](https://doomwiki.org/wiki/Eviternity) \u2022 Sequel Eviternity II released 2023.",
   "_schemaVersion": 1,
-  "_source": "manual"
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/Eviternity"
+  ]
 }
