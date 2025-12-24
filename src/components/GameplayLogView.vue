@@ -226,41 +226,39 @@ onMounted(async () => {
               </div>
             </button>
 
-            <!-- Expanded Event Timeline -->
-            <div v-if="isExpanded(session.log)" class="border-t border-zinc-800">
-              <div class="max-h-96 overflow-y-auto">
-                <div
-                  v-for="(event, idx) in getInterestingEvents(session.log.events)"
-                  :key="idx"
-                  class="flex items-center gap-3 px-4 py-2 hover:bg-zinc-800/30 text-sm"
-                >
-                  <!-- Time -->
-                  <span class="font-mono text-[10px] text-zinc-600 w-16 text-right">
-                    {{ formatTime(event.time_ms) }}
-                  </span>
+            <!-- Expanded Event Timeline (inline, no scroll) -->
+            <template v-if="isExpanded(session.log)">
+              <div
+                v-for="(event, idx) in getInterestingEvents(session.log.events)"
+                :key="idx"
+                class="flex items-center gap-3 px-4 py-1.5 text-sm border-t border-zinc-800/50 first:border-t-zinc-800"
+              >
+                <!-- Time -->
+                <span class="font-mono text-[10px] text-zinc-600 w-14 text-right">
+                  {{ formatTime(event.time_ms) }}
+                </span>
 
-                  <!-- Icon -->
-                  <component
-                    :is="getEventStyle(event).icon"
-                    :size="14"
-                    :class="getEventStyle(event).color"
-                  />
+                <!-- Icon -->
+                <component
+                  :is="getEventStyle(event).icon"
+                  :size="12"
+                  :class="getEventStyle(event).color"
+                />
 
-                  <!-- Text -->
-                  <span :class="event.type === 'death' ? 'text-red-300' : 'text-zinc-400'">
-                    {{ getEventText(event) }}
-                  </span>
-                </div>
-
-                <!-- Show message if no interesting events -->
-                <div
-                  v-if="getInterestingEvents(session.log.events).length === 0"
-                  class="px-4 py-6 text-center text-zinc-600 text-sm"
-                >
-                  No notable events recorded
-                </div>
+                <!-- Text -->
+                <span :class="event.type === 'death' ? 'text-red-300' : 'text-zinc-500'" class="text-xs">
+                  {{ getEventText(event) }}
+                </span>
               </div>
-            </div>
+
+              <!-- Show message if no interesting events -->
+              <div
+                v-if="getInterestingEvents(session.log.events).length === 0"
+                class="px-4 py-4 text-center text-zinc-600 text-xs border-t border-zinc-800"
+              >
+                No notable events recorded
+              </div>
+            </template>
           </div>
         </div>
       </div>
