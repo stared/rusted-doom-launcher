@@ -1,8 +1,30 @@
 use std::collections::HashMap;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 mod wad_parser;
+
+// Global state to hold the running GZDoom process output collector
+static GZDOOM_LOG: std::sync::OnceLock<Arc<Mutex<GZDoomSession>>> = std::sync::OnceLock::new();
+
+struct GZDoomSession {
+    start_time: std::time::Instant,
+    lines: Vec<(u64, String)>, // (time_ms, line)
+    finished: bool,
+}
+
+impl GZDoomSession {
+    fn new() -> Self {
+        Self {
+            start_time: std::time::Instant::now(),
+            lines: Vec::new(),
+            finished: false,
+        }
+    }
+}
 
 /// Check if a process with the given name is running.
 #[tauri::command]
@@ -43,7 +65,7 @@ async fn extract_and_save_level_names(wad_path: String) -> Result<String, String
 }
 
 /// Launch GZDoom with the specified executable path and arguments.
-/// This bypasses shell plugin limitations for custom GZDoom paths.
+/// Captures stdout/stderr for later retrieval via get_gzdoom_log.
 #[tauri::command]
 async fn launch_gzdoom(
     gzdoom_path: String,
@@ -55,13 +77,81 @@ async fn launch_gzdoom(
         return Err("Invalid GZDoom path: must contain 'gzdoom'".to_string());
     }
 
-    // Spawn GZDoom as a detached process
-    Command::new(&gzdoom_path)
+    // Initialize or reset the session
+    let session = Arc::new(Mutex::new(GZDoomSession::new()));
+    let _ = GZDOOM_LOG.set(session.clone());
+
+    // If already set, reset it
+    if let Some(existing) = GZDOOM_LOG.get() {
+        let mut guard = existing.lock().unwrap();
+        *guard = GZDoomSession::new();
+    }
+
+    // Spawn GZDoom with piped stdout/stderr
+    let mut child = Command::new(&gzdoom_path)
         .args(&args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| format!("Failed to launch GZDoom at '{}': {}", gzdoom_path, e))?;
 
+    // Take ownership of stdout and stderr
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+
+    // Spawn thread to read stdout
+    if let Some(stdout) = stdout {
+        let session_clone = GZDOOM_LOG.get().unwrap().clone();
+        thread::spawn(move || {
+            let reader = BufReader::new(stdout);
+            for line in reader.lines().map_while(Result::ok) {
+                let mut guard = session_clone.lock().unwrap();
+                let elapsed = guard.start_time.elapsed().as_millis() as u64;
+                guard.lines.push((elapsed, line));
+            }
+        });
+    }
+
+    // Spawn thread to read stderr (merge with stdout)
+    if let Some(stderr) = stderr {
+        let session_clone = GZDOOM_LOG.get().unwrap().clone();
+        thread::spawn(move || {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines().map_while(Result::ok) {
+                let mut guard = session_clone.lock().unwrap();
+                let elapsed = guard.start_time.elapsed().as_millis() as u64;
+                guard.lines.push((elapsed, line));
+            }
+        });
+    }
+
+    // Spawn thread to wait for process exit and mark session as finished
+    thread::spawn(move || {
+        let _ = child.wait();
+        if let Some(session) = GZDOOM_LOG.get() {
+            let mut guard = session.lock().unwrap();
+            guard.finished = true;
+        }
+    });
+
     Ok(())
+}
+
+/// Get the captured GZDoom console log after the game exits.
+/// Returns JSON array of [time_ms, text] pairs, or null if no session/not finished.
+#[tauri::command]
+async fn get_gzdoom_log() -> Result<Option<Vec<(u64, String)>>, String> {
+    match GZDOOM_LOG.get() {
+        Some(session) => {
+            let guard = session.lock().unwrap();
+            if guard.finished {
+                Ok(Some(guard.lines.clone()))
+            } else {
+                Ok(None) // Still running
+            }
+        }
+        None => Ok(None), // No session started
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -74,6 +164,7 @@ pub fn run() {
         .plugin(tauri_plugin_upload::init())
         .invoke_handler(tauri::generate_handler![
             launch_gzdoom,
+            get_gzdoom_log,
             is_process_running,
             extract_wad_level_names,
             extract_and_save_level_names
