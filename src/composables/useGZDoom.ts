@@ -2,15 +2,26 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { readDir, mkdir } from "@tauri-apps/plugin-fs";
 import type { Iwad } from "../lib/schema";
+import type { SkillLevel } from "../lib/statsSchema";
 import { useSettings } from "./useSettings";
+import { useGameplayLog } from "./useGameplayLog";
 import { isExistsError } from "../lib/errors";
 
 const IWADS: Iwad[] = ["doom", "doom2", "plutonia", "tnt", "heretic", "hexen", "freedoom1", "freedoom2"];
 
+// Session tracking for gameplay log
+interface SessionInfo {
+  slug: string;
+  skill: SkillLevel;
+  startedAt: Date;
+}
+
 export function useGZDoom() {
   const isRunning = ref(false);
   const availableIwads = ref<Iwad[]>([]);
+  const currentSession = ref<SessionInfo | null>(null);
   const { getLibraryPath, getGZDoomPath, isGZDoomFound, gzdoomDetectedPath } = useSettings();
+  const { saveGameplayLog } = useGameplayLog();
 
   async function detectIwads() {
     const dir = await getLibraryPath();
@@ -19,7 +30,13 @@ export function useGZDoom() {
     availableIwads.value = IWADS.filter(iwad => files.has(`${iwad.toUpperCase()}.WAD`));
   }
 
-  async function launch(wadPath: string, iwad: Iwad, additionalFiles: string[] = [], wadSlug?: string) {
+  async function launch(
+    wadPath: string,
+    iwad: Iwad,
+    additionalFiles: string[] = [],
+    wadSlug?: string,
+    skill: SkillLevel = "HMP"
+  ) {
     const dir = await getLibraryPath();
     const iwadPath = `${dir}/${iwad.toUpperCase()}.WAD`;
 
@@ -46,6 +63,15 @@ export function useGZDoom() {
       throw new Error("GZDoom not found");
     }
 
+    // Track session info for gameplay log
+    if (wadSlug) {
+      currentSession.value = {
+        slug: wadSlug,
+        skill,
+        startedAt: new Date(),
+      };
+    }
+
     // Use Rust command to launch GZDoom (supports custom paths)
     await invoke("launch_gzdoom", { gzdoomPath, args });
     isRunning.value = true;
@@ -62,11 +88,31 @@ export function useGZDoom() {
         if (!running) {
           clearInterval(pollInterval);
           isRunning.value = false;
+
+          // Capture gameplay log if we have session info
+          if (currentSession.value) {
+            try {
+              const log = await invoke<Array<[number, string]> | null>("get_gzdoom_log");
+              if (log && log.length > 0) {
+                await saveGameplayLog(
+                  currentSession.value.slug,
+                  currentSession.value.skill,
+                  log,
+                  currentSession.value.startedAt,
+                  new Date()
+                );
+              }
+            } catch (e) {
+              console.error("Failed to save gameplay log:", e);
+            }
+            currentSession.value = null;
+          }
         }
       } catch {
         // If check fails, assume not running
         clearInterval(pollInterval);
         isRunning.value = false;
+        currentSession.value = null;
       }
     }, 2000); // Check every 2 seconds
   }
