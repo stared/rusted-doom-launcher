@@ -70,7 +70,7 @@ const authorDisplay = computed(() => {
 </script>
 
 <template>
-  <div class="group overflow-hidden rounded-lg bg-zinc-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+  <div class="overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
     <!-- Image area with overlay -->
     <div class="relative aspect-video overflow-hidden">
       <!-- Screenshot/thumbnail -->
@@ -78,7 +78,7 @@ const authorDisplay = computed(() => {
         v-if="imageSrc"
         :src="imageSrc"
         :alt="wad.title"
-        class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        class="absolute inset-0 w-full h-full object-cover"
       />
 
       <!-- Fallback for no image -->
@@ -95,10 +95,12 @@ const authorDisplay = computed(() => {
       <!-- Difficulty badge (top right) -->
       <div
         v-if="difficultyConfig"
-        class="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/70 backdrop-blur-sm"
+        class="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded bg-black/70 backdrop-blur-sm"
       >
-        <div :class="['w-2 h-2 rounded-full', difficultyConfig.color]" />
-        <span :class="['text-xs font-bold', difficultyConfig.textColor]">
+        <span :class="['text-xs font-bold uppercase tracking-wide', difficultyConfig.textColor]">
+          {{ difficultyConfig.label }}
+        </span>
+        <span class="text-[10px] text-zinc-400">
           {{ difficulty?.toFixed(1) }}
         </span>
       </div>
