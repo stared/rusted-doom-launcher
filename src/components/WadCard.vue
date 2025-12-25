@@ -192,9 +192,17 @@ function handleVideoClick(e: MouseEvent) {
       />
 
       
-      <!-- Fallback for WADs without video -->
+      <!-- Thumbnail image for WADs without video -->
+      <img
+        v-if="!hasVideo && wad.thumbnail"
+        :src="wad.thumbnail"
+        :alt="wad.title"
+        class="absolute inset-0 w-full h-full object-cover"
+      />
+
+      <!-- Fallback for WADs without video or thumbnail -->
       <div
-        v-if="!hasVideo"
+        v-if="!hasVideo && !wad.thumbnail"
         class="absolute inset-0 flex items-center justify-center bg-red-900"
       >
         <span class="text-2xl text-red-300 font-bold">DOOM</span>
