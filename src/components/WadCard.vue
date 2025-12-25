@@ -208,8 +208,6 @@ function handleVideoClick(e: MouseEvent) {
         <span class="text-2xl text-red-300 font-bold">DOOM</span>
       </div>
 
-            <!-- Award badge -->
-      <span v-if="wad.awards.length" class="absolute top-2 right-2 text-lg pointer-events-none z-30">🏆</span>
     </div>
 
     <div class="p-3">
