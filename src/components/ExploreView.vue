@@ -21,7 +21,7 @@ const emit = defineEmits<{
   delete: [wad: WadEntry];
 }>();
 
-const { getDifficulty } = useWadSummaries();
+const { getDifficulty, getVibe } = useWadSummaries();
 
 // Filter/sort state
 const searchQuery = ref("");
@@ -97,13 +97,17 @@ function formatType(type: string): string {
 const filteredWads = computed(() => {
   let result = [...props.wads];
 
-  // Search filter
+  // Search filter - searches title, authors, and vibe
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
-    result = result.filter(w =>
-      w.title.toLowerCase().includes(q) ||
-      w.authors.some(a => a.name.toLowerCase().includes(q))
-    );
+    result = result.filter(w => {
+      const vibe = getVibe(w.slug) ?? "";
+      return (
+        w.title.toLowerCase().includes(q) ||
+        w.authors.some(a => a.name.toLowerCase().includes(q)) ||
+        vibe.toLowerCase().includes(q)
+      );
+    });
   }
 
   // IWAD filter

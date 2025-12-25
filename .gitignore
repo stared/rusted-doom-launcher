@@ -5,3 +5,9 @@ target/
 *.log
 *.tsbuildinfo
 vite.config.d.ts
+
+# Script cache/temp files
+scripts/data/.*_cache.json
+scripts/data/*-metadata.json
+scripts/data/cacowards_raw.json
+scripts/data/wads_metadata.json
