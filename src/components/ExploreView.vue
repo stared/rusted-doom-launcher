@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Compass } from "lucide-vue-next";
-import WadList from "./WadList.vue";
+import ExploreCard from "./ExploreCard.vue";
 import type { WadEntry } from "../lib/schema";
 import type { WadSaveInfo } from "../composables/useSaves";
 import type { DownloadProgress } from "../composables/useDownload";
@@ -32,15 +32,14 @@ const notDownloadedWads = computed(() =>
       <p class="text-zinc-600 text-sm mt-2">Check Library to play your collection</p>
     </div>
 
-    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <WadList
-        :wads="notDownloadedWads"
-        :is-downloaded="isDownloaded"
-        :is-downloading="isDownloading"
-        :get-download-progress="getDownloadProgress"
-        :get-save-info="getSaveInfo"
+    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ExploreCard
+        v-for="wad in notDownloadedWads"
+        :key="wad.slug"
+        :wad="wad"
+        :is-downloading="isDownloading(wad.slug)"
+        :download-progress="getDownloadProgress(wad.slug)"
         @play="emit('play', $event)"
-        @delete="emit('delete', $event)"
       />
     </div>
   </div>
