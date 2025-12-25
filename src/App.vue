@@ -2,7 +2,6 @@
 import { ref, onMounted, watch } from "vue";
 import Sidebar from "./components/Sidebar.vue";
 import MainView from "./components/MainView.vue";
-import LibraryView from "./components/LibraryView.vue";
 import ExploreView from "./components/ExploreView.vue";
 import RunsView from "./components/RunsView.vue";
 import GameplayLogView from "./components/GameplayLogView.vue";
@@ -18,7 +17,7 @@ import type { WadEntry } from "./lib/schema";
 
 declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unknown };
 
-type View = "main" | "library" | "explore" | "runs" | "logs" | "settings" | "about";
+type View = "main" | "explore" | "runs" | "logs" | "settings" | "about";
 
 const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning, isGZDoomFound } = useGZDoom();
@@ -110,16 +109,6 @@ async function handleDelete(wad: WadEntry) {
         :wads="wads"
         :loading="loading"
         :error="error"
-        :is-downloaded="isDownloaded"
-        :is-downloading="isDownloading"
-        :get-download-progress="getDownloadProgress"
-        :get-save-info="getCachedSaveInfo"
-        @play="handlePlay"
-        @delete="handleDelete"
-      />
-      <LibraryView
-        v-else-if="activeView === 'library'"
-        :wads="wads"
         :is-downloaded="isDownloaded"
         :is-downloading="isDownloading"
         :get-download-progress="getDownloadProgress"
