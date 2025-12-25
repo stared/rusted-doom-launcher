@@ -19,8 +19,17 @@
       "filename": "cah.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/e/e5/Cold_as_Hell_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/6/6d/OldCAH1.jpeg",
+      "caption": "Medical Facilities in Cold as Hell."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/15/CAHFlame1.png",
+      "caption": "Updated flamethrower in CAH: SE"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

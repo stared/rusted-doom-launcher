@@ -19,8 +19,21 @@
       "filename": "the-adventures-of-square.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/0/0d/SquareE2.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/6/6a/SquareE1A4.png",
+      "caption": "Taking down a horde of airvolts with the dual oozis in Episode 1, Area 4."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/92/SquareE2A1.png",
+      "caption": "Facing off against circle jerks on board the space station in Episode 2, Area 1."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/12/Square_cows_in_waterfall.png",
+      "caption": "Two cows in a waterfall"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

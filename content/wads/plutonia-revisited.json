@@ -19,8 +19,13 @@
       "filename": "prcp.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/9/9e/Plutonia_RCP_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/7/78/Prcp-intermission-screen.png",
+      "caption": "Intermission screen"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

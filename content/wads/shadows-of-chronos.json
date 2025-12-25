@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/d/dc/Shadows_of_Chronos_MAP05.png",
+      "caption": "Starting room of the Forest of Time."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

@@ -19,8 +19,13 @@
       "filename": "remnant.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/7/72/Remnant_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/f/f7/Remnant_map.png",
+      "caption": "Map of Remnant"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

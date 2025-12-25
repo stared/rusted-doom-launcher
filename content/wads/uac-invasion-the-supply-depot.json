@@ -19,8 +19,13 @@
       "filename": "supplydp.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/b/ba/UAC_Invasion_The_Supply_Depot_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/f/fe/UAC_Invasion_The_Supply_Depot_map.png",
+      "caption": "Map of UAC Invasion: The Supply Depot"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

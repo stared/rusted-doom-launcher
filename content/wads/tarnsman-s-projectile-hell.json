@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/6/61/TPH_cover.jpg",
+      "caption": "Cover art by Substance20"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

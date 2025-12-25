@@ -20,7 +20,96 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/e/e1/E1m8b-start.png",
+      "caption": "Start of Tech Gone Bad"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/ee/E1M8B_map.png",
+      "caption": "Map of Tech Gone Bad"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/97/E1m8b-surrounding-nukage.png",
+      "caption": "Northern part of the surrounding pool."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3b/E1m8b-blue-floored-room.png",
+      "caption": "A blue floored room."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3e/E1m8b-blue-key-room.png",
+      "caption": "Nukage room with the blue keycard."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/63/E1m8b-imp-pack.png",
+      "caption": "Now killing a pack of imps."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d6/E1m8b-separate-building.png",
+      "caption": "Invading a computer equipment room in a separate building."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/db/E1m8b-yellow-keycard.png",
+      "caption": "Yellow keycard now accessible."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/15/E1m8b-computer-equipment.png",
+      "caption": "Another equipment room."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/91/E1m8b-yellow-door.png",
+      "caption": "Massive attack next to the yellow door."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3e/E1m8b-demon.png",
+      "caption": "Hunting the demons behind the yellow door."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/12/E1m8b-staircase.png",
+      "caption": "Now approaching the three alcoves room."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/14/E1m8b-central-nukage.png",
+      "caption": "Central nukage area."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/40/E1m8b-secret-six.png",
+      "caption": "Inside secret #6."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/df/E1m8b-dark.png",
+      "caption": "The darkest room."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fb/E1m8b-use-of-rocket-launcher.png",
+      "caption": "Testing the found rocket launcher on imps."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8a/E1m8b-tunnels.png",
+      "caption": "Tunnel with holes."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f8/E1m8b-red-key-room.png",
+      "caption": "The red key room."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8b/E1m8b-surrounding-nukage-southwest.png",
+      "caption": "Southern part of the surrounding pool."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8d/E1m8b-maze.png",
+      "caption": "Finding an exit in the computer maze."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f6/E1m8b-penultimate-room.png",
+      "caption": "The next-to-last (before the barons of Hell area) trap room."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d5/E1m8b-final.png",
+      "caption": "Mow down the barons of Hell to finish the Tech Gone Bad."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

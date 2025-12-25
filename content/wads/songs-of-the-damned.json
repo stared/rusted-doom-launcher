@@ -20,7 +20,68 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/2/2e/Songs_of_the_Damned_MAP01.png",
+      "caption": "Structure near the starting area."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/1a/Songs_of_the_Damned_map.png",
+      "caption": "Map of Songs of the Damned"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/35/SongsOfTheDamned_start.png",
+      "caption": "The start"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/81/SongsOfTheDamned_circle.png",
+      "caption": "The next place"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/ee/SongsOfTheDamned_chainsaw.png",
+      "caption": "The chainsaw"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/5b/SongsOfTheDamned_yellowdoor.png",
+      "caption": "The yellow door room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/5e/SongsOfTheDamned_yellowkey.png",
+      "caption": "The yellow key"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/c8/SongsOfTheDamned_hangman.png",
+      "caption": "After the yellow door"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/34/SongsOfTheDamned_waterzone1.png",
+      "caption": "The pool below"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/4c/SongsOfTheDamned_waterzone2.png",
+      "caption": "The red key zone"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/cf/SongsOfTheDamned_soulsphere.png",
+      "caption": "The soulsphere"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/66/SongsOfTheDamned_cyberdemon.png",
+      "caption": "The cyberdemon\u2019s den on the left"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d4/SongsOfTheDamned_pool.png",
+      "caption": "The last pool"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/79/SongsOfTheDamned_archvile.png",
+      "caption": "The trapped arch-vile"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b2/SongsOfTheDamned_end.png",
+      "caption": "The end"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

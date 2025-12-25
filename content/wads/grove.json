@@ -19,8 +19,53 @@
       "filename": "grove.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/8/87/Grove_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/5/56/Grove-starting-area.png",
+      "caption": "Starting area"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/27/Grove-hands.png",
+      "caption": "Pillars hands area"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/34/Grove-town.png",
+      "caption": "Town buildings"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/ec/Grove-town-lamps.png",
+      "caption": "Town lampposts"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/72/Grove-ruins.png",
+      "caption": "Ruins"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fa/Grove-ruins-inside.png",
+      "caption": "Inside the ruins"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d2/Grove-cave-entrance.png",
+      "caption": "Cave entrance"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/05/Grove-cave-inside.png",
+      "caption": "Inside the cave"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a8/Grove-circle.png",
+      "caption": "Circle area"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a4/Grove-megaarmor.png",
+      "caption": "Megaarmor area"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/68/Grove-well.png",
+      "caption": "The well"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

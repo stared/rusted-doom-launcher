@@ -19,8 +19,57 @@
       "filename": "elementalism-phase-1.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/9/99/Elementalism_titlemap.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/b/b5/Elementalism_melee_revenant.png",
+      "caption": "Melee revenant"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/47/Elementalism_phantasm.png",
+      "caption": "Phantasm"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/6c/Elementalism_stone_imp.png",
+      "caption": "Stone imp"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fe/Elementalism_stone_demon.png",
+      "caption": "Stone demon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/67/Elementalism_stone_gargoyle.png",
+      "caption": "Stone gargoyle"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3a/Elementalism_arachnorb.png",
+      "caption": "Arachnorb"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/48/Elementalism_vulgar.png",
+      "caption": "Vulgar"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/28/Elementalism_deep_one.png",
+      "caption": "Deep One"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/be/Elementalism_hellion.png",
+      "caption": "Hellion"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/db/Elementalism_hierophant.png",
+      "caption": "Hierophant"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d7/Elementalism_bruiser.png",
+      "caption": "Bruiser demon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/6c/Elementalism_pyro_demon.png",
+      "caption": "Pyro demon"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

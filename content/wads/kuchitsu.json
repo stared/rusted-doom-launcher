@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/2/2b/Kuchitsu_MAP01.png",
+      "caption": "Starting area of the first level"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

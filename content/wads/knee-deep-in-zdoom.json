@@ -19,8 +19,101 @@
       "filename": "knee-deep-in-zdoom.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/f/fe/Knee_Deep_in_ZDoom_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/a/a1/Z1M1_start.jpg",
+      "caption": "The beginning of KDiZD."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/ed/KDIZD_RFT.png",
+      "caption": "Rapid fire trooper"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/c8/KDiZD_Shadow.png",
+      "caption": "Shadows"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/01/KDIZD_SoulHarvesters.png",
+      "caption": "Soul harvesters"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/6d/KDIZD_StoneImp.png",
+      "caption": "Stone imp"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/44/KDIZD_ChainsawZombies.png",
+      "caption": "Chainsaw zombies"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/bb/KDiZD_Rocket_Zombie.png",
+      "caption": "Rocket zombie"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/41/KDIZD_DarkImps.png",
+      "caption": "Dark imp family"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3f/KDIZD_MaulerDemon.png",
+      "caption": "Mauler demon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/12/KDIZD_Satyr.png",
+      "caption": "Satyr"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/70/KDIZD_Chaingunners.png",
+      "caption": "Chaingunners"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3b/KDIZD_BloodDemons.png",
+      "caption": "Blood demons"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/96/KDIZD_HellKnights.png",
+      "caption": "Hell knights"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/74/KDIZD_HellsFury.png",
+      "caption": "Hell's fury"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/ce/KDIZD_HellWarrior.png",
+      "caption": "Hell warrior"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fd/KDIZD_Nightmare.png",
+      "caption": "Nightmare"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/cb/KDIZD_DemonCubes.png",
+      "caption": "Demon cubes"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b5/KDiZD_Rifle_Zombie.png",
+      "caption": "Rifle zombies"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/0a/KDIZD_Bruisers.png",
+      "caption": "Bruiser demons"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/90/KDIZD_Magmantis.png",
+      "caption": "Deimos Guardian"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b4/KDiZD_SSG.png",
+      "caption": "Super Shotgun"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d6/KDiZD_Grenade_Launcher.png",
+      "caption": "Grenade Launcher"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/58/KDiZD_Rifle.png",
+      "caption": "Rifle"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

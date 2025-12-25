@@ -19,8 +19,13 @@
       "filename": "breach.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/d/da/Breach_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/7/70/Breach_map.png",
+      "caption": "Map of Breach"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

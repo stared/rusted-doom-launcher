@@ -20,7 +20,16 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/2/2d/Putrefier_MAP01.png",
+      "caption": "Outside the facility."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/ca/Putrefier_map.png",
+      "caption": "Map of Putrefier"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

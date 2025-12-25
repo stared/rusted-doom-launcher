@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/9/97/Absolute_Order_MAP02.png",
+      "caption": "The starting town."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

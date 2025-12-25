@@ -19,8 +19,13 @@
       "filename": "vercit.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/5/57/Verdant_Citadel_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/a/a1/Verdant_Citadel_map.png",
+      "caption": "Map of Verdant Citadel"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

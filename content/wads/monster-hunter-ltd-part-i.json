@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/0/0d/Monster_Hunter_Ltd._Part_I_map.png",
+      "caption": "Map of Monster Hunter Ltd. Part I"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

@@ -19,8 +19,13 @@
       "filename": "winter-s-fury.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/3/3d/Winter%27s_Fury_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/2/29/Wintersfury.png",
+      "caption": "A view of Mount Baphomet in MAP05A. Winter's Fury is notable for its extremely detailed levels."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

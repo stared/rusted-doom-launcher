@@ -19,8 +19,17 @@
       "filename": "dustdevil.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/7/71/Dust_Devil_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/a/ae/DUST01_Research_Outpost.png",
+      "caption": "Research Outpost"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/af/DUST02_The_Dust_Fields.png",
+      "caption": "The Dust Fields"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

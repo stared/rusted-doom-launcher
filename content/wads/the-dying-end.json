@@ -20,7 +20,64 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/d/dd/The_Dying_End_MAP29.png",
+      "caption": "The big marble structure in the middle."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/9a/Dying_End_map.png",
+      "caption": "Map of The Dying End"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a1/TheDyingEnd_start.png",
+      "caption": "The start"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f5/TheDyingEnd_teleporter.png",
+      "caption": "The first teleporter"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/1a/TheDyingEnd_back.png",
+      "caption": "The back of the room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8b/TheDyingEnd_backpack.png",
+      "caption": "The backpack"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/0d/TheDyingEnd_imptowers.png",
+      "caption": "The imps towers"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/51/TheDyingEnd_secret3.png",
+      "caption": "Secret #3"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/06/TheDyingEnd_bottlepath.png",
+      "caption": "The health path"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/ef/TheDyingEnd_trappedarmor.png",
+      "caption": "The trapped megaarmor"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/05/TheDyingEnd_teleporter2.png",
+      "caption": "The second teleporter"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b3/TheDyingEnd_temple.png",
+      "caption": "The temple"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/72/TheDyingEnd_secret7.png",
+      "caption": "Secret #7"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/09/TheDyingEnd_end.png",
+      "caption": "The end"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

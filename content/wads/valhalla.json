@@ -20,7 +20,16 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/0/0f/Valhalla_MAP09.png",
+      "caption": "The starting area set amid the industrial ruins."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/e3/Valhalla_map.png",
+      "caption": "Map of Valhalla"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

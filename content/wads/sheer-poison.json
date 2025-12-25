@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/c/c4/Sheer_Poison_map.png",
+      "caption": "Map of Sheer Poison"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

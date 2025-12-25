@@ -22,8 +22,65 @@
       "filename": "knee-deep-in-knee-deep-in-zdoom.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/a/ae/Knee-Deep_in_Knee-Deep_in_ZDoom.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/3/3f/KDiKDiZD_Rapid_Fire_Trooper.png",
+      "caption": "Rapid fire trooper"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/84/KDiKDiZD_Suicide_Bomber.png",
+      "caption": "Suicide bomber"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/01/KDiKDiZD_Chaingunner.png",
+      "caption": "Chaingunner"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/4d/KDiKDiZD_Shadow.png",
+      "caption": "Shadow"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/51/KDiKDiZD_Soul_Harvester.png",
+      "caption": "Soul harvester"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/52/KDiKDiZD_Mauler.png",
+      "caption": "Mauler"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/0c/KDiKDiZD_Dark_Imp.png",
+      "caption": "Dark imp"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/da/KDiKDiZD_Nightmare_Demon.png",
+      "caption": "Nightmare demon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/38/KDiKDiZD_Wargrin.png",
+      "caption": "Wargrin"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/aa/KDiKDiZD_Dark_Caco.png",
+      "caption": "Dark caco"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/51/KDiKDiZD_Soul_Reaper.png",
+      "caption": "Soul reaper"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/81/KDiKDiZD_Hell_knight.png",
+      "caption": "Hell knight"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/db/KDiKDiZD_Hell_warrior.png",
+      "caption": "Hell warrior"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/1d/KDiKDiZD_Bruiser.png",
+      "caption": "Bruiser"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

@@ -19,8 +19,53 @@
       "filename": "dead-wire.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/1/12/Dead-wire-titlescreen.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/0/01/Dead.wire_map.png",
+      "caption": "Map of dead.wire"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f3/Dead-wire-green.png",
+      "caption": "Green area"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/57/Dead-wire-blue.png",
+      "caption": "Blue area"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fb/Dead-wire-red.png",
+      "caption": "Red area"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d1/Dead-wire-01.png",
+      "caption": ""
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/4d/Dead-wire-02.png",
+      "caption": ""
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/4d/Dead-wire-03.png",
+      "caption": ""
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/50/Dead-wire-04.png",
+      "caption": ""
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/c7/Dead-wire-05.png",
+      "caption": ""
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d3/Dead-wire-06.png",
+      "caption": ""
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/6c/Dead-wire-final.png",
+      "caption": ""
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

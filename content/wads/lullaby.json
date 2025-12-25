@@ -19,8 +19,13 @@
       "filename": "lullaby.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/d/d0/Lullaby_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/8/87/Lullaby_map.png",
+      "caption": "Map of Lullaby"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

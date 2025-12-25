@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/5/51/Erkatane_MAP01.png",
+      "caption": "Starting area of MAP01."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

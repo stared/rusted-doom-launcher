@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/f/f8/Eviternity_Chapter5.png",
+      "caption": "A screenshot of MAP21 of Eviternity, which uses OTEX"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [],
   "tags": [

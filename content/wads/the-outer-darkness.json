@@ -19,8 +19,13 @@
       "filename": "odark.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/b/b5/Outer_Darkness_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/a/a5/Outer_Darkness_map.png",
+      "caption": "Map of The Outer Darkness"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

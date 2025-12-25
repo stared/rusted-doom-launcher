@@ -20,7 +20,16 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/9/9e/Drip_Feed_MAP30.png",
+      "caption": "The outer area of the citadel."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/16/Drip_Feed_map.png",
+      "caption": "Map of Drip Feed"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

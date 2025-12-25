@@ -19,8 +19,13 @@
       "filename": "dop2.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/e/ec/Demons_of_Problematique_2_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/5/58/DemonsOfProblematique2.png",
+      "caption": "The northwestern hall in MAP04"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

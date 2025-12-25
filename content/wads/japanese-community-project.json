@@ -19,8 +19,17 @@
       "filename": "jpcp.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/2/25/Jpcp-title-screen.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/3/3b/Jpcp-endgame-screen.jpg",
+      "caption": "End game background."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/01/CREDIT_JPCP.png",
+      "caption": "Credits Screen."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

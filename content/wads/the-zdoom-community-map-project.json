@@ -19,8 +19,201 @@
       "filename": "zdmcmp1.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/6/61/ZDCMP1_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/b/b1/ZDCMP1_map.png",
+      "caption": "Map of ZDCMP"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/c7/Zdmcmp1-start.png",
+      "caption": "The start"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/59/Zdmcmp1-secret2.png",
+      "caption": "Secret #2"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a7/Zdmcmp1-grass.png",
+      "caption": "The big grassy outdoor area"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/0b/Zdmcmp1-baronofcentaur.png",
+      "caption": "The first baron with shield"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/52/Zdmcmp1-darkimps.png",
+      "caption": "Two dark imps with homing missiles"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fc/Zdmcmp1-redimp.png",
+      "caption": "The red imp"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/e9/Zdmcmp1-sewers.png",
+      "caption": "The first sewers"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/7f/Zdmcmp1-twinroom.png",
+      "caption": "One of the twin rooms"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/50/Zdmcmp1-ykroom.png",
+      "caption": "The yellow skull room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/76/Zdmcmp1-columns.png",
+      "caption": "The columns room and secret #4"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/19/Zdmcmp1-trap.png",
+      "caption": "A trap"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/da/Zdmcmp1-redroom.png",
+      "caption": "The lava room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/02/Zdmcmp1-blueroom.png",
+      "caption": "The rotating blue room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/82/Zdmcmp1-fountain.png",
+      "caption": "The fountain that goes"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8e/Zdmcmp1-afrit.png",
+      "caption": "Under water"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/ec/Zdmcmp1-pool.png",
+      "caption": "The pool and secret #6"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/53/Zdmcmp1-trees.png",
+      "caption": "Trees, nearby"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/37/Zdmcmp1-sewers2.png",
+      "caption": "Sewers, again"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/26/Zdmcmp1-forklift.png",
+      "caption": "The forklift"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/14/Zdmcmp1-newimps.png",
+      "caption": "One dark imp and one stone imp"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f8/Zdmcmp1-secret7.png",
+      "caption": "Secret #7"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/20/Zdmcmp1-wingedbaron.png",
+      "caption": "The winged baron"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/e5/Zdmcmp1-allstoodstill.png",
+      "caption": "Now, Serious Sam style"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a9/Zdmcmp1-1stwave.png",
+      "caption": "The first wave"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/9b/Zdmcmp1-2ndwave.png",
+      "caption": "The second wave"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/45/Zdmcmp1-3rdwave.png",
+      "caption": "The third wave"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/39/Zdmcmp1-4thwave.png",
+      "caption": "The fourth wave"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/6d/Zdmcmp1-5thwave.png",
+      "caption": "The fifth wave"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/65/Zdmcmp1-6thwave.png",
+      "caption": "The sixth and last wave"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/33/Zdmcmp1-reward.png",
+      "caption": "The reward"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/08/Zdmcmp1-yellowkey.png",
+      "caption": "The yellow skull key"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8e/Zdmcmp1-afrit.png",
+      "caption": "The afrit"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b2/Zdmcmp1-BFG9000.png",
+      "caption": "The BFG9000"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/39/Zdmcmp1-lava.png",
+      "caption": "A lava room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a4/Zdmcmp1-secret10.png",
+      "caption": "Find the last secret"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/27/Zdmcmp1-portal.png",
+      "caption": "The portal"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/9e/Zdmcmp1-quietsea.png",
+      "caption": "Peaceful place"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d4/Zdmcmp1-orangecaco.png",
+      "caption": "An orange cacodemon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a8/Zdmcmp1-imps.png",
+      "caption": "OMG it's full of imps"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/11/Zdmcmp1-trapped.png",
+      "caption": "Trapped, no way out"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/19/Zdmcmp1-megasphere.png",
+      "caption": "The megasphere"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/e3/Zdmcmp1-freeze.png",
+      "caption": "The freezer and a frozen monster"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/26/Zdmcmp1-hellunderglass.png",
+      "caption": "Hell under glass"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fd/Zdmcmp1-megaarmor.png",
+      "caption": "The megaarmor"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/4f/Zdmcmp1-river.png",
+      "caption": "The river"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/e2/Zdmcmp1-temple.png",
+      "caption": "The last temple"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/14/Zdmcmp1-boss.png",
+      "caption": "The boss"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

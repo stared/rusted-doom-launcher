@@ -19,8 +19,53 @@
       "filename": "valiant.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/c/c7/Valiant_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/6/6e/Valiant_super_pistol.png",
+      "caption": "Super pistol"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/c5/Valiant_super_chaingun.png",
+      "caption": "Super chaingun"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/99/Valiant_doom_wiki_screen_shot_1.png",
+      "caption": "Super imp a.k.a. devil"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d6/Valiant_doom_wiki_screen_shot_2.png",
+      "caption": "Super pinky a.k.a. blood demon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/0d/Valiant_doom_wiki_screen_shot_7.png",
+      "caption": "Super mancubus a.k.a. daedabus"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/46/Valiant_doom_wiki_screen_shot_5.png",
+      "caption": "Pyro knight a.k.a. pyro demon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/cd/Valiant_doom_wiki_screen_shot_6.png",
+      "caption": "Cybruiser"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/31/Valiant_doom_wiki_screen_shot_3.png",
+      "caption": "Arachnorb"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/89/Valiant_doom_wiki_screen_shot_8.png",
+      "caption": "Lightning orb"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/58/Valiant_doom_wiki_screen_shot_4.png",
+      "caption": "Suicide bomber"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/71/Valiant_doom_wiki_screen_shot_9.png",
+      "caption": "Super vile a.k.a. diabolist"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

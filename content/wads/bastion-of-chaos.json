@@ -19,8 +19,13 @@
       "filename": "bast_cha.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/1/16/Bastion_of_Chaos_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/9/97/Bastion_of_Chaos_map.png",
+      "caption": "Map of Bastion of Chaos"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

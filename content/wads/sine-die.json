@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/f/f2/Sine_Die_MAP01.png",
+      "caption": "Inside the facility."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

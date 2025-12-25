@@ -19,8 +19,21 @@
       "filename": "back-to-saturn-x-episode-2.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/c/c7/BTSXE1.jpg",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/b/bd/BTSXE2.png",
+      "caption": "Title screen"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b3/BTSXE1_Official.png",
+      "caption": "The modified title screen."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/26/BTSXE2_Official.png",
+      "caption": "The modified title screen."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

@@ -19,8 +19,13 @@
       "filename": "10x10.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/8/8a/10x10_TITLEPIC.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/0/00/10x10_INTERPIC.png",
+      "caption": "Intermission screen"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

@@ -19,8 +19,17 @@
       "filename": "swideath.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/5/57/Swift_Death_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/a/a6/Swlogo.jpg",
+      "caption": "Logo of Swift Death"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/77/Swscn.jpg",
+      "caption": "MAP28 in Swift Death"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

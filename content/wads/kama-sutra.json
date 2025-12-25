@@ -22,8 +22,13 @@
       "filename": "ksutra.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/6/6e/Kama_Sutra_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/b/b5/KamaSutraMAP30Title.gif",
+      "caption": "MAP30 title graphic"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

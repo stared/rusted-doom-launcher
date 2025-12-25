@@ -19,8 +19,13 @@
       "filename": "nostalgic-entropy-neo-retro.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/b/b0/Nostalgic_Entropy_Neo_Retro_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/4/43/Nostalgic_Entropy_Neo_Retro_map.png",
+      "caption": "Map of Nostalgic Entropy: Neo Retro"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

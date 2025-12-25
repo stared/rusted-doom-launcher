@@ -19,8 +19,13 @@
       "filename": "fueldevr.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/6/62/Fuel_Devourer_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/7/7d/Fuel_Devourer_map.png",
+      "caption": "Map of Fuel Devourer"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

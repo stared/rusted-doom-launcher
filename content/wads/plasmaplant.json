@@ -20,7 +20,16 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/9/98/Plasmaplant_MAP01.png",
+      "caption": "The path to the exit, showcasing the map's unique visual style."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/5f/PLASMAP.WAD_MAP01.png",
+      "caption": "Map of Plasmaplant"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

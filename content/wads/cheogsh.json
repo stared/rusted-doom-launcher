@@ -19,8 +19,73 @@
       "filename": "cheogsh.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/c/c6/Cheogsh_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/d/d0/Cheogsh_map.png",
+      "caption": "Map of Cheogsh"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d7/Cheogsh_howler.png",
+      "caption": "The howler"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/87/Cheogsh_maulerdemons.png",
+      "caption": "Mauler demons"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fc/Cheogsh_greenlights.png",
+      "caption": "The next place"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/e6/Cheogsh_satyr.png",
+      "caption": "The satyr"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/91/Cheogsh_harvester.png",
+      "caption": "The harvester"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/21/Cheogsh_hellwarriors.png",
+      "caption": "Hell warriors and satyrs"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3c/Cheogsh_secret4.png",
+      "caption": "Secret #4"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/49/Cheogsh_Belphegorsbloodbath.png",
+      "caption": "Belphegor\u2019s bloodbath"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b7/Cheogsh_Skulltavern.png",
+      "caption": "Skull tavern"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/57/Cheogsh_bluekey.png",
+      "caption": "The blue key place"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/5c/Cheogsh_diningroom.png",
+      "caption": "The dining room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/84/Cheogsh_cave.png",
+      "caption": "The big cave"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/47/Cheogsh_pentagram.png",
+      "caption": "The activated pentagram"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/cc/Cheogsh_Cheogsh.png",
+      "caption": "The demon Cheogsh"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3e/Cheogsh_end.png",
+      "caption": "The end"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

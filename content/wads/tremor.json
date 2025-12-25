@@ -19,8 +19,69 @@
       "filename": "tremor.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/f/f7/Tremor_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/c/c4/Tremor_map.png",
+      "caption": "Map of Tremor"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/68/Tremor-start.png",
+      "caption": "The first outside area"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f5/Tremor-armor.png",
+      "caption": "The first armor"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/70/Tremor-entering.png",
+      "caption": "Entering the next area (the big one)"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/e8/Tremor-nukage.png",
+      "caption": "Avoid the nukage or not?"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/17/Tremor-yellowkey.png",
+      "caption": "The yellow key"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8f/Tremor-nukagefalls.png",
+      "caption": "Don't fall"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a3/Tremor-secret.png",
+      "caption": "A secret supercharge"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/2d/Tremor-end.png",
+      "caption": "The pillar with the end room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f9/Tremor-trap.png",
+      "caption": "The trapped room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/99/Tremor-lostsoul.png",
+      "caption": "A lonely lost soul"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/65/Tremor-endup.png",
+      "caption": "Other view from the end zone"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/1f/Tremor-soulsphere.png",
+      "caption": "Another soulsphere"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/ce/Tremor-metal.png",
+      "caption": "The trapped metallic room with two cyberdemons"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8a/Tremor-lol.png",
+      "caption": "lol"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

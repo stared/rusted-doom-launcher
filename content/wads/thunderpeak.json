@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/3/37/ZPack_E1M8_map.png",
+      "caption": "Map of Thunderpeak Powerplant"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

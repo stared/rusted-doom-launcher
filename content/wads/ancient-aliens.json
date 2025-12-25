@@ -19,8 +19,21 @@
       "filename": "aaliens.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/1/1c/AncientAliens-Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/8/8b/AncientAliens-Credits.png",
+      "caption": "Credits"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/42/AncientAliens-FirstMap.png",
+      "caption": "The beginning"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/ad/AncientAliens-Intermission.png",
+      "caption": "Intermission screen"
+    }
+  ],
   "youtubeVideos": [
     {
       "id": "pZXu29KMpgI",

@@ -19,8 +19,29 @@
       "filename": "scythe2.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/3/36/Scythe2_titlepic.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/1/16/Scythe2-marine.PNG",
+      "caption": "An Evil Marine prepares to attack the player in MAP31: Secret (Scythe 2)."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/39/Scythe2-afrit.PNG",
+      "caption": "The Afrit makes its first appearance in MAP26: Death (Scythe 2)."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/7b/Scythe2_interpic.png",
+      "caption": "Intermission screen"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/2f/Scythe_2_credit.png",
+      "caption": "Credits screen"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b6/Scythe_2_bossback.png",
+      "caption": "Ending screen"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

@@ -20,7 +20,16 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/3/33/Chex3_E3M1.png",
+      "caption": "Chex Quest 3 E3M1"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/95/Cq3ve_qc3m1.png",
+      "caption": "Chex Quest 3: Vanilla Edition CQ3M2, based on E3M2"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

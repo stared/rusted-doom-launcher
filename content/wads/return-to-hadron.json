@@ -19,8 +19,13 @@
       "filename": "hadron.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/c/c9/Return_to_Hadron_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/c/cf/Return_to_Hadron_%28Ultimate%29_title.png",
+      "caption": "Title screen"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

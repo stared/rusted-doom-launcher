@@ -19,8 +19,41 @@
       "filename": "SIGIL_v1_21.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/3/32/SIGIL_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/2/2b/SIGIL_logo.jpg",
+      "caption": "Logo of SIGIL."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/c9/SIGIL-beast-box-front.jpg",
+      "caption": "Front cover of Beast Box package."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/7e/SIGIL-Box.jpg",
+      "caption": "Front cover of standard package."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/9d/SIGIL-beast-box-inside.jpg",
+      "caption": "Internal shot of Beast Box; clockwise from top-left: floppy disk shaped USB flash drive; collectible coin; Romero's head figurine; book package"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/7d/SIGIL-beast-box-tshirt.jpg",
+      "caption": "XL-sized SIGIL t-shirt included with Beast Box"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/7f/SIGIL-Disc-1.jpg",
+      "caption": "SIGIL disc 1"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/63/SIGIL-Disc-2.jpg",
+      "caption": "SIGIL disc 2"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f0/Sigil_Text_Screen.png",
+      "caption": "Text screen at end of episode"
+    }
+  ],
   "youtubeVideos": [
     {
       "id": "4VibM9vCguc",

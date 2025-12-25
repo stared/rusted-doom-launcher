@@ -22,8 +22,13 @@
       "filename": "sunlust.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/8/8b/Sunlust_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/a/a4/Sl30-slaughter.png",
+      "caption": "MAP30 earns its reputation as a difficult slaughter map."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

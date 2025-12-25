@@ -19,8 +19,13 @@
       "filename": "stardate.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/6/6b/Stardate_20X6_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/5/5b/Stardate20X6.png",
+      "caption": "A screenshot from MAP07, showing off the WAD's purple theme."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

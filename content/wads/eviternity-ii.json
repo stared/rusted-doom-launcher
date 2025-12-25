@@ -19,8 +19,77 @@
       "filename": "eviternityii.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/8/8a/Eviternity_II_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/2/28/Eviternity_II_Nightmare_Demon.png",
+      "caption": "Nightmare demon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/ad/Eviternity_II_Former_Corporal.png",
+      "caption": "Former corporal"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/1d/Eviternity_II_Astral_Cacodemon.png",
+      "caption": "Astral cacodemon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d7/Eviternity_II_Annihilator.png",
+      "caption": "Annihilator"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/13/Eviternity_II_Astral_Arachnotron.png",
+      "caption": "Astral arachnotron"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/61/Eviternity_II_Astral_Mancubus.png",
+      "caption": "Astral mancubus"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/2e/Eviternity_II_Veilimp.png",
+      "caption": "Veilimp"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/82/Eviternity_II_Duke_of_Hell.png",
+      "caption": "Duke of Hell"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/88/Eviternity_II_Necromenace.png",
+      "caption": "Necromenace"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/e5/Eviternity_II_Nightmare_Cacodemon.png",
+      "caption": "Nightmare cacodemon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/53/Eviternity_II_The_Origin.png",
+      "caption": "The Origin"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f6/Eviternity_II_Chapter_1.png",
+      "caption": "MAP05: Departure"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b9/Eviternity_II_Chapter_2.png",
+      "caption": "MAP07: Sovereign"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b4/Eviternity_II_Chapter_3.png",
+      "caption": "MAP11: Titan"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8c/Eviternity_II_Chapter_4.png",
+      "caption": "MAP18: Malaise"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/aa/Eviternity_II_Chapter_5.png",
+      "caption": "MAP21: Numb"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/49/Eviternity_II_Chapter_6.png",
+      "caption": "MAP26: Myriad"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

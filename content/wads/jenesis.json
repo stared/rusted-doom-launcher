@@ -19,8 +19,17 @@
       "filename": "jenesis.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/c/cb/Jenesis_titlepic.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/c/c8/Jenesis_shot1.png",
+      "caption": "Screenshot of MAP06: Radioactive Ocean from Jenesis, Part 1."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/1a/Jenesis_Bethesda_Edition_title.png",
+      "caption": "Title screen of Jenesis: Bethesda Edition"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

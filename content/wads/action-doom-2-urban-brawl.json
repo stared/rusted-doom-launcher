@@ -19,8 +19,17 @@
       "filename": "action-doom-2-urban-brawl.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/5/50/Action_Doom_2_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/c/c1/Action_doom_2.png",
+      "caption": "Urban Brawl's cel-shaded graphics"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/82/Action_doom_2_box.jpg",
+      "caption": "Urban Brawl - Special Edition"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

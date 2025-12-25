@@ -19,8 +19,69 @@
       "filename": "ic2005.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/b/bf/IC2005_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/5/50/IC2005_map.png",
+      "caption": "Map of IC2005"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/94/IC2005-start.png",
+      "caption": "The start"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/4b/IC2005-UAC.png",
+      "caption": "The UAC logo"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/1e/IC2005-bolt.png",
+      "caption": "Don\u2019t cross the bolt"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/cb/IC2005-zombie.png",
+      "caption": "Zombies in the pit"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b4/IC2005-switch.png",
+      "caption": "The switch room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/78/IC2005-cacodemons.png",
+      "caption": "Cacodemons and the blue key"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/83/IC2005-bluekey.png",
+      "caption": "The blue key"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/2e/IC2005-cyberdemon.png",
+      "caption": "The cyberdemon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/7f/IC2005-computer.png",
+      "caption": "Computers"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/d7/IC2005-dark.png",
+      "caption": "The dark place"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/81/IC2005-crates.png",
+      "caption": "The crate room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/c0/IC2005-trap.png",
+      "caption": "The trap room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/61/IC2005-core.png",
+      "caption": "The core"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/89/IC2005-end.png",
+      "caption": "The end"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

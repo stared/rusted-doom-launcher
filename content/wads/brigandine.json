@@ -19,8 +19,13 @@
       "filename": "brigandine.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/8/8e/Brigandine_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/b/b9/Brigandine_map.png",
+      "caption": "Map of Brigandine"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

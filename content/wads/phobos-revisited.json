@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/d/d4/Phobos-Revisited-E1M5-pentagram.png",
+      "caption": "Pentagram in E1M5"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

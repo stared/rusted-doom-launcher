@@ -19,8 +19,13 @@
       "filename": "sp_usimp.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/9/98/Simplicity_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/1/13/Ultimate_Simplicity_Title.png",
+      "caption": "An example screenshot of the animated title screen featured in Ultimate Simplicity."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

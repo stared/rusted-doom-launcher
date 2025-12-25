@@ -19,8 +19,13 @@
       "filename": "miasma.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/0/09/Miasma_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/3/31/Miasma_map.png",
+      "caption": "Map of Miasma"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

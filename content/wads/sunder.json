@@ -19,8 +19,17 @@
       "filename": "sunder.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/a/a4/Sunder_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/e/eb/Su11-start.png",
+      "caption": "Hundreds of monsters greet the player at the start of MAP11"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/40/Su11-start2.png",
+      "caption": "The massive opening arena of MAP11"
+    }
+  ],
   "youtubeVideos": [
     {
       "id": "i4gUiAAHOgA",

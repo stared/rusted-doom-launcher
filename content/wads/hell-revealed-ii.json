@@ -19,8 +19,13 @@
       "filename": "hr2final.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/1/1c/Hell_Revealed_II_Title.PNG",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/9/9c/Hell_Revealed_II_Menu.png",
+      "caption": "The main menu brought up at the beginning of MAP01: IGNITION!, showing the megawad's custom menu design and status bar."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

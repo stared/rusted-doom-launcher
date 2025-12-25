@@ -19,8 +19,13 @@
       "filename": "foreverhood.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/4/4f/Foreverhood_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/9/9c/Foreverhood_MAP01.png",
+      "caption": "Gameplay screenshot of MAP01, showcasing one of the Sequa NPC and the gateways"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

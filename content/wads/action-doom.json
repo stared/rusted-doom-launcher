@@ -19,8 +19,17 @@
       "filename": "nonstop.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/e/e2/Action_Doom_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/d/dd/Action_doom_1.png",
+      "caption": "Screenshot of the boat chase."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/be/Action_doom_box.jpg",
+      "caption": "The physical box made for Action Doom"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

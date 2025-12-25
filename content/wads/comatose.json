@@ -19,8 +19,13 @@
       "filename": "comatose.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/2/2b/Comatose_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/6/62/Comatose_map.png",
+      "caption": "Map of Comatose"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

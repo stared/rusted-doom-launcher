@@ -19,8 +19,41 @@
       "filename": "vaporware-demo.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/5/5d/Vaporware-demo-titlepic.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/b/b7/Vaporware-map.png",
+      "caption": "Map of Vaporware Demo"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3a/Vaporware_floor_reflection.png",
+      "caption": "Floor reflection inside a train car"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f2/Vaporware_train_portals.png",
+      "caption": "Portals above and below the train"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a6/Vaporware_walkway.png",
+      "caption": "Windy outdoor walkway with 3D floors"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b7/Vaporware_central_first_level.png",
+      "caption": "Atrium bottom level with orange key"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a6/Vaporware_central_second_level.png",
+      "caption": "Atrium second level and fastened-crate"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/85/Vaporware_blue_key_window.png",
+      "caption": "Blue key window overlooking the atrium"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b0/Vaporware_north_switch.png",
+      "caption": "Switch to the exit"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

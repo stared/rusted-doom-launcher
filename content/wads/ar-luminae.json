@@ -22,8 +22,13 @@
       "filename": "ar-luminae.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/4/42/Ar_Luminae_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/f/f9/Ar_Luminae_map.png",
+      "caption": "Map of Ar Luminae"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

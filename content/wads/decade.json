@@ -19,8 +19,61 @@
       "filename": "decade.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/0/05/Decade_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/6/6f/Decade_map.png",
+      "caption": "Map of Decade"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f6/Decade-start.png",
+      "caption": "The start"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/53/Decade-backpack.png",
+      "caption": "The backpack"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/af/Decade-acid.png",
+      "caption": "The next acid room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fe/Decade-up.png",
+      "caption": "Up in the same place"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/81/Decade-skeletons.png",
+      "caption": "The revenants"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/c/c9/Decade-darkness.png",
+      "caption": "A dark room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/89/Decade-trap.png",
+      "caption": "The trap"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/67/Decade-gauntlet.png",
+      "caption": "The gauntlet"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/02/Decade-secret.png",
+      "caption": "Jump to get it before the normal way"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/e3/Decade-mancubus.png",
+      "caption": "The four super-mancubi"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/08/Decade-yellowkey.png",
+      "caption": "The yellow key can be grabbed"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/00/Decade-end.png",
+      "caption": "The end"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

@@ -19,8 +19,53 @@
       "filename": "eviternity.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/b/bc/Eviternity_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/5/5d/Eviternity_Nightmare_Demon.png",
+      "caption": "Nightmare demon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/2d/Eviternity_Former_Captain.png",
+      "caption": "Former captain"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/02/Eviternity_Astral_Cacodemon.png",
+      "caption": "Astral cacodemon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/69/Eviternity_Annihilator.png",
+      "caption": "Annihilator"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/1e/Eviternity_Archangelus.png",
+      "caption": "Archangelus"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/10/Eviternity_Chapter1.png",
+      "caption": "MAP02: Subterranean"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/e/eb/Eviternity_Chapter2.png",
+      "caption": "MAP06: Reconnect"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f6/Eviternity_Chapter3.png",
+      "caption": "MAP15: Cryonology"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/a2/Eviternity_Chapter4.png",
+      "caption": "MAP17: Segregation"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/f8/Eviternity_Chapter5.png",
+      "caption": "MAP21: Imperishable"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/5c/Eviternity_Chapter6.png",
+      "caption": "MAP26: Transcendence"
+    }
+  ],
   "youtubeVideos": [
     {
       "id": "MbJJpM4pTSI",

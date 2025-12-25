@@ -19,8 +19,13 @@
       "filename": "5l1c.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/8/80/5till_L1_Complex_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/5/52/5till_L1_Complex_map.png",
+      "caption": "Map of 5till L1 Complex"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

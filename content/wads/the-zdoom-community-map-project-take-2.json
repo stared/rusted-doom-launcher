@@ -19,8 +19,45 @@
       "filename": "the-zdoom-community-map-project-take-2.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/e/e6/ZDCMP2_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/8/8b/ZDCMP2_map.jpg",
+      "caption": "Map of ZDCMP2"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/9e/ZDCMP2_comm_centre.png",
+      "caption": "Communications centre."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/12/ZDCMP2_lagoon.png",
+      "caption": "The lagoon. The rapid fire trooper on the left shows the location of secret #14."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/0b/ZDCMP2_simulationroom.png",
+      "caption": "The simulation room, showing its surreal aesthetic."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/80/ZDCMP2_centraljunction.png",
+      "caption": "The central junction, where you encounter the cyberdemon. The red key is seen on the marble block."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/90/ZDCMP2_caverns.png",
+      "caption": "Caverns area near the engineering bay. The spider mastermind is found around the corner to the right."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/dc/ZDCMP2_digsite.png",
+      "caption": "The perimeter of the dig site. As you can see, there is plenty of cover to hide from the angels."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/09/ZDCMP2_earlyhell.png",
+      "caption": "The first major fight in hell takes place here. The towers are occupied by the first vores of the level."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/27/ZDCMP2_generator.png",
+      "caption": "Overlooking the final area, showing the generator towering over the arena. We also see the bridge leading to the arena, and in the bottom left, Dr. Acheron's body next to a megasphere."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

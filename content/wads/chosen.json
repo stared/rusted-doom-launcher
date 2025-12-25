@@ -19,8 +19,13 @@
       "filename": "ch133.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/b/b8/Chosen_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/9/9d/Chosen-sphinx.png",
+      "caption": "Battling a sphinx"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

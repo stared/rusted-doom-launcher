@@ -20,7 +20,12 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/c/c1/The_Eye_map.png",
+      "caption": "Map of The Eye"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

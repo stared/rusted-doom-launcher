@@ -19,8 +19,13 @@
       "filename": "njol.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/a/a3/Operation_Overlord_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/9/98/Operation_Overlord_map.png",
+      "caption": "Map of Operation Overlord"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

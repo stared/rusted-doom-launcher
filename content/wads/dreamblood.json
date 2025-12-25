@@ -19,8 +19,41 @@
       "filename": "dreamblood.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/3/3b/Dreamblood_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/3/3e/Dreamblood_MAP01_-_Electric_Moon.png",
+      "caption": "MAP01: Electric Moon"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fe/Dreamblood_MAP02_-_Mechanical_Mutations.jpg",
+      "caption": "MAP02: Mechanical Mutations"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/9f/Dreamblood_MAP03_-_Martian_Embers.png",
+      "caption": "MAP03: Martian Embers"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/f/fd/Dreamblood_MAP04_-_City_64.png",
+      "caption": "MAP04: City 64"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/94/Dreamblood_MAP05_-_Where_The_Water_Flows.png",
+      "caption": "MAP05: Where The Water Flows"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/5/51/Dreamblood_MAP06_-_North_Pollution.png",
+      "caption": "MAP06: North Pollution"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/0b/Dreamblood_MAP07_-_Accursed_Sunset.jpg",
+      "caption": "MAP07: Accursed Sunset"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/60/Dreamblood_MAP08_-_The_Cubes_of_Pink.png",
+      "caption": "MAP08: The Cubes of Pink"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

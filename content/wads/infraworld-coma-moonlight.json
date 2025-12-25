@@ -20,7 +20,16 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/d/d1/Infraworld_Coma_Moonlight_MAP01.png",
+      "caption": "The fortress as seen from the western side"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/9/94/Infraworld_Coma_Moonlight_map.png",
+      "caption": "Map of Infraworld - Coma Moonlight"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

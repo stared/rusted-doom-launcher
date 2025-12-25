@@ -19,8 +19,49 @@
       "filename": "dimension-of-the-boomed.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/5/5a/Dimension_of_the_Boomed_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/9/98/DOTB_MENU.png",
+      "caption": "Main menu"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3e/DOTB_MAP01_1.png",
+      "caption": "First level"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/3f/DOTB_MAP02_1.png",
+      "caption": "Second level"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/60/DOTB_MAP03_1.png",
+      "caption": "Third level"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/4/4c/DOTB_MAP04_1.png",
+      "caption": "Fourth level"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/2d/DOTB_MAP05_1.png",
+      "caption": "Fifth level"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/21/DOTB_MAP06_1.png",
+      "caption": "Sixth level"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/d/da/DOTB_MAP07_1.png",
+      "caption": "Seventh level"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/0/06/DOTB_MAP08_1.png",
+      "caption": "Eighth level"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/35/DOTB_MAP09.png",
+      "caption": "Ninth level"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

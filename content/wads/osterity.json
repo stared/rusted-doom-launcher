@@ -19,8 +19,45 @@
       "filename": "osterity.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/0/04/Osterity_Title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/b/b1/Osterity_zombie_cowboy.png",
+      "caption": "Zombie cowboy"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/8a/Osterity_zombie_scientists.png",
+      "caption": "Zombie scientists"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/a/ad/Osterity_pyrobaron.png",
+      "caption": "Fire baron"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/26/Osterity_greenboy.png",
+      "caption": "Hell gremlin"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/35/Osterity_evil_cube.png",
+      "caption": "Green skull cube"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/6b/Osterity_mechamind.png",
+      "caption": "Spider mechamind"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/8/80/Osterity_soul_spawner.png",
+      "caption": "Infernal eye"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/28/Osterity_vile_spirit.png",
+      "caption": "Vile spirit"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/23/Osterity_hellspine.png",
+      "caption": "Hellspine"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

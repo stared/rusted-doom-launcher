@@ -19,8 +19,33 @@
       "filename": "marc1_1.zip"
     }
   ],
-  "thumbnail": "",
-  "screenshots": [],
+  "thumbnail": "https://doomwiki.org/w/images/c/ce/Myhousepk3_title.png",
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/1/12/My_House_map.png",
+      "caption": "Map of My House (original release)"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/1/19/My_House_map_2025-04.png",
+      "caption": "Map of My House (April 2025 release)"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/6/61/Myhouse_1.png",
+      "caption": "The opening shot of the House's exterior."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/b/b2/Myhouse_2.png",
+      "caption": "The living room where you'll face the first few monsters."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/2/28/Myhouse_3.png",
+      "caption": "The downstairs TV room."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/38/Myhouse_4.png",
+      "caption": "The upstairs master bedroom, with the yellow keycard in shot."
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

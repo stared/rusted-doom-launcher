@@ -20,7 +20,16 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/e/ec/Escape_from_Castle_Chezcrea_MAP30.png",
+      "caption": "The large eastern room"
+    },
+    {
+      "url": "https://doomwiki.org/w/images/3/37/Escape_from_Castle_Chezcrea_map.png",
+      "caption": "Map of Escape from Castle Chezcrea"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {

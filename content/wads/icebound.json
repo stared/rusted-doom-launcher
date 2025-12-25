@@ -20,7 +20,16 @@
     }
   ],
   "thumbnail": "",
-  "screenshots": [],
+  "screenshots": [
+    {
+      "url": "https://doomwiki.org/w/images/3/3c/Icebound_E1M3.png",
+      "caption": "A boat docked at the starting area."
+    },
+    {
+      "url": "https://doomwiki.org/w/images/7/77/Icebound_map.png",
+      "caption": "Map of Icebound"
+    }
+  ],
   "youtubeVideos": [],
   "awards": [
     {
