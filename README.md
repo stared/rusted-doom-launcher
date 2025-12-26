@@ -1,28 +1,41 @@
 # Doom WAD Launcher
 
-A desktop app for launching GZDoom with community WADs.
+Classic Doom is timeless, but managing thousands of community-made WADs shouldn't be a chore. This launcher streamlines the chaos, letting you browse, preview, and launch mods instantly so you can focus on ripping and tearing.
 
-- Browse and manage your WAD collection with YouTube previews
-- One-click launch with GZDoom
-- Track play stats per level
-- Download WADs directly from the app
+## Features
 
-## Tech Stack
+- **Visual Browsing:** Explore WADs with embedded YouTube previews
+- **Instant Action:** One-click launch with GZDoom
+- **Mod Manager:** Download new WADs directly within the app
+- **Stat Tracking:** Track your play stats per level
 
-Tauri 2 + Vue 3 + TypeScript + Tailwind CSS
+## Prerequisites
 
-## Run
+To run this application, you need:
+
+- **[GZDoom](https://zdoom.org/downloads)** - Modern Doom source port
+- **Original Doom WADs** - `DOOM.WAD` or `DOOM2.WAD` from [GOG.com](https://www.gog.com/en/game/doom_doom_ii) or [Steam](https://store.steampowered.com/app/2280/DOOM__DOOM_II/)
+- **[pnpm](https://pnpm.io/)** - Node.js package manager
+- **[Rust](https://rustup.rs/)** - Required for Tauri
+
+## Development
+
+Install dependencies and run:
 
 ```bash
 pnpm install
 pnpm tauri dev
 ```
 
-## Build
+Build for production:
 
 ```bash
 pnpm tauri build
 ```
+
+## Tech Stack
+
+Tauri 2 + Vue 3 + TypeScript + Tailwind CSS
 
 ## Author
 
