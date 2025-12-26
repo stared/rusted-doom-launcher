@@ -3,32 +3,27 @@
   "title": "My House",
   "authors": [
     {
-      "name": "Steve Nelson"
+      "name": "Veddge"
+    },
+    {
+      "name": "kevansevans"
     }
   ],
   "year": 2023,
-  "description": "This is basically my house with the pool (grin) and an extra bit, there are no fancy trimmings to this level, just a shit load of bad guys in my house for those trigger happy maniacs. Blow them away !! Version 1.1, fixed some textures!",
+  "description": "A single-level PK3 for Doom II that begins as a simple recreation of a childhood home but transforms into a deeply unsettling psychological horror experience with non-Euclidean geometry, mysterious secrets, and layers of hidden content that players are still discovering.",
   "iwad": "doom2",
-  "type": "megawad",
+  "type": "single-level",
   "sourcePort": "gzdoom",
   "requires": [],
   "downloads": [
     {
-      "type": "idgames",
-      "url": "https://youfailit.net/pub/idgames/levels/doom/m-o/marc1_1.zip",
-      "filename": "marc1_1.zip"
+      "type": "direct",
+      "url": "https://archive.org/download/myhouse.wad/files/myhouse.pk3",
+      "filename": "myhouse.pk3"
     }
   ],
   "thumbnail": "https://doomwiki.org/w/images/c/ce/Myhousepk3_title.png",
   "screenshots": [
-    {
-      "url": "https://doomwiki.org/w/images/1/12/My_House_map.png",
-      "caption": "Map of My House (original release)"
-    },
-    {
-      "url": "https://doomwiki.org/w/images/1/19/My_House_map_2025-04.png",
-      "caption": "Map of My House (April 2025 release)"
-    },
     {
       "url": "https://doomwiki.org/w/images/6/61/Myhouse_1.png",
       "caption": "The opening shot of the House's exterior."
@@ -53,12 +48,13 @@
       "year": 2023
     }
   ],
-  "tags": [],
-  "difficulty": "unknown",
-  "notes": "",
+  "tags": ["horror", "psychological", "non-euclidean"],
+  "difficulty": "medium",
+  "notes": "Requires GZDoom with hardware renderer. Use myhouse.pk3, not .wad file.",
   "_schemaVersion": 1,
-  "_source": "cacowards-scraper",
+  "_source": "manual",
   "urls": [
-    "https://doomwiki.org/wiki/My_House"
+    "https://doomwiki.org/wiki/My_House",
+    "https://www.doomworld.com/forum/topic/134292-myhousewad/"
   ]
 }
