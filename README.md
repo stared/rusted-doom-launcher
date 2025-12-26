@@ -2,6 +2,8 @@
 
 Classic Doom is timeless, but managing thousands of community-made WADs shouldn't be a chore. This launcher streamlines the chaos, letting you browse, preview, and launch mods instantly so you can focus on ripping and tearing.
 
+![](./rusted_doom_launcher_screenshot.jpg)
+
 ## Features
 
 - **Visual Browsing:** Explore WADs with embedded YouTube previews
@@ -33,9 +35,12 @@ Build for production:
 pnpm tauri build
 ```
 
-## Tech Stack
+## Tech
 
-Tauri 2 + Vue 3 + TypeScript + Tailwind CSS
+- [Tauri 2](https://v2.tauri.app/) (its in Rust, hence the project name)
+- [Vue 3](https://vuejs.org/) in TypeScript
+- Python scripts for some processing
+- Claude Code and Gemini for vibe coding
 
 ## Author
 
