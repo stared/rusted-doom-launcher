@@ -21,7 +21,7 @@ type View = "main" | "explore" | "runs" | "logs" | "settings" | "about";
 
 const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning, isGZDoomFound } = useGZDoom();
-const { loadState: loadDownloadState, isDownloaded, isDownloading, getDownloadProgress, downloadWithDeps, deleteWad } = useDownload();
+const { loadState: loadDownloadState, isDownloaded, isDownloading, downloadProgress, downloadWithDeps, deleteWad } = useDownload();
 const { loadSettings } = useSettings();
 const { loadAllSaveInfo, getCachedSaveInfo, refreshSaveInfo } = useSaves();
 const { captureStats } = useStats();
@@ -118,7 +118,7 @@ async function handleDelete(wad: WadEntry) {
         :error="error"
         :is-downloaded="isDownloaded"
         :is-downloading="isDownloading"
-        :get-download-progress="getDownloadProgress"
+        :download-progress="downloadProgress"
         :get-save-info="getCachedSaveInfo"
         @play="handlePlay"
         @delete="handleDelete"
@@ -128,7 +128,7 @@ async function handleDelete(wad: WadEntry) {
         :wads="wads"
         :is-downloaded="isDownloaded"
         :is-downloading="isDownloading"
-        :get-download-progress="getDownloadProgress"
+        :download-progress="downloadProgress"
         :get-save-info="getCachedSaveInfo"
         @play="handlePlay"
         @delete="handleDelete"

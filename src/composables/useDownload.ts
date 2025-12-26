@@ -1,4 +1,4 @@
-import { ref, reactive } from "vue";
+import { ref } from "vue";
 import { exists, mkdir, remove, readTextFile, writeTextFile, readFile, rename, stat } from "@tauri-apps/plugin-fs";
 import { download as tauriDownload } from "@tauri-apps/plugin-upload";
 import type { WadEntry } from "../lib/schema";
@@ -16,7 +16,7 @@ export interface DownloadProgress {
 // Singleton state
 const downloads = ref<LauncherDownloads>({ version: 1, downloads: {} });
 const downloading = ref<Set<string>>(new Set());
-const downloadProgress = reactive<Map<string, DownloadProgress>>(new Map());
+const downloadProgress = ref<Record<string, DownloadProgress>>({});
 
 /**
  * Validate downloaded file has correct format (ZIP/WAD magic bytes).
@@ -80,7 +80,7 @@ export function useDownload() {
   }
 
   function getDownloadProgress(slug: string): DownloadProgress | undefined {
-    return downloadProgress.get(slug);
+    return downloadProgress.value[slug];
   }
 
   async function downloadWad(wad: WadEntry): Promise<string> {
@@ -112,17 +112,24 @@ export function useDownload() {
     }
 
     downloading.value.add(wad.slug);
-    downloadProgress.set(wad.slug, { progress: 0, total: 0 });
+    downloadProgress.value = { ...downloadProgress.value, [wad.slug]: { progress: 0, total: 0 } };
     try {
       await mkdir(dir, { recursive: true });
 
       // Use tauri-plugin-upload for streaming download with progress
       // ProgressPayload: { progress, progressTotal, total, transferSpeed }
+      let lastUpdate = 0;
       await tauriDownload(
         url,
         partPath,
         (payload) => {
-          downloadProgress.set(wad.slug, { progress: payload.progress, total: payload.total });
+          // Throttle updates to every 100ms to avoid excessive re-renders
+          const now = Date.now();
+          if (now - lastUpdate > 100 || payload.progressTotal === payload.total) {
+            lastUpdate = now;
+            // progressTotal = cumulative bytes downloaded, progress = just current chunk
+            downloadProgress.value = { ...downloadProgress.value, [wad.slug]: { progress: payload.progressTotal, total: payload.total } };
+          }
         }
       );
 
@@ -148,7 +155,8 @@ export function useDownload() {
       return path;
     } finally {
       downloading.value.delete(wad.slug);
-      downloadProgress.delete(wad.slug);
+      const { [wad.slug]: _, ...rest } = downloadProgress.value;
+      downloadProgress.value = rest;
     }
   }
 
@@ -175,5 +183,5 @@ export function useDownload() {
     await saveState();
   }
 
-  return { loadState, isDownloaded, isDownloading, getDownloadProgress, downloadWad, downloadWithDeps, deleteWad, getLibraryPath };
+  return { loadState, isDownloaded, isDownloading, getDownloadProgress, downloadProgress, downloadWad, downloadWithDeps, deleteWad, getLibraryPath };
 }

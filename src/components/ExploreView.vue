@@ -12,9 +12,14 @@ const props = defineProps<{
   wads: WadEntry[];
   isDownloaded: (slug: string) => boolean;
   isDownloading: (slug: string) => boolean;
-  getDownloadProgress: (slug: string) => DownloadProgress | undefined;
+  downloadProgress: Record<string, DownloadProgress>;
   getSaveInfo: (slug: string) => WadSaveInfo | null;
 }>();
+
+// Helper to get progress for a specific slug
+function getDownloadProgress(slug: string): DownloadProgress | undefined {
+  return props.downloadProgress[slug];
+}
 
 const emit = defineEmits<{
   play: [wad: WadEntry];
