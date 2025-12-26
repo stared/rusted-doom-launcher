@@ -1,7 +1,7 @@
 [package]
-name = "doom-launcher"
+name = "rusted-doom-launcher"
 version = "0.1.0"
-description = "A Steam-like launcher for Doom WADs"
+description = "Rusted Doom Launcher - browse, preview, and launch Doom WADs"
 authors = ["you"]
 edition = "2021"
 

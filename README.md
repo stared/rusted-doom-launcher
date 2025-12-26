@@ -1,4 +1,4 @@
-# Doom WAD Launcher
+# Rusted Doom Launcher
 
 Classic Doom is timeless, but managing thousands of community-made WADs shouldn't be a chore. This launcher streamlines the chaos, letting you browse, preview, and launch mods instantly so you can focus on ripping and tearing.
 
