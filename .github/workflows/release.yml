@@ -13,9 +13,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-14
+          - platform: macos-latest
             args: --target aarch64-apple-darwin
-          - platform: macos-13
+          - platform: macos-15
             args: --target x86_64-apple-darwin
           - platform: ubuntu-22.04
             args: ''
@@ -38,6 +38,10 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Rust target (macOS x86_64)
+        if: matrix.args == '--target x86_64-apple-darwin'
+        run: rustup target add x86_64-apple-darwin
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2

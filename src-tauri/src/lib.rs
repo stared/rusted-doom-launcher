@@ -170,8 +170,8 @@ pub fn run() {
             extract_and_save_level_names
         ]);
 
-    // Enable MCP plugin for AI debugging in development builds
-    #[cfg(debug_assertions)]
+    // Enable MCP plugin for AI debugging in development builds (only when feature enabled)
+    #[cfg(all(debug_assertions, feature = "mcp"))]
     {
         use log::info;
         info!("Development build: enabling MCP plugin for AI debugging");
