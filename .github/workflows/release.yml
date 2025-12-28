@@ -50,9 +50,12 @@ jobs:
             - [GZDoom](https://zdoom.org/downloads) must be installed
             - DOOM.WAD or DOOM2.WAD (from Steam or GOG)
 
-            ## First Launch (macOS)
-            macOS will block the app. Go to System Settings → Privacy & Security → "Open Anyway"
-            Or run: `xattr -cr /Applications/Rusted\ Doom\ Launcher.app`
+            ## First Launch (macOS Sequoia 15+)
+            macOS blocks unsigned apps. After installing, open Terminal and run:
+            ```
+            xattr -cr /Applications/Rusted\ Doom\ Launcher.app
+            ```
+            Then open the app normally.
           releaseDraft: true
           prerelease: false
           args: --target aarch64-apple-darwin

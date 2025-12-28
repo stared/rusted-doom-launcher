@@ -10,12 +10,13 @@ Get the latest release from [GitHub Releases](https://github.com/stared/rusted-d
 
 ### macOS
 
-1. Download the `.dmg` file (Apple Silicon or Intel)
+1. Download the `.dmg` file
 2. Open the `.dmg` and drag the app to Applications
-3. **First launch:** macOS will block the app since it's not notarized. To open it:
-   - Open **System Settings → Privacy & Security**
-   - Scroll down and click **"Open Anyway"** next to the blocked app
-   - Or run in Terminal: `xattr -cr /Applications/Rusted\ Doom\ Launcher.app`
+3. **First launch (required):** macOS Sequoia blocks unsigned apps. Open Terminal and run:
+   ```
+   xattr -cr /Applications/Rusted\ Doom\ Launcher.app
+   ```
+4. Now open the app normally
 
 ### Windows
 
