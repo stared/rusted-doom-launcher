@@ -4,6 +4,32 @@ Classic Doom is timeless, but managing thousands of community-made WADs shouldn'
 
 ![](./rusted_doom_launcher_screenshot.jpg)
 
+## Download
+
+Get the latest release from [GitHub Releases](https://github.com/stared/rusted-doom-launcher/releases).
+
+### macOS
+
+1. Download the `.dmg` file (Apple Silicon or Intel)
+2. Open the `.dmg` and drag the app to Applications
+3. **First launch:** macOS will block the app since it's not notarized. To open it:
+   - Open **System Settings → Privacy & Security**
+   - Scroll down and click **"Open Anyway"** next to the blocked app
+   - Or run in Terminal: `xattr -cr /Applications/Rusted\ Doom\ Launcher.app`
+
+### Windows
+
+Download and run the `.exe` installer.
+
+### Linux
+
+Download `.AppImage`, make it executable (`chmod +x`), and run. Or install the `.deb` package.
+
+## Requirements
+
+- **[GZDoom](https://zdoom.org/downloads)** - Install separately
+- **DOOM.WAD or DOOM2.WAD** - From [GOG](https://www.gog.com/en/game/doom_doom_ii) or [Steam](https://store.steampowered.com/app/2280/DOOM__DOOM_II/)
+
 ## Features
 
 - **Visual Browsing:** Explore WADs with embedded YouTube previews
@@ -11,16 +37,9 @@ Classic Doom is timeless, but managing thousands of community-made WADs shouldn'
 - **Mod Manager:** Download new WADs directly within the app
 - **Stat Tracking:** Track your play stats per level
 
-## Prerequisites
-
-To run this application, you need:
-
-- **[GZDoom](https://zdoom.org/downloads)** - Modern Doom source port
-- **Original Doom WADs** - `DOOM.WAD` or `DOOM2.WAD` from [GOG.com](https://www.gog.com/en/game/doom_doom_ii) or [Steam](https://store.steampowered.com/app/2280/DOOM__DOOM_II/)
-- **[pnpm](https://pnpm.io/)** - Node.js package manager
-- **[Rust](https://rustup.rs/)** - Required for Tauri
-
 ## Development
+
+To build from source, you need [pnpm](https://pnpm.io/) and [Rust](https://rustup.rs/).
 
 Install dependencies and run:
 
