@@ -4,32 +4,35 @@ Classic Doom is timeless, but managing thousands of community-made WADs shouldn'
 
 ![](./rusted_doom_launcher_screenshot.jpg)
 
-## Download
+## Requirements
 
-Get the latest release from [GitHub Releases](https://github.com/stared/rusted-doom-launcher/releases).
+- **[GZDoom](https://github.com/ZDoom/gzdoom/releases)** - the Doom source port
+- **DOOM.WAD or DOOM2.WAD** - game data from [GOG](https://www.gog.com/en/game/doom_doom_ii) or [Steam](https://store.steampowered.com/app/2280/DOOM__DOOM_II/)
 
-### macOS
+## Install
 
-1. Download the `.dmg` file
-2. Open the `.dmg` and drag the app to Applications
-3. **First launch (required):** macOS Sequoia blocks unsigned apps. Open Terminal and run:
+### macOS (Homebrew)
+
+The easiest way:
+
+```bash
+brew install --cask gzdoom
+brew install stared/doom/rusted-doom-launcher
+```
+
+Then run with `rusted-doom-launcher` or open the app from `/opt/homebrew/opt/rusted-doom-launcher/`.
+
+### macOS (Manual Download)
+
+Get the `.dmg` from [GitHub Releases](https://github.com/stared/rusted-doom-launcher/releases).
+
+1. Download and open the `.dmg`, drag app to Applications
+2. Install [GZDoom](https://github.com/ZDoom/gzdoom/releases) separately
+3. **First launch:** The app is not signed with an Apple certificate. Open Terminal and run:
    ```
    xattr -cr /Applications/Rusted\ Doom\ Launcher.app
    ```
-4. Now open the app normally
-
-### Windows
-
-Download and run the `.exe` installer.
-
-### Linux
-
-Download `.AppImage`, make it executable (`chmod +x`), and run. Or install the `.deb` package.
-
-## Requirements
-
-- **[GZDoom](https://zdoom.org/downloads)** - Install separately
-- **DOOM.WAD or DOOM2.WAD** - From [GOG](https://www.gog.com/en/game/doom_doom_ii) or [Steam](https://store.steampowered.com/app/2280/DOOM__DOOM_II/)
+4. Open the app
 
 ## Features
 
