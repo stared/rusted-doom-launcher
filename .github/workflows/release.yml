@@ -57,7 +57,7 @@ jobs:
 
             ## Requirements
             - [UZDoom](https://github.com/UZDoom/UZDoom) or [GZDoom](https://github.com/ZDoom/gzdoom) - `brew install --cask gzdoom`
-            - DOOM.WAD or DOOM2.WAD (from Steam or GOG)
+            - DOOM.WAD or DOOM2.WAD (from GOG or Steam)
           releaseDraft: true
           prerelease: false
           args: --target aarch64-apple-darwin

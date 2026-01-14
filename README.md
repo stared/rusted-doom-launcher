@@ -7,7 +7,7 @@ Classic Doom is timeless, but managing thousands of community-made WADs shouldn'
 ## Requirements
 
 - **[UZDoom](https://github.com/UZDoom/UZDoom/releases)** or **[GZDoom](https://github.com/ZDoom/gzdoom/releases)** - modern Doom source ports
-- **DOOM.WAD or DOOM2.WAD** - game data from [GOG](https://www.gog.com/en/game/doom_doom_ii) or [Steam](https://store.steampowered.com/app/2280/DOOM__DOOM_II/)
+- **DOOM.WAD or DOOM2.WAD** - game data from [GOG](https://www.gog.com/en/game/doom_doom_ii) or Steam
 
 ## Install
 
