@@ -1,38 +1,54 @@
 # Rusted Doom Launcher
 
-Classic Doom is timeless, but managing thousands of community-made WADs shouldn't be a chore. This launcher streamlines the chaos, letting you browse, preview, and launch mods instantly so you can focus on ripping and tearing.
+A modern launcher for classic Doom.
+Browse community-made maps and episodes, then install and launch them with a single click—essentially bringing the Steam experience to Doom.
+
+I picked top maps from [Cacowards](https://www.doomworld.com/cacowards/).
+
+It is currently in alpha. I build it for myself, but sharing it so others may enjoys as well.
+There are similar apps, notably [Doom Launcher](https://github.com/nstlaurent/DoomLauncher), but they are either Windows-only or lack features I wanted.
+
+I use macOS (Apple Silicon) and created this tool specifically for it.
+There are no builds yet for other systems, but porting should be straightforward.
 
 ![](./rusted_doom_launcher_screenshot.jpg)
 
 ## Requirements
 
-- **[UZDoom](https://github.com/UZDoom/UZDoom/releases)** or **[GZDoom](https://github.com/ZDoom/gzdoom/releases)** - modern Doom source ports
-- **DOOM.WAD or DOOM2.WAD** - game data from [GOG](https://www.gog.com/en/game/doom_doom_ii) or Steam
+- [GZDoom](https://github.com/ZDoom/gzdoom/) - Doom source port
+  - works also with newer [UZDoom](https://github.com/UZDoom/UZDoom/), there is some [drama about the GZDoom-UZDoom split](https://arstechnica.com/gaming/2025/10/civil-war-gzdoom-fan-developers-split-off-over-use-of-chatgpt-generated-code/)
+- `doom.wad` and `doom2.wad` - Doom game data from [GOG.com](https://www.gog.com/en/game/doom_doom_ii) or Steam
 
 ## Install
 
-### macOS (Homebrew)
+### macOS
 
-The easiest way:
+The easiest way is to use [Homebrew](https://brew.sh/) via my tap [stared/doom](https://github.com/stared/homebrew-doom/).
 
 ```bash
-brew install --cask gzdoom  # or uzdoom
-brew install stared/doom/rusted-doom-launcher
+brew install --cask stared/doom/rusted-doom-launcher
 ```
 
-Then run with `rusted-doom-launcher` or open the app from `/opt/homebrew/opt/rusted-doom-launcher/`.
+Alternatively, download a binary from [releases](https://github.com/stared/rusted-doom-launcher/releases). Since it is unsigned open-source software, you must remove the quarantine attribute before running (otherwise macOS will report it as damaged):
 
-### macOS (Manual Download)
+```bash
+xattr -cr /Applications/Rusted\ Doom\ Launcher.app
+```
 
-Get the `.dmg` from [GitHub Releases](https://github.com/stared/rusted-doom-launcher/releases).
+You also need a Doom engine. Install it manually or via Homebrew:
 
-1. Download and open the `.dmg`, drag app to Applications
-2. Install [UZDoom](https://github.com/UZDoom/UZDoom/releases) or [GZDoom](https://github.com/ZDoom/gzdoom/releases) separately
-3. **First launch:** The app is not signed with an Apple certificate. Open Terminal and run:
-   ```
-   xattr -cr /Applications/Rusted\ Doom\ Launcher.app
-   ```
-4. Open the app
+```bash
+brew install --cask gzdoom
+# or newer:
+brew install --cask stared/doom/uzdoom
+```
+
+### Linux and Windows
+
+Not yet!
+
+Contributions are welcome if you can make it work on these systems.
+
 
 ## Features
 
@@ -60,7 +76,7 @@ pnpm tauri build
 
 ## Tech
 
-- [Tauri 2](https://v2.tauri.app/) (its in Rust, hence the project name)
+- [Tauri 2](https://v2.tauri.app/) (it's in Rust, hence the project name)
 - [Vue 3](https://vuejs.org/) in TypeScript
 - Python scripts for some processing
 - Claude Code and Gemini for vibe coding
