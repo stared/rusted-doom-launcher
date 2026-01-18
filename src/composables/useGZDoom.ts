@@ -29,8 +29,17 @@ export function useGZDoom() {
   async function detectIwads() {
     const dir = await getLibraryPath();
     const entries = await readDir(dir);
-    const files = new Set(entries.map(e => e.name?.toUpperCase()));
-    availableIwads.value = IWADS.filter(iwad => files.has(`${iwad.toUpperCase()}.WAD`));
+    iwadFilenames.clear();
+    availableIwads.value = IWADS.filter(iwad => {
+      const found = entries.find(e =>
+        e.name?.toUpperCase() === `${iwad.toUpperCase()}.WAD`
+      );
+      if (found?.name) {
+        iwadFilenames.set(iwad, found.name);
+        return true;
+      }
+      return false;
+    });
   }
 
   async function launch(
@@ -41,7 +50,9 @@ export function useGZDoom() {
     skill: SkillLevel = "HMP"
   ) {
     const dir = await getLibraryPath();
-    const iwadPath = `${dir}/${iwad.toUpperCase()}.WAD`;
+    const filename = iwadFilenames.get(iwad);
+    if (!filename) throw new Error(`IWAD ${iwad} not detected`);
+    const iwadPath = `${dir}/${filename}`;
 
     // Create per-WAD save directory if slug provided
     const saveDir = wadSlug ? `${dir}/saves/${wadSlug}` : null;
