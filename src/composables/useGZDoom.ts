@@ -16,10 +16,13 @@ interface SessionInfo {
   startedAt: Date;
 }
 
+// Singleton state - shared across all components
+const isRunning = ref(false);
+const availableIwads = ref<Iwad[]>([]);
+const currentSession = ref<SessionInfo | null>(null);
+const iwadFilenames = new Map<Iwad, string>(); // e.g., "doom" -> "doom.wad"
+
 export function useGZDoom() {
-  const isRunning = ref(false);
-  const availableIwads = ref<Iwad[]>([]);
-  const currentSession = ref<SessionInfo | null>(null);
   const { getLibraryPath, getGZDoomPath, isGZDoomFound, gzdoomDetectedPath } = useSettings();
   const { saveGameplayLog } = useGameplayLog();
 
