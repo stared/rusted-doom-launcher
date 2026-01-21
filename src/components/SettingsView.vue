@@ -8,7 +8,7 @@ import { useGZDoom } from "../composables/useGZDoom";
 import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
 
-const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath } = useSettings();
+const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, checkInnoextract, importFromGOG } = useSettings();
 const { availableIwads, detectIwads } = useGZDoom();
 const { wads } = useWads();
 
@@ -41,6 +41,9 @@ const migratedIwadsBySource = computed(() => {
 
 const errorMsg = ref("");
 const engineVersion = ref<string | null>(null);
+const hasInnoextract = ref(false);
+const gogImporting = ref(false);
+const gogImportResult = ref<{ success: boolean; message: string } | null>(null);
 
 async function fetchEngineVersion() {
   if (!settings.value.gzdoomPath) {
@@ -57,6 +60,67 @@ async function fetchEngineVersion() {
 // Fetch version when component mounts and when path changes
 onMounted(fetchEngineVersion);
 watch(() => settings.value.gzdoomPath, fetchEngineVersion);
+
+// Check innoextract availability
+async function checkInnoextractAvailability() {
+  hasInnoextract.value = await checkInnoextract();
+}
+onMounted(checkInnoextractAvailability);
+
+// Handle GOG import button click
+async function handleGOGButtonClick() {
+  // If innoextract not found, re-check
+  if (!hasInnoextract.value) {
+    hasInnoextract.value = await checkInnoextract();
+    if (!hasInnoextract.value) {
+      gogImportResult.value = {
+        success: false,
+        message: "innoextract not found. Install with: brew install innoextract",
+      };
+    }
+    return;
+  }
+
+  // Proceed with import
+  await browseAndImportGOG();
+}
+
+// Import from GOG installer
+async function browseAndImportGOG() {
+  gogImportResult.value = null;
+  const selected = await open({
+    title: "Select GOG Doom Installer",
+    filters: [{ name: "Installer", extensions: ["exe"] }],
+    directory: false,
+    multiple: false,
+  });
+  if (!selected) return;
+
+  const installerPath = typeof selected === "string" ? selected : selected[0];
+  gogImporting.value = true;
+  try {
+    const result = await importFromGOG(installerPath);
+    await detectIwads();
+    if (result.extractedWads.length > 0) {
+      gogImportResult.value = {
+        success: true,
+        message: `Extracted: ${result.extractedWads.join(", ")}`,
+      };
+    } else {
+      gogImportResult.value = {
+        success: false,
+        message: "No WAD files were extracted",
+      };
+    }
+  } catch (e) {
+    gogImportResult.value = {
+      success: false,
+      message: e instanceof Error ? e.message : String(e),
+    };
+  } finally {
+    gogImporting.value = false;
+  }
+}
 
 async function browseGZDoom() {
   const selected = await open({
@@ -173,6 +237,26 @@ function getEngineName(path: string | null): string {
         <p v-if="!hasAnyIwad" class="text-xs text-red-400 mt-2">
           No IWADs found. Place WAD files in {{ shortenPath(settings.libraryPath) }}/iwads/.
         </p>
+      </div>
+
+      <!-- Import from GOG -->
+      <div class="rounded-lg bg-zinc-800/50 p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-zinc-300">Import IWADs from GOG</label>
+            <p class="text-sm text-zinc-500 mt-1">Select installer, e.g. <code class="text-zinc-400">setup_doom_plus_doom_ii_...exe</code></p>
+            <p v-if="gogImportResult" class="text-xs mt-1" :class="gogImportResult.success ? 'text-green-400' : 'text-red-400'">
+              {{ gogImportResult.message }}
+            </p>
+          </div>
+          <button
+            class="rounded bg-zinc-700 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="gogImporting"
+            @click="handleGOGButtonClick"
+          >
+            {{ gogImporting ? "Extracting..." : (hasInnoextract ? "Import" : "Check innoextract") }}
+          </button>
+        </div>
       </div>
 
     </div>

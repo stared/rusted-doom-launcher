@@ -96,6 +96,41 @@
           "name": "gzdoom-user-apps",
           "cmd": "$HOME/Applications/GZDoom.app/Contents/MacOS/gzdoom",
           "args": true
+        },
+        {
+          "name": "innoextract",
+          "cmd": "innoextract",
+          "args": true
+        },
+        {
+          "name": "innoextract-homebrew-arm",
+          "cmd": "/opt/homebrew/bin/innoextract",
+          "args": true
+        },
+        {
+          "name": "innoextract-homebrew-intel",
+          "cmd": "/usr/local/bin/innoextract",
+          "args": true
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "innoextract",
+          "cmd": "innoextract",
+          "args": true
+        },
+        {
+          "name": "innoextract-homebrew-arm",
+          "cmd": "/opt/homebrew/bin/innoextract",
+          "args": true
+        },
+        {
+          "name": "innoextract-homebrew-intel",
+          "cmd": "/usr/local/bin/innoextract",
+          "args": true
         }
       ]
     }

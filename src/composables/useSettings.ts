@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { homeDir } from "@tauri-apps/api/path";
 import { exists, readTextFile, writeTextFile, mkdir, readDir, readFile, writeFile } from "@tauri-apps/plugin-fs";
+import { Command } from "@tauri-apps/plugin-shell";
 import { isNotFoundError } from "../lib/errors";
 
 const APP_NAME = "rusted-doom-launcher";
@@ -22,7 +23,8 @@ const GZDOOM_LOCATIONS = [
 
 const KNOWN_IWADS = [
   "doom.wad", "doom2.wad", "plutonia.wad", "tnt.wad",
-  "heretic.wad", "hexen.wad", "freedoom1.wad", "freedoom2.wad"
+  "heretic.wad", "hexen.wad", "freedoom1.wad", "freedoom2.wad",
+  "nerve.wad", "masterlevels.wad"
 ];
 
 interface MigratedIwad {
@@ -118,6 +120,98 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
   }
 
   return copied;
+}
+
+// INNOEXTRACT locations to try (in order)
+const INNOEXTRACT_COMMANDS = [
+  { name: "innoextract", cmd: "innoextract" },
+  { name: "innoextract-homebrew-arm", cmd: "/opt/homebrew/bin/innoextract" },
+  { name: "innoextract-homebrew-intel", cmd: "/usr/local/bin/innoextract" },
+];
+
+// Check if innoextract is available and return the command name to use
+async function findInnoextract(): Promise<string | null> {
+  for (const { name, cmd } of INNOEXTRACT_COMMANDS) {
+    try {
+      const result = await Command.create(name, ["--version"]).execute();
+      if (result.code === 0) {
+        console.log(`[findInnoextract] Found innoextract at: ${cmd}`);
+        return name;
+      }
+    } catch {
+      // Try next location
+    }
+  }
+  return null;
+}
+
+interface GOGExtractResult {
+  extractedWads: string[];
+  errors: string[];
+}
+
+// Copyrighted WADs that must be extracted from owned installers
+// (SIGIL is free and can be downloaded separately, extras.wad is KEX-only bloat)
+const GOG_IWADS_TO_EXTRACT = [
+  "doom.wad",
+  "doom2.wad",
+  "plutonia.wad",
+  "tnt.wad",
+  "nerve.wad",
+  "masterlevels.wad",
+];
+
+// Extract IWADs from a GOG installer using innoextract
+async function extractFromGOG(
+  installerPath: string,
+  iwadsDir: string,
+  innoextractCmd: string
+): Promise<GOGExtractResult> {
+  // Ensure iwads directory exists
+  await mkdir(iwadsDir, { recursive: true });
+
+  // List contents first to verify it's a valid Inno Setup installer
+  const listResult = await Command.create(innoextractCmd, ["--list", installerPath]).execute();
+  if (listResult.code !== 0) {
+    throw new Error(`Not a valid Inno Setup installer: ${listResult.stderr}`);
+  }
+
+  // Check if it contains WAD files
+  const hasWads = listResult.stdout.toLowerCase().includes(".wad");
+  if (!hasWads) {
+    throw new Error("This installer doesn't appear to contain any WAD files");
+  }
+
+  // Extract only copyrighted IWADs (skip extras.wad and freely available sigil)
+  const includeArgs = GOG_IWADS_TO_EXTRACT.flatMap(wad => ["--include", wad]);
+  const extractResult = await Command.create(innoextractCmd, [
+    ...includeArgs,
+    "--output-dir", iwadsDir,
+    "--flatten",
+    installerPath
+  ]).execute();
+
+  const errors: string[] = [];
+  if (extractResult.code !== 0) {
+    errors.push(extractResult.stderr);
+  }
+
+  // Check which WADs were actually extracted by checking if files exist
+  const extractedWads: string[] = [];
+  for (const wad of GOG_IWADS_TO_EXTRACT) {
+    try {
+      if (await exists(`${iwadsDir}/${wad}`)) {
+        extractedWads.push(wad);
+      }
+    } catch {
+      // File doesn't exist
+    }
+  }
+
+  return {
+    extractedWads,
+    errors,
+  };
 }
 
 export function useSettings() {
@@ -217,6 +311,20 @@ export function useSettings() {
     await saveSettings();
   }
 
+  async function importFromGOG(installerPath: string): Promise<GOGExtractResult> {
+    const innoCmd = await findInnoextract();
+    if (!innoCmd) {
+      throw new Error("innoextract not found. Install it with: brew install innoextract");
+    }
+    const iwadsDir = `${settings.value.libraryPath}/iwads`;
+    return extractFromGOG(installerPath, iwadsDir, innoCmd);
+  }
+
+  async function checkInnoextract(): Promise<boolean> {
+    const cmd = await findInnoextract();
+    return cmd !== null;
+  }
+
   return {
     settings,
     isFirstRun,
@@ -224,5 +332,7 @@ export function useSettings() {
     initSettings,
     setGZDoomPath,
     setLibraryPath,
+    checkInnoextract,
+    importFromGOG,
   };
 }

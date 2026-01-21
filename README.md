@@ -18,6 +18,7 @@ There are no builds yet for other systems, but porting should be straightforward
 - [GZDoom](https://github.com/ZDoom/gzdoom/) - Doom source port
   - works also with newer [UZDoom](https://github.com/UZDoom/UZDoom/), there is some [drama about the GZDoom-UZDoom split](https://arstechnica.com/gaming/2025/10/civil-war-gzdoom-fan-developers-split-off-over-use-of-chatgpt-generated-code/)
 - `doom.wad` and `doom2.wad` - Doom game data from [GOG.com](https://www.gog.com/en/game/doom_doom_ii) or Steam
+  - The app can extract IWADs directly from GOG installers using [innoextract](https://constexpr.org/innoextract/) (`brew install innoextract`)
 
 ## Install
 
