@@ -5,13 +5,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { Check, X } from "lucide-vue-next";
 import { useSettings } from "../composables/useSettings";
 import { useGZDoom } from "../composables/useGZDoom";
-import { useLevelNames } from "../composables/useLevelNames";
 import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
 
 const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath } = useSettings();
 const { availableIwads, detectIwads } = useGZDoom();
-const { rescanAllWads } = useLevelNames();
 const { wads } = useWads();
 
 // IWADs required by games in the catalog
@@ -42,8 +40,6 @@ const migratedIwadsBySource = computed(() => {
 });
 
 const errorMsg = ref("");
-const rescanning = ref(false);
-const rescanResult = ref<number | null>(null);
 const engineVersion = ref<string | null>(null);
 
 async function fetchEngineVersion() {
@@ -111,16 +107,6 @@ function getEngineName(path: string | null): string {
   return "Doom engine";
 }
 
-async function handleRescan() {
-  rescanning.value = true;
-  rescanResult.value = null;
-  try {
-    const count = await rescanAllWads();
-    rescanResult.value = count;
-  } finally {
-    rescanning.value = false;
-  }
-}
 </script>
 
 <template>
@@ -189,25 +175,6 @@ async function handleRescan() {
         </p>
       </div>
 
-      <!-- Level Names -->
-      <div class="rounded-lg bg-zinc-800/50 p-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <label class="text-sm font-medium text-zinc-300">Level Names</label>
-            <p class="text-sm text-zinc-500 mt-1">Extract level names from downloaded WADs</p>
-            <p v-if="rescanResult !== null" class="text-xs text-green-400 mt-1">
-              Extracted names from {{ rescanResult }} WADs
-            </p>
-          </div>
-          <button
-            class="rounded bg-zinc-700 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-600 disabled:opacity-50"
-            :disabled="rescanning"
-            @click="handleRescan"
-          >
-            {{ rescanning ? 'Scanning...' : 'Rescan' }}
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
