@@ -54,6 +54,19 @@ mcp__tauri-mcp__read_logs           - get console logs (source="console")
 - Tools not available: Restart Claude Code session after `.mcp.json` changes
 - Permission errors: Ensure `mcp-bridge:default` in `capabilities/default.json`
 
+### Releasing
+
+To create a release, push a version tag:
+```bash
+git tag v0.1.6
+git push origin v0.1.6
+```
+
+This triggers `.github/workflows/release.yml` which:
+1. Builds the macOS app (aarch64)
+2. Creates a **draft** GitHub release with the DMG
+3. Go to GitHub Releases to publish the draft
+
 ### Scripts
 Python exploration scripts live in `scripts/`. Run with `uv run scripts/<script>.py`.
 
