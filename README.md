@@ -1,15 +1,15 @@
 # Rusted Doom Launcher
 
-A modern launcher for classic Doom.
+A modern open-source launcher for classic Doom WADs and mods.
 Browse community-made maps and episodes, then install and launch them with a single click—essentially bringing the Steam experience to Doom.
 
-I picked top maps from [Cacowards](https://www.doomworld.com/cacowards/).
+I got inspired by [Doom & Retro FPS Mods](https://www.facebook.com/groups/495775970100553/) FaceBook group and gameplays of modern maps - the scence is alive and well! For now, the library consists of the top maps from [Cacowards](https://www.doomworld.com/cacowards/). I am open to expand it.
 
 It is currently in alpha. I build it for myself, but sharing it so others may enjoys as well.
 There are similar apps, notably [Doom Launcher](https://github.com/nstlaurent/DoomLauncher), but they are either Windows-only or lack features I wanted.
 
 I use macOS (Apple Silicon) and created this tool specifically for it.
-There are no builds yet for other systems, but porting should be straightforward.
+There are no builds yet for other systems, but porting should be straightforward. If you want to make it runnable on Windows or Linux, I would be happy to add it to the repo.
 
 ![](./rusted_doom_launcher_screenshot.jpg)
 
@@ -49,7 +49,6 @@ brew install --cask stared/doom/uzdoom
 Not yet!
 
 Contributions are welcome if you can make it work on these systems.
-
 
 ## Features
 
