@@ -9,7 +9,25 @@ jobs:
   release:
     permissions:
       contents: write
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            name: 'macOS-arm64'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            name: 'macOS-x64'
+          - platform: 'ubuntu-22.04'
+            args: ''
+            name: 'Linux-x64'
+          - platform: 'windows-latest'
+            args: ''
+            name: 'Windows-x64'
+
+    runs-on: ${{ matrix.platform }}
+    name: Build (${{ matrix.name }})
 
     steps:
       - uses: actions/checkout@v4
@@ -26,11 +44,19 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install frontend dependencies
         run: pnpm install
@@ -45,20 +71,34 @@ jobs:
           releaseBody: |
             A modern launcher for classic Doom. Browse community-made maps and episodes, then install and launch them with a single click.
 
-            ## Install via Homebrew (recommended)
-            ```
-            brew install --cask stared/doom/rusted-doom-launcher
-            ```
+            ## Download
 
-            ## Manual Install
-            1. Download the `.dmg` file below (Apple Silicon)
+            | Platform | Download |
+            |----------|----------|
+            | macOS (Apple Silicon) | `.dmg` file ending in `aarch64` |
+            | macOS (Intel) | `.dmg` file ending in `x64` |
+            | Windows | `.exe` (NSIS installer) or `.msi` |
+            | Linux | `.deb` or `.AppImage` |
+
+            ## macOS Install
+            1. Download the appropriate `.dmg` file for your Mac
             2. Drag to Applications
             3. Run: `xattr -cr /Applications/Rusted\ Doom\ Launcher.app`
             4. Open the app
 
+            ## Windows Install
+            1. Download the `.exe` or `.msi` installer
+            2. Run the installer
+            3. Open the app
+
+            ## Linux Install
+            1. Download the `.AppImage` or `.deb` file
+            2. For AppImage: `chmod +x` and run
+            3. For deb: `sudo dpkg -i rusted-doom-launcher_*.deb`
+
             ## Requirements
-            - [UZDoom](https://github.com/UZDoom/UZDoom) or [GZDoom](https://github.com/ZDoom/gzdoom) - `brew install --cask stared/doom/uzdoom`
+            - [UZDoom](https://github.com/UZDoom/UZDoom) or [GZDoom](https://github.com/ZDoom/gzdoom)
             - doom.wad or doom2.wad from [GOG](https://www.gog.com/en/game/doom_doom_ii) or Steam
           releaseDraft: true
           prerelease: false
-          args: --target aarch64-apple-darwin
+          args: ${{ matrix.args }}

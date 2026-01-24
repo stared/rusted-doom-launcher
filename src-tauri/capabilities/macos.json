@@ -1,29 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "default",
-  "description": "Capability for the main window",
+  "identifier": "macos",
+  "description": "macOS-specific capabilities",
+  "platforms": ["macOS"],
   "windows": ["main"],
   "permissions": [
-    "core:default",
     "mcp-bridge:default",
-    "dialog:default",
-    "dialog:allow-open",
-    "fs:default",
-    "fs:allow-read-text-file",
-    "fs:allow-write-text-file",
-    "fs:allow-read-file",
-    "fs:allow-exists",
-    "fs:allow-read-dir",
-    "fs:allow-mkdir",
-    "fs:allow-write-file",
-    "fs:allow-remove",
-    "fs:allow-stat",
-    "fs:allow-rename",
     {
       "identifier": "fs:scope",
       "allow": [
-        "$RESOURCE/**",
-        "$APPDATA/**",
         "$HOME/Library/Application Support/gzdoom",
         "$HOME/Library/Application Support/gzdoom/**",
         "$HOME/Library/Application Support/rusted-doom-launcher",
@@ -38,8 +23,6 @@
         "$HOME/Applications/GZDoom.app/**"
       ]
     },
-    "http:default",
-    "upload:default",
     {
       "identifier": "upload:allow-download",
       "allow": [
@@ -47,13 +30,6 @@
         { "path": "$HOME/Library/Application Support/rusted-doom-launcher/**" }
       ]
     },
-    {
-      "identifier": "http:allow-fetch",
-      "allow": [
-        { "url": "https://*" }
-      ]
-    },
-    "shell:default",
     {
       "identifier": "shell:allow-spawn",
       "allow": [

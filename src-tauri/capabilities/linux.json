@@ -1,0 +1,108 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "linux",
+  "description": "Linux-specific capabilities",
+  "platforms": ["linux"],
+  "windows": ["main"],
+  "permissions": [
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "/usr/bin/gzdoom",
+        "/usr/bin/uzdoom",
+        "/usr/games/gzdoom",
+        "/usr/games/uzdoom",
+        "/usr/local/bin/gzdoom",
+        "/usr/local/bin/uzdoom",
+        "$HOME/.local/bin/gzdoom",
+        "$HOME/.local/bin/uzdoom",
+        "$HOME/.config/gzdoom/**",
+        "$HOME/.config/uzdoom/**",
+        "$HOME/.config/rusted-doom-launcher/**",
+        "$HOME/.var/app/org.zdoom.GZDoom/**",
+        "$HOME/.var/app/org.zdoom.UZDoom/**"
+      ]
+    },
+    {
+      "identifier": "upload:allow-download",
+      "allow": [
+        { "path": "$HOME/.config/rusted-doom-launcher/**" }
+      ]
+    },
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "gzdoom-usr-bin",
+          "cmd": "/usr/bin/gzdoom",
+          "args": true
+        },
+        {
+          "name": "uzdoom-usr-bin",
+          "cmd": "/usr/bin/uzdoom",
+          "args": true
+        },
+        {
+          "name": "gzdoom-usr-games",
+          "cmd": "/usr/games/gzdoom",
+          "args": true
+        },
+        {
+          "name": "uzdoom-usr-games",
+          "cmd": "/usr/games/uzdoom",
+          "args": true
+        },
+        {
+          "name": "gzdoom-usr-local",
+          "cmd": "/usr/local/bin/gzdoom",
+          "args": true
+        },
+        {
+          "name": "uzdoom-usr-local",
+          "cmd": "/usr/local/bin/uzdoom",
+          "args": true
+        },
+        {
+          "name": "gzdoom-local-bin",
+          "cmd": "$HOME/.local/bin/gzdoom",
+          "args": true
+        },
+        {
+          "name": "uzdoom-local-bin",
+          "cmd": "$HOME/.local/bin/uzdoom",
+          "args": true
+        },
+        {
+          "name": "gzdoom-flatpak",
+          "cmd": "flatpak",
+          "args": ["run", "org.zdoom.GZDoom"]
+        },
+        {
+          "name": "innoextract",
+          "cmd": "innoextract",
+          "args": true
+        },
+        {
+          "name": "innoextract-usr-bin",
+          "cmd": "/usr/bin/innoextract",
+          "args": true
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "innoextract",
+          "cmd": "innoextract",
+          "args": true
+        },
+        {
+          "name": "innoextract-usr-bin",
+          "cmd": "/usr/bin/innoextract",
+          "args": true
+        }
+      ]
+    }
+  ]
+}

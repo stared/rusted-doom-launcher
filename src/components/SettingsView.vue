@@ -2,11 +2,14 @@
 import { ref, watch, onMounted, computed } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
+import { platform } from "@tauri-apps/plugin-os";
 import { Check, X } from "lucide-vue-next";
 import { useSettings } from "../composables/useSettings";
 import { useGZDoom } from "../composables/useGZDoom";
 import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
+
+const currentPlatform = platform();
 
 const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, checkInnoextract, importFromGOG } = useSettings();
 const { availableIwads, detectIwads } = useGZDoom();
@@ -73,9 +76,14 @@ async function handleGOGButtonClick() {
   if (!hasInnoextract.value) {
     hasInnoextract.value = await checkInnoextract();
     if (!hasInnoextract.value) {
+      const installInstructions = currentPlatform === "macos"
+        ? "brew install innoextract"
+        : currentPlatform === "windows"
+        ? "scoop install innoextract (or download from https://constexpr.org/innoextract/)"
+        : "sudo apt install innoextract (or your distro's package manager)";
       gogImportResult.value = {
         success: false,
-        message: "innoextract not found. Install with: brew install innoextract",
+        message: `innoextract not found. Install with: ${installInstructions}`,
       };
     }
     return;
@@ -123,22 +131,38 @@ async function browseAndImportGOG() {
 }
 
 async function browseGZDoom() {
+  // Platform-specific file filters
+  const filters = currentPlatform === "macos"
+    ? [{ name: "Application", extensions: ["app"] }]
+    : currentPlatform === "windows"
+    ? [{ name: "Executable", extensions: ["exe"] }]
+    : [{ name: "All Files", extensions: ["*"] }];
+
   const selected = await open({
     title: "Select Doom Engine (UZDoom or GZDoom)",
-    filters: [{ name: "Application", extensions: ["app"] }],
+    filters,
     directory: false,
     multiple: false,
   });
   if (selected) {
     const path = typeof selected === "string" ? selected : selected[0];
-    const appName = path.split("/").pop()?.toLowerCase() ?? "";
-    if (!appName.includes("gzdoom") && !appName.includes("uzdoom")) {
-      errorMsg.value = `"${appName}" doesn't appear to be a Doom engine. Please select UZDoom.app or GZDoom.app`;
+    const fileName = path.split(/[/\\]/).pop()?.toLowerCase() ?? "";
+    if (!fileName.includes("gzdoom") && !fileName.includes("uzdoom")) {
+      const expectedFormat = currentPlatform === "macos" ? "UZDoom.app or GZDoom.app"
+        : currentPlatform === "windows" ? "gzdoom.exe or uzdoom.exe"
+        : "gzdoom or uzdoom";
+      errorMsg.value = `"${fileName}" doesn't appear to be a Doom engine. Please select ${expectedFormat}`;
       return;
     }
-    // Derive executable name from app name (e.g., UZDoom.app -> uzdoom)
-    const execName = appName.replace(".app", "").toLowerCase();
-    const execPath = path.endsWith(".app") ? `${path}/Contents/MacOS/${execName}` : path;
+
+    // macOS: Derive executable path from .app bundle
+    // Windows/Linux: Use path directly (it's already the executable)
+    let execPath = path;
+    if (currentPlatform === "macos" && path.endsWith(".app")) {
+      const execName = fileName.replace(".app", "").toLowerCase();
+      execPath = `${path}/Contents/MacOS/${execName}`;
+    }
+
     await setGZDoomPath(execPath);
     errorMsg.value = "";
   }
@@ -159,8 +183,15 @@ async function browseLibrary() {
 
 function shortenPath(path: string | null): string {
   if (!path) return "Not found";
-  const home = path.match(/^\/Users\/[^/]+/)?.[0];
-  if (home) return path.replace(home, "~");
+  // macOS: /Users/username/... -> ~/...
+  const macHome = path.match(/^\/Users\/[^/]+/)?.[0];
+  if (macHome) return path.replace(macHome, "~");
+  // Windows: C:\Users\username\... -> ~\...
+  const winHome = path.match(/^[A-Za-z]:\\Users\\[^\\]+/)?.[0];
+  if (winHome) return path.replace(winHome, "~");
+  // Linux: /home/username/... -> ~/...
+  const linuxHome = path.match(/^\/home\/[^/]+/)?.[0];
+  if (linuxHome) return path.replace(linuxHome, "~");
   return path;
 }
 

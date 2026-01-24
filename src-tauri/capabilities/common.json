@@ -1,0 +1,39 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "common",
+  "description": "Common capabilities shared across all platforms",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "os:default",
+    "dialog:default",
+    "dialog:allow-open",
+    "fs:default",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-read-file",
+    "fs:allow-exists",
+    "fs:allow-read-dir",
+    "fs:allow-mkdir",
+    "fs:allow-write-file",
+    "fs:allow-remove",
+    "fs:allow-stat",
+    "fs:allow-rename",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$RESOURCE/**",
+        "$APPDATA/**"
+      ]
+    },
+    "http:default",
+    "upload:default",
+    {
+      "identifier": "http:allow-fetch",
+      "allow": [
+        { "url": "https://*" }
+      ]
+    },
+    "shell:default"
+  ]
+}

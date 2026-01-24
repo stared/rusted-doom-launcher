@@ -1,0 +1,93 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "windows",
+  "description": "Windows-specific capabilities",
+  "platforms": ["windows"],
+  "windows": ["main"],
+  "permissions": [
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$LOCALAPPDATA/GZDoom/**",
+        "$LOCALAPPDATA/UZDoom/**",
+        "$HOME/AppData/Local/GZDoom/**",
+        "$HOME/AppData/Local/UZDoom/**",
+        "$HOME/AppData/Roaming/rusted-doom-launcher/**",
+        "C:/Games/GZDoom/**",
+        "C:/Games/UZDoom/**",
+        "C:/Program Files/GZDoom/**",
+        "C:/Program Files/UZDoom/**",
+        "C:/Program Files (x86)/GZDoom/**",
+        "C:/Program Files (x86)/UZDoom/**",
+        "$HOME/scoop/apps/gzdoom/**",
+        "$HOME/scoop/apps/uzdoom/**"
+      ]
+    },
+    {
+      "identifier": "upload:allow-download",
+      "allow": [
+        { "path": "$HOME/AppData/Roaming/rusted-doom-launcher/**" }
+      ]
+    },
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "gzdoom-local",
+          "cmd": "$LOCALAPPDATA/GZDoom/gzdoom.exe",
+          "args": true
+        },
+        {
+          "name": "uzdoom-local",
+          "cmd": "$LOCALAPPDATA/UZDoom/uzdoom.exe",
+          "args": true
+        },
+        {
+          "name": "gzdoom-games",
+          "cmd": "C:/Games/GZDoom/gzdoom.exe",
+          "args": true
+        },
+        {
+          "name": "uzdoom-games",
+          "cmd": "C:/Games/UZDoom/uzdoom.exe",
+          "args": true
+        },
+        {
+          "name": "gzdoom-program-files",
+          "cmd": "C:/Program Files/GZDoom/gzdoom.exe",
+          "args": true
+        },
+        {
+          "name": "uzdoom-program-files",
+          "cmd": "C:/Program Files/UZDoom/uzdoom.exe",
+          "args": true
+        },
+        {
+          "name": "gzdoom-scoop",
+          "cmd": "$HOME/scoop/apps/gzdoom/current/gzdoom.exe",
+          "args": true
+        },
+        {
+          "name": "uzdoom-scoop",
+          "cmd": "$HOME/scoop/apps/uzdoom/current/uzdoom.exe",
+          "args": true
+        },
+        {
+          "name": "innoextract",
+          "cmd": "innoextract.exe",
+          "args": true
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "innoextract",
+          "cmd": "innoextract.exe",
+          "args": true
+        }
+      ]
+    }
+  ]
+}
