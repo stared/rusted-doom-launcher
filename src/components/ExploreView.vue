@@ -109,16 +109,18 @@ function formatType(type: string): string {
 const filteredWads = computed(() => {
   let result = [...props.wads];
 
-  // Search filter - searches title, authors, and vibe
+  // Search filter
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
     result = result.filter(w => {
-      const vibe = getVibe(w.slug) ?? "";
-      return (
-        w.title.toLowerCase().includes(q) ||
-        w.authors.some(a => a.name.toLowerCase().includes(q)) ||
-        vibe.toLowerCase().includes(q)
-      );
+      const searchableText = [
+        w.title,
+        w.slug,
+        w.authors.map(a => a.name).join(" "),
+        w.downloads.map(d => d.filename).join(" "),
+        getVibe(w.slug) ?? "",
+      ].join(" ").toLowerCase();
+      return searchableText.includes(q);
     });
   }
 
