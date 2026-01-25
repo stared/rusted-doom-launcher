@@ -109,8 +109,8 @@ export function useGZDoom() {
 
   function pollForExit() {
     // Derive process name from path (e.g., /bin/uzdoom -> uzdoom)
-    const enginePath = settings.value.gzdoomPath;
-    const processName = enginePath?.split("/").pop() ?? "gzdoom";
+    // Note: gzdoomPath is guaranteed to exist - launch() validates it before calling this
+    const processName = settings.value.gzdoomPath!.split(/[/\\]/).pop()!;
 
     const pollInterval = setInterval(async () => {
       try {

@@ -90,8 +90,7 @@ async function handlePlay(wad: WadEntry) {
     return;
   }
   if (!availableIwads.value.includes(wad.iwad)) {
-    const shortPath = settings.value.libraryPath.replace(/^\/Users\/[^/]+/, "~");
-    errorMsg.value = `${wad.iwad.toUpperCase()}.WAD not found in ${shortPath}. This IWAD is required to run the mod.`;
+    errorMsg.value = `${wad.iwad.toUpperCase()}.WAD not found in ${settings.value.libraryPath}/iwads/. This IWAD is required to run the mod.`;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
