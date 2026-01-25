@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { homeDir } from "@tauri-apps/api/path";
+import { homeDir, join } from "@tauri-apps/api/path";
 import { exists, readTextFile, writeTextFile, mkdir, readDir, readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { Command } from "@tauri-apps/plugin-shell";
 import { platform } from "@tauri-apps/plugin-os";
@@ -7,16 +7,34 @@ import { isNotFoundError } from "../lib/errors";
 
 const APP_NAME = "rusted-doom-launcher";
 const OLD_APP_NAME = "gzdoom";
+const OS = platform();
 
 interface Settings {
   gzdoomPath: string | null;  // null = not found
   libraryPath: string;        // Never null after init
 }
 
+// Get platform-specific app data directory
+// useLocal: on Windows, use AppData/Local instead of AppData/Roaming
+async function getAppDir(h: string, appName: string, useLocal = false): Promise<string> {
+  switch (OS) {
+    case "macos":
+      return join(h, "Library", "Application Support", appName);
+    case "windows":
+      return join(h, "AppData", useLocal ? "Local" : "Roaming", appName);
+    default: // linux and others
+      return join(h, ".config", appName);
+  }
+}
+
+// Convenience wrappers
+const getConfigDir = (h: string) => getAppDir(h, APP_NAME);
+const getOldConfigDir = (h: string) => getAppDir(h, OLD_APP_NAME);
+const getGZDoomConfigDir = (h: string) => getAppDir(h, OS === "windows" ? "GZDoom" : "gzdoom", OS === "windows");
+
 // Get platform-specific engine locations
 async function getEngineLocations(h: string): Promise<string[]> {
-  const os = platform();
-  switch (os) {
+  switch (OS) {
     case "macos":
       return [
         "/Applications/UZDoom.app/Contents/MacOS/uzdoom",
@@ -25,21 +43,21 @@ async function getEngineLocations(h: string): Promise<string[]> {
         "/opt/homebrew/bin/gzdoom",
         "/usr/local/bin/uzdoom",
         "/usr/local/bin/gzdoom",
-        `${h}/Applications/UZDoom.app/Contents/MacOS/uzdoom`,
-        `${h}/Applications/GZDoom.app/Contents/MacOS/gzdoom`,
+        await join(h, "Applications", "UZDoom.app", "Contents", "MacOS", "uzdoom"),
+        await join(h, "Applications", "GZDoom.app", "Contents", "MacOS", "gzdoom"),
       ];
     case "windows":
       return [
-        `${h}/AppData/Local/GZDoom/gzdoom.exe`,
-        `${h}/AppData/Local/UZDoom/uzdoom.exe`,
-        "C:/Games/GZDoom/gzdoom.exe",
-        "C:/Games/UZDoom/uzdoom.exe",
-        "C:/Program Files/GZDoom/gzdoom.exe",
-        "C:/Program Files/UZDoom/uzdoom.exe",
-        "C:/Program Files (x86)/GZDoom/gzdoom.exe",
-        "C:/Program Files (x86)/UZDoom/uzdoom.exe",
-        `${h}/scoop/apps/gzdoom/current/gzdoom.exe`,
-        `${h}/scoop/apps/uzdoom/current/uzdoom.exe`,
+        await join(h, "AppData", "Local", "GZDoom", "gzdoom.exe"),
+        await join(h, "AppData", "Local", "UZDoom", "uzdoom.exe"),
+        "C:\\Games\\GZDoom\\gzdoom.exe",
+        "C:\\Games\\UZDoom\\uzdoom.exe",
+        "C:\\Program Files\\GZDoom\\gzdoom.exe",
+        "C:\\Program Files\\UZDoom\\uzdoom.exe",
+        "C:\\Program Files (x86)\\GZDoom\\gzdoom.exe",
+        "C:\\Program Files (x86)\\UZDoom\\uzdoom.exe",
+        await join(h, "scoop", "apps", "gzdoom", "current", "gzdoom.exe"),
+        await join(h, "scoop", "apps", "uzdoom", "current", "uzdoom.exe"),
       ];
     case "linux":
       return [
@@ -49,56 +67,11 @@ async function getEngineLocations(h: string): Promise<string[]> {
         "/usr/games/uzdoom",
         "/usr/local/bin/gzdoom",
         "/usr/local/bin/uzdoom",
-        `${h}/.local/bin/gzdoom`,
-        `${h}/.local/bin/uzdoom`,
+        await join(h, ".local", "bin", "gzdoom"),
+        await join(h, ".local", "bin", "uzdoom"),
       ];
     default:
       return [];
-  }
-}
-
-// Get platform-specific settings directory
-async function getConfigDir(h: string): Promise<string> {
-  const os = platform();
-  switch (os) {
-    case "macos":
-      return `${h}/Library/Application Support/${APP_NAME}`;
-    case "windows":
-      return `${h}/AppData/Roaming/${APP_NAME}`;
-    case "linux":
-      return `${h}/.config/${APP_NAME}`;
-    default:
-      return `${h}/.config/${APP_NAME}`;
-  }
-}
-
-// Get platform-specific old settings directory (for migration)
-async function getOldConfigDir(h: string): Promise<string> {
-  const os = platform();
-  switch (os) {
-    case "macos":
-      return `${h}/Library/Application Support/${OLD_APP_NAME}`;
-    case "windows":
-      return `${h}/AppData/Roaming/${OLD_APP_NAME}`;
-    case "linux":
-      return `${h}/.config/${OLD_APP_NAME}`;
-    default:
-      return `${h}/.config/${OLD_APP_NAME}`;
-  }
-}
-
-// Get platform-specific GZDoom config directory (for IWAD migration)
-async function getGZDoomConfigDir(h: string): Promise<string> {
-  const os = platform();
-  switch (os) {
-    case "macos":
-      return `${h}/Library/Application Support/gzdoom`;
-    case "windows":
-      return `${h}/AppData/Local/GZDoom`;
-    case "linux":
-      return `${h}/.config/gzdoom`;
-    default:
-      return `${h}/.config/gzdoom`;
   }
 }
 
@@ -127,13 +100,13 @@ async function getHome(): Promise<string> {
 async function getSettingsPath(): Promise<string> {
   const h = await getHome();
   const configDir = await getConfigDir(h);
-  return `${configDir}/launcher-settings.json`;
+  return join(configDir, "launcher-settings.json");
 }
 
 async function getOldSettingsPath(): Promise<string> {
   const h = await getHome();
   const oldConfigDir = await getOldConfigDir(h);
-  return `${oldConfigDir}/launcher-settings.json`;
+  return join(oldConfigDir, "launcher-settings.json");
 }
 
 async function findGZDoom(): Promise<string | null> {
@@ -172,7 +145,7 @@ async function copyFile(src: string, dest: string): Promise<void> {
 // Populate iwads/ folder from known locations (data folder root, GZDoom folder)
 async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]> {
   const h = await getHome();
-  const iwadsDir = `${libraryPath}/iwads`;
+  const iwadsDir = await join(libraryPath, "iwads");
 
   // Skip if iwads/ already has content
   const existing = await findIwadsInDir(iwadsDir);
@@ -193,7 +166,9 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
     const iwads = await findIwadsInDir(srcDir);
     for (const name of iwads) {
       if (copiedNames.map(n => n.toLowerCase()).includes(name.toLowerCase())) continue;
-      await copyFile(`${srcDir}/${name}`, `${iwadsDir}/${name}`);
+      const srcPath = await join(srcDir, name);
+      const destPath = await join(iwadsDir, name);
+      await copyFile(srcPath, destPath);
       copied.push({ name, from: srcDir });
       copiedNames.push(name);
     }
@@ -202,10 +177,8 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
   return copied;
 }
 
-// Get platform-specific innoextract commands
 function getInnoextractCommands(): { name: string; cmd: string }[] {
-  const os = platform();
-  switch (os) {
+  switch (OS) {
     case "macos":
       return [
         { name: "innoextract", cmd: "innoextract" },
@@ -213,9 +186,7 @@ function getInnoextractCommands(): { name: string; cmd: string }[] {
         { name: "innoextract-homebrew-intel", cmd: "/usr/local/bin/innoextract" },
       ];
     case "windows":
-      return [
-        { name: "innoextract", cmd: "innoextract.exe" },
-      ];
+      return [{ name: "innoextract", cmd: "innoextract.exe" }];
     case "linux":
       return [
         { name: "innoextract", cmd: "innoextract" },
@@ -226,10 +197,8 @@ function getInnoextractCommands(): { name: string; cmd: string }[] {
   }
 }
 
-// Get platform-specific innoextract install instructions
 function getInnoextractInstallInstructions(): string {
-  const os = platform();
-  switch (os) {
+  switch (OS) {
     case "macos":
       return "Install with: brew install innoextract";
     case "windows":
@@ -312,7 +281,8 @@ async function extractFromGOG(
   const extractedWads: string[] = [];
   for (const wad of GOG_IWADS_TO_EXTRACT) {
     try {
-      if (await exists(`${iwadsDir}/${wad}`)) {
+      const wadPath = await join(iwadsDir, wad);
+      if (await exists(wadPath)) {
         extractedWads.push(wad);
       }
     } catch {
@@ -428,7 +398,7 @@ export function useSettings() {
     if (!innoCmd) {
       throw new Error(`innoextract not found. ${getInnoextractInstallInstructions()}`);
     }
-    const iwadsDir = `${settings.value.libraryPath}/iwads`;
+    const iwadsDir = await join(settings.value.libraryPath, "iwads");
     return extractFromGOG(installerPath, iwadsDir, innoCmd);
   }
 
