@@ -90,8 +90,8 @@ async function handlePlay(wad: WadEntry) {
     return;
   }
   if (!availableIwads.value.includes(wad.iwad)) {
-    const shortPath = settings.value.libraryPath.replace(/^\/Users\/[^/]+/, "~");
-    errorMsg.value = `${wad.iwad.toUpperCase()}.WAD not found in ${shortPath}. This IWAD is required to run the mod.`;
+    errorMsg.value = `${wad.iwad.toUpperCase()}.WAD not found in ${settings.value.libraryPath}/iwads/. This IWAD is required to run the mod.`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
   try {
@@ -101,6 +101,7 @@ async function handlePlay(wad: WadEntry) {
   } catch (e) {
     console.error(`[Play] Error launching ${wad.slug}:`, e);
     errorMsg.value = getErrorMessage(e);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 
@@ -109,6 +110,7 @@ async function handleDelete(wad: WadEntry) {
     await deleteWad(wad.slug);
   } catch (e) {
     errorMsg.value = getErrorMessage(e);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 </script>

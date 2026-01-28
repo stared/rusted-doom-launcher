@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import { join } from "@tauri-apps/api/path";
 import { exists, mkdir, remove, readTextFile, writeTextFile, readFile, rename, stat } from "@tauri-apps/plugin-fs";
 import { download as tauriDownload } from "@tauri-apps/plugin-upload";
 import type { WadEntry } from "../lib/schema";
@@ -53,7 +54,8 @@ export function useDownload() {
   async function loadState() {
     const dir = settings.value.libraryPath;
     try {
-      const content = await readTextFile(`${dir}/launcher-downloads.json`);
+      const downloadsPath = await join(dir, "launcher-downloads.json");
+      const content = await readTextFile(downloadsPath);
       const parsed = LauncherDownloadsSchema.safeParse(JSON.parse(content));
       if (parsed.success) {
         downloads.value = parsed.data;
@@ -67,7 +69,8 @@ export function useDownload() {
   }
 
   async function saveState() {
-    await writeTextFile(`${settings.value.libraryPath}/launcher-downloads.json`, JSON.stringify(downloads.value, null, 2));
+    const downloadsPath = await join(settings.value.libraryPath, "launcher-downloads.json");
+    await writeTextFile(downloadsPath, JSON.stringify(downloads.value, null, 2));
   }
 
   function isDownloaded(slug: string): boolean {
@@ -96,7 +99,7 @@ export function useDownload() {
       throw new Error(`Download not available for "${wad.title}" - URL not configured`);
     }
 
-    const path = `${dir}/${filename}`;
+    const path = await join(dir, filename);
     const partPath = `${path}.part`;  // Atomic download: write to .part file first
 
     if (await exists(path)) {
@@ -173,7 +176,8 @@ export function useDownload() {
     if (!info) return;
     const dir = settings.value.libraryPath;
     try {
-      await remove(`${dir}/${info.filename}`);
+      const filePath = await join(dir, info.filename);
+      await remove(filePath);
     } catch (e) {
       console.error(`Failed to delete ${info.filename}:`, e);
       // Continue anyway - we still want to remove from state

@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { join } from "@tauri-apps/api/path";
 import { readDir, mkdir } from "@tauri-apps/plugin-fs";
 import type { Iwad } from "../lib/schema";
 import type { SkillLevel } from "../lib/statsSchema";
@@ -32,7 +33,7 @@ export function useGZDoom() {
       console.warn("[detectIwads] No libraryPath set, skipping");
       return;
     }
-    const iwadsDir = `${dir}/iwads`;
+    const iwadsDir = await join(dir, "iwads");
     let entries: Awaited<ReturnType<typeof readDir>> = [];
     try {
       entries = await readDir(iwadsDir);
@@ -64,10 +65,10 @@ export function useGZDoom() {
     const dir = settings.value.libraryPath;
     const filename = iwadFilenames.get(iwad);
     if (!filename) throw new Error(`IWAD ${iwad} not detected`);
-    const iwadPath = `${dir}/iwads/${filename}`;
+    const iwadPath = await join(dir, "iwads", filename);
 
     // Create per-WAD save directory if slug provided
-    const saveDir = wadSlug ? `${dir}/saves/${wadSlug}` : null;
+    const saveDir = wadSlug ? await join(dir, "saves", wadSlug) : null;
     if (saveDir) {
       try {
         await mkdir(saveDir, { recursive: true });
@@ -108,8 +109,8 @@ export function useGZDoom() {
 
   function pollForExit() {
     // Derive process name from path (e.g., /bin/uzdoom -> uzdoom)
-    const enginePath = settings.value.gzdoomPath;
-    const processName = enginePath?.split("/").pop() ?? "gzdoom";
+    // Note: gzdoomPath is guaranteed to exist - launch() validates it before calling this
+    const processName = settings.value.gzdoomPath!.split(/[/\\]/).pop()!;
 
     const pollInterval = setInterval(async () => {
       try {

@@ -1,25 +1,79 @@
 import { ref } from "vue";
-import { homeDir } from "@tauri-apps/api/path";
+import { homeDir, join } from "@tauri-apps/api/path";
 import { exists, readTextFile, writeTextFile, mkdir, readDir, readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { Command } from "@tauri-apps/plugin-shell";
+import { platform } from "@tauri-apps/plugin-os";
 import { isNotFoundError } from "../lib/errors";
 
 const APP_NAME = "rusted-doom-launcher";
 const OLD_APP_NAME = "gzdoom";
+const OS = platform();
 
 interface Settings {
   gzdoomPath: string | null;  // null = not found
   libraryPath: string;        // Never null after init
 }
 
-const GZDOOM_LOCATIONS = [
-  "/Applications/UZDoom.app/Contents/MacOS/uzdoom",
-  "/Applications/GZDoom.app/Contents/MacOS/gzdoom",
-  "/opt/homebrew/bin/uzdoom",
-  "/opt/homebrew/bin/gzdoom",
-  "/usr/local/bin/uzdoom",
-  "/usr/local/bin/gzdoom",
-];
+// Get platform-specific app data directory
+// useLocal: on Windows, use AppData/Local instead of AppData/Roaming
+async function getAppDir(h: string, appName: string, useLocal = false): Promise<string> {
+  switch (OS) {
+    case "macos":
+      return join(h, "Library", "Application Support", appName);
+    case "windows":
+      return join(h, "AppData", useLocal ? "Local" : "Roaming", appName);
+    default: // linux and others
+      return join(h, ".config", appName);
+  }
+}
+
+// Convenience wrappers
+const getConfigDir = (h: string) => getAppDir(h, APP_NAME);
+const getOldConfigDir = (h: string) => getAppDir(h, OLD_APP_NAME);
+const getGZDoomConfigDir = (h: string) => getAppDir(h, OS === "windows" ? "GZDoom" : "gzdoom", OS === "windows");
+
+// Get platform-specific engine locations
+async function getEngineLocations(h: string): Promise<string[]> {
+  switch (OS) {
+    case "macos":
+      return [
+        "/Applications/UZDoom.app/Contents/MacOS/uzdoom",
+        "/Applications/GZDoom.app/Contents/MacOS/gzdoom",
+        "/opt/homebrew/bin/uzdoom",
+        "/opt/homebrew/bin/gzdoom",
+        "/usr/local/bin/uzdoom",
+        "/usr/local/bin/gzdoom",
+        await join(h, "Applications", "UZDoom.app", "Contents", "MacOS", "uzdoom"),
+        await join(h, "Applications", "GZDoom.app", "Contents", "MacOS", "gzdoom"),
+      ];
+    case "windows":
+      return [
+        await join(h, "AppData", "Local", "GZDoom", "gzdoom.exe"),
+        await join(h, "AppData", "Local", "UZDoom", "uzdoom.exe"),
+        "C:\\Games\\GZDoom\\gzdoom.exe",
+        "C:\\Games\\UZDoom\\uzdoom.exe",
+        "C:\\Program Files\\GZDoom\\gzdoom.exe",
+        "C:\\Program Files\\UZDoom\\uzdoom.exe",
+        "C:\\Program Files (x86)\\GZDoom\\gzdoom.exe",
+        "C:\\Program Files (x86)\\UZDoom\\uzdoom.exe",
+        await join(h, "scoop", "apps", "gzdoom", "current", "gzdoom.exe"),
+        await join(h, "scoop", "apps", "uzdoom", "current", "uzdoom.exe"),
+      ];
+    case "linux":
+      return [
+        "/usr/bin/gzdoom",
+        "/usr/bin/uzdoom",
+        "/usr/games/gzdoom",
+        "/usr/games/uzdoom",
+        "/usr/local/bin/gzdoom",
+        "/usr/local/bin/uzdoom",
+        await join(h, ".local", "bin", "gzdoom"),
+        await join(h, ".local", "bin", "uzdoom"),
+      ];
+    default:
+      return [];
+  }
+}
 
 const KNOWN_IWADS = [
   "doom.wad", "doom2.wad", "plutonia.wad", "tnt.wad",
@@ -45,21 +99,19 @@ async function getHome(): Promise<string> {
 
 async function getSettingsPath(): Promise<string> {
   const h = await getHome();
-  return `${h}/Library/Application Support/${APP_NAME}/launcher-settings.json`;
+  const configDir = await getConfigDir(h);
+  return join(configDir, "launcher-settings.json");
 }
 
 async function getOldSettingsPath(): Promise<string> {
   const h = await getHome();
-  return `${h}/Library/Application Support/${OLD_APP_NAME}/launcher-settings.json`;
+  const oldConfigDir = await getOldConfigDir(h);
+  return join(oldConfigDir, "launcher-settings.json");
 }
 
 async function findGZDoom(): Promise<string | null> {
   const h = await getHome();
-  const allLocations = [
-    ...GZDOOM_LOCATIONS,
-    `${h}/Applications/UZDoom.app/Contents/MacOS/uzdoom`,
-    `${h}/Applications/GZDoom.app/Contents/MacOS/gzdoom`,
-  ];
+  const allLocations = await getEngineLocations(h);
   for (const path of allLocations) {
     try {
       if (await exists(path)) return path;
@@ -93,16 +145,17 @@ async function copyFile(src: string, dest: string): Promise<void> {
 // Populate iwads/ folder from known locations (data folder root, GZDoom folder)
 async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]> {
   const h = await getHome();
-  const iwadsDir = `${libraryPath}/iwads`;
+  const iwadsDir = await join(libraryPath, "iwads");
 
   // Skip if iwads/ already has content
   const existing = await findIwadsInDir(iwadsDir);
   if (existing.length > 0) return [];
 
   // Source locations (priority order)
+  const gzdoomConfigDir = await getGZDoomConfigDir(h);
   const sources = [
-    libraryPath,                                    // Data folder root
-    `${h}/Library/Application Support/gzdoom`,     // GZDoom folder
+    libraryPath,      // Data folder root
+    gzdoomConfigDir,  // GZDoom config folder (platform-specific)
   ];
 
   await mkdir(iwadsDir, { recursive: true });
@@ -113,7 +166,9 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
     const iwads = await findIwadsInDir(srcDir);
     for (const name of iwads) {
       if (copiedNames.map(n => n.toLowerCase()).includes(name.toLowerCase())) continue;
-      await copyFile(`${srcDir}/${name}`, `${iwadsDir}/${name}`);
+      const srcPath = await join(srcDir, name);
+      const destPath = await join(iwadsDir, name);
+      await copyFile(srcPath, destPath);
       copied.push({ name, from: srcDir });
       copiedNames.push(name);
     }
@@ -122,16 +177,43 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
   return copied;
 }
 
-// INNOEXTRACT locations to try (in order)
-const INNOEXTRACT_COMMANDS = [
-  { name: "innoextract", cmd: "innoextract" },
-  { name: "innoextract-homebrew-arm", cmd: "/opt/homebrew/bin/innoextract" },
-  { name: "innoextract-homebrew-intel", cmd: "/usr/local/bin/innoextract" },
-];
+function getInnoextractCommands(): { name: string; cmd: string }[] {
+  switch (OS) {
+    case "macos":
+      return [
+        { name: "innoextract", cmd: "innoextract" },
+        { name: "innoextract-homebrew-arm", cmd: "/opt/homebrew/bin/innoextract" },
+        { name: "innoextract-homebrew-intel", cmd: "/usr/local/bin/innoextract" },
+      ];
+    case "windows":
+      return [{ name: "innoextract", cmd: "innoextract.exe" }];
+    case "linux":
+      return [
+        { name: "innoextract", cmd: "innoextract" },
+        { name: "innoextract-usr-bin", cmd: "/usr/bin/innoextract" },
+      ];
+    default:
+      return [{ name: "innoextract", cmd: "innoextract" }];
+  }
+}
+
+function getInnoextractInstallInstructions(): string {
+  switch (OS) {
+    case "macos":
+      return "Install with: brew install innoextract";
+    case "windows":
+      return "Install with: scoop install innoextract (or download from https://constexpr.org/innoextract/)";
+    case "linux":
+      return "Install with: sudo apt install innoextract (or your distro's package manager)";
+    default:
+      return "Install innoextract from https://constexpr.org/innoextract/";
+  }
+}
 
 // Check if innoextract is available and return the command name to use
 async function findInnoextract(): Promise<string | null> {
-  for (const { name, cmd } of INNOEXTRACT_COMMANDS) {
+  const commands = getInnoextractCommands();
+  for (const { name, cmd } of commands) {
     try {
       const result = await Command.create(name, ["--version"]).execute();
       if (result.code === 0) {
@@ -199,7 +281,8 @@ async function extractFromGOG(
   const extractedWads: string[] = [];
   for (const wad of GOG_IWADS_TO_EXTRACT) {
     try {
-      if (await exists(`${iwadsDir}/${wad}`)) {
+      const wadPath = await join(iwadsDir, wad);
+      if (await exists(wadPath)) {
         extractedWads.push(wad);
       }
     } catch {
@@ -218,7 +301,7 @@ export function useSettings() {
     if (initialized.value) return;
 
     const h = await getHome();
-    const newConfigDir = `${h}/Library/Application Support/${APP_NAME}`;
+    const newConfigDir = await getConfigDir(h);
     const newDefaultLibrary = newConfigDir;  // New users get new folder
 
     const newPath = await getSettingsPath();
@@ -313,9 +396,9 @@ export function useSettings() {
   async function importFromGOG(installerPath: string): Promise<GOGExtractResult> {
     const innoCmd = await findInnoextract();
     if (!innoCmd) {
-      throw new Error("innoextract not found. Install it with: brew install innoextract");
+      throw new Error(`innoextract not found. ${getInnoextractInstallInstructions()}`);
     }
-    const iwadsDir = `${settings.value.libraryPath}/iwads`;
+    const iwadsDir = await join(settings.value.libraryPath, "iwads");
     return extractFromGOG(installerPath, iwadsDir, innoCmd);
   }
 

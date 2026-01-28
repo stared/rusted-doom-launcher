@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import { join } from "@tauri-apps/api/path";
 import { exists, readDir, readFile, stat } from "@tauri-apps/plugin-fs";
 import { unzipSync, strFromU8 } from "fflate";
 import { useSettings } from "./useSettings";
@@ -38,8 +39,8 @@ const saveInfoCache = ref<Map<string, WadSaveInfo>>(new Map());
 export function useSaves() {
   const { settings } = useSettings();
 
-  function getSaveDir(slug: string): string {
-    return `${settings.value.libraryPath}/saves/${slug}`;
+  async function getSaveDir(slug: string): Promise<string> {
+    return join(settings.value.libraryPath, "saves", slug);
   }
 
   async function getSaveInfo(slug: string): Promise<WadSaveInfo | null> {
@@ -54,7 +55,7 @@ export function useSaves() {
     }
 
     try {
-      const saveDir = getSaveDir(slug);
+      const saveDir = await getSaveDir(slug);
 
       // No save directory = no saves
       if (!(await exists(saveDir))) {
@@ -72,7 +73,8 @@ export function useSaves() {
       let lastPlayed: Date | null = null;
       for (const save of saveFiles) {
         try {
-          const fileStat = await stat(`${saveDir}/${save.name}`);
+          const savePath = await join(saveDir, save.name!);
+          const fileStat = await stat(savePath);
           const mtime = fileStat.mtime ? new Date(fileStat.mtime) : null;
           if (mtime && (!lastPlayed || mtime > lastPlayed)) {
             lastPlayed = mtime;
@@ -110,7 +112,8 @@ export function useSaves() {
 
     for (const saveName of saveNames) {
       try {
-        const { levels } = await parseSaveFile(`${saveDir}/${saveName}`);
+        const savePath = await join(saveDir, saveName);
+        const { levels } = await parseSaveFile(savePath);
 
         for (const level of levels) {
           const key = `${level.levelname.toUpperCase()}_${level.skill}`;

@@ -26,7 +26,7 @@ impl GZDoomSession {
     }
 }
 
-/// Get the version of GZDoom/UZDoom from the app bundle's Info.plist.
+/// Get the version of GZDoom/UZDoom.
 /// Returns the version string (e.g., "g4.14.2") or an error.
 #[tauri::command]
 async fn get_engine_version(engine_path: String) -> Result<String, String> {
@@ -36,44 +36,94 @@ async fn get_engine_version(engine_path: String) -> Result<String, String> {
         return Err("Invalid path: must be GZDoom or UZDoom".to_string());
     }
 
-    // Extract app bundle path from executable path
-    // e.g., /Applications/GZDoom.app/Contents/MacOS/gzdoom -> /Applications/GZDoom.app
-    let path = Path::new(&engine_path);
-    let app_path = path
-        .ancestors()
-        .find(|p| p.extension().map_or(false, |ext| ext == "app"))
-        .ok_or("Could not find .app bundle")?;
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: Extract version from app bundle's Info.plist
+        let path = Path::new(&engine_path);
+        let app_path = path
+            .ancestors()
+            .find(|p| p.extension().map_or(false, |ext| ext == "app"))
+            .ok_or("Could not find .app bundle")?;
 
-    let info_plist = app_path.join("Contents/Info.plist");
+        let info_plist = app_path.join("Contents/Info.plist");
 
-    // Use defaults read to get CFBundleShortVersionString
-    let output = Command::new("defaults")
-        .arg("read")
-        .arg(&info_plist)
-        .arg("CFBundleShortVersionString")
-        .output()
-        .map_err(|e| format!("Failed to read Info.plist: {}", e))?;
+        let output = Command::new("defaults")
+            .arg("read")
+            .arg(&info_plist)
+            .arg("CFBundleShortVersionString")
+            .output()
+            .map_err(|e| format!("Failed to read Info.plist: {}", e))?;
 
-    if output.status.success() {
-        let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if !version.is_empty() {
-            return Ok(version);
+        if output.status.success() {
+            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !version.is_empty() {
+                return Ok(version);
+            }
         }
+        Err("Could not read version from Info.plist".to_string())
     }
 
-    Err("Could not read version from Info.plist".to_string())
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    {
+        // Windows/Linux: Run engine with --version flag
+        let output = Command::new(&engine_path)
+            .arg("--version")
+            .output()
+            .map_err(|e| format!("Failed to run engine: {}", e))?;
+
+        // GZDoom prints version to stdout, e.g., "GZDoom g4.14.2 (...)"
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let combined = format!("{}{}", stdout, stderr);
+
+        // Extract version pattern like "g4.14.2" or just version number
+        for line in combined.lines() {
+            let line_lower = line.to_lowercase();
+            if line_lower.contains("gzdoom") || line_lower.contains("uzdoom") {
+                // Try to extract version number (e.g., "g4.14.2" or "4.14.2")
+                if let Some(version) = extract_version_from_line(line) {
+                    return Ok(version);
+                }
+            }
+        }
+        Err("Could not parse version from engine output".to_string())
+    }
+}
+
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+fn extract_version_from_line(line: &str) -> Option<String> {
+    // Look for patterns like "g4.14.2" or "4.14.2"
+    let re = regex::Regex::new(r"g?\d+\.\d+(?:\.\d+)?").ok()?;
+    re.find(line).map(|m| m.as_str().to_string())
 }
 
 /// Check if a process with the given name is running.
 #[tauri::command]
 async fn is_process_running(process_name: String) -> Result<bool, String> {
-    let output = Command::new("pgrep")
-        .arg("-x")
-        .arg(&process_name)
-        .output()
-        .map_err(|e| format!("Failed to run pgrep: {}", e))?;
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        // macOS/Linux: Use pgrep
+        let output = Command::new("pgrep")
+            .arg("-x")
+            .arg(&process_name)
+            .output()
+            .map_err(|e| format!("Failed to run pgrep: {}", e))?;
 
-    Ok(output.status.success())
+        Ok(output.status.success())
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: Use tasklist
+        let output = Command::new("tasklist")
+            .args(["/FI", &format!("IMAGENAME eq {}.exe", process_name), "/NH"])
+            .output()
+            .map_err(|e| format!("Failed to run tasklist: {}", e))?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        // tasklist returns "INFO: No tasks are running..." if not found
+        Ok(!stdout.contains("No tasks") && stdout.to_lowercase().contains(&process_name.to_lowercase()))
+    }
 }
 
 /// Extract level names from a WAD file's MAPINFO/ZMAPINFO/UMAPINFO/DEHACKED lumps.
@@ -200,6 +250,7 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_upload::init())
+        .plugin(tauri_plugin_os::init())
         .invoke_handler(tauri::generate_handler![
             launch_gzdoom,
             get_gzdoom_log,
