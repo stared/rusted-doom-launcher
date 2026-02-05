@@ -5,7 +5,23 @@ use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+pub mod launcher_downloads;
 mod wad_parser;
+
+#[tauri::command]
+async fn read_launcher_downloads(library_path: String) -> Result<launcher_downloads::LauncherDownloads, String> {
+    let path = launcher_downloads::launcher_downloads_path(library_path);
+    launcher_downloads::read_launcher_downloads_or_empty(path)
+}
+
+#[tauri::command]
+async fn write_launcher_downloads(
+    library_path: String,
+    state: launcher_downloads::LauncherDownloads,
+) -> Result<(), String> {
+    let path = launcher_downloads::launcher_downloads_path(library_path);
+    launcher_downloads::write_launcher_downloads(path, &state)
+}
 
 // Global state to hold the running GZDoom process output collector
 static GZDOOM_LOG: std::sync::OnceLock<Arc<Mutex<GZDoomSession>>> = std::sync::OnceLock::new();
@@ -206,7 +222,9 @@ pub fn run() {
             get_engine_version,
             is_process_running,
             extract_wad_level_names,
-            extract_and_save_level_names
+            extract_and_save_level_names,
+            read_launcher_downloads,
+            write_launcher_downloads
         ]);
 
     // MCP bridge for Claude Code debugging (dev mode only)
