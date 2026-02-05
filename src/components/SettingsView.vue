@@ -123,9 +123,18 @@ async function browseAndImportGOG() {
 }
 
 async function browseGZDoom() {
+  const os = getOsForFilters();
+  const macFilter = { name: "Mac Application", extensions: ["app"] };
+  const winFilter = { name: "Windows Executable", extensions: ["exe"] };
+  const anyFilter = { name: "Any", extensions: ["*"] };
+  const filters = os === "mac"
+    ? [macFilter, winFilter, anyFilter]
+    : os === "win"
+      ? [winFilter, macFilter, anyFilter]
+      : [anyFilter, macFilter, winFilter];
   const selected = await open({
     title: "Select Doom Engine (UZDoom or GZDoom)",
-    filters: [{ name: "Application", extensions: ["app"] }],
+    filters,
     directory: false,
     multiple: false,
   });
@@ -169,6 +178,13 @@ function getEngineName(path: string | null): string {
   if (path.toLowerCase().includes("uzdoom")) return "UZDoom";
   if (path.toLowerCase().includes("gzdoom")) return "GZDoom";
   return "Doom engine";
+}
+
+function getOsForFilters(): "mac" | "win" | "linux" {
+  const ua = navigator.userAgent;
+  if (/Mac|iPhone|iPad|iPod/i.test(ua)) return "mac";
+  if (/Win/i.test(ua)) return "win";
+  return "linux";
 }
 
 </script>
