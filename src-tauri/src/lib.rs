@@ -4,6 +4,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use tauri::Manager;
 
 pub mod launcher_downloads;
 mod wad_parser;
@@ -216,6 +217,12 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_upload::init())
+        .setup(|app| {
+            let app_data_dir = app.path().app_data_dir()?;
+            std::fs::create_dir_all(&app_data_dir)
+                .map_err(|e| format!("Failed to create app data dir: {e}"))?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             launch_gzdoom,
             get_gzdoom_log,
