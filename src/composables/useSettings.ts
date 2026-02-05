@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { homeDir } from "@tauri-apps/api/path";
+import { appConfigDir, appDataDir, homeDir, join } from "@tauri-apps/api/path";
 import { exists, readTextFile, writeTextFile, mkdir, readDir, readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { Command } from "@tauri-apps/plugin-shell";
 import { isNotFoundError } from "../lib/errors";
@@ -44,21 +44,21 @@ async function getHome(): Promise<string> {
 }
 
 async function getSettingsPath(): Promise<string> {
-  const h = await getHome();
-  return `${h}/Library/Application Support/${APP_NAME}/launcher-settings.json`;
+  const configDir = await appConfigDir();
+  return join(configDir, "launcher-settings.json");
 }
 
 async function getOldSettingsPath(): Promise<string> {
   const h = await getHome();
-  return `${h}/Library/Application Support/${OLD_APP_NAME}/launcher-settings.json`;
+  return join(h, "Library", "Application Support", OLD_APP_NAME, "launcher-settings.json");
 }
 
 async function findGZDoom(): Promise<string | null> {
   const h = await getHome();
   const allLocations = [
     ...GZDOOM_LOCATIONS,
-    `${h}/Applications/UZDoom.app/Contents/MacOS/uzdoom`,
-    `${h}/Applications/GZDoom.app/Contents/MacOS/gzdoom`,
+    await join(h, "Applications", "UZDoom.app", "Contents", "MacOS", "uzdoom"),
+    await join(h, "Applications", "GZDoom.app", "Contents", "MacOS", "gzdoom"),
   ];
   for (const path of allLocations) {
     try {
@@ -93,7 +93,7 @@ async function copyFile(src: string, dest: string): Promise<void> {
 // Populate iwads/ folder from known locations (data folder root, GZDoom folder)
 async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]> {
   const h = await getHome();
-  const iwadsDir = `${libraryPath}/iwads`;
+  const iwadsDir = await join(libraryPath, "iwads");
 
   // Skip if iwads/ already has content
   const existing = await findIwadsInDir(iwadsDir);
@@ -102,7 +102,7 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
   // Source locations (priority order)
   const sources = [
     libraryPath,                                    // Data folder root
-    `${h}/Library/Application Support/gzdoom`,     // GZDoom folder
+    await join(h, "Library", "Application Support", "gzdoom"),     // GZDoom folder
   ];
 
   await mkdir(iwadsDir, { recursive: true });
@@ -113,7 +113,9 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
     const iwads = await findIwadsInDir(srcDir);
     for (const name of iwads) {
       if (copiedNames.map(n => n.toLowerCase()).includes(name.toLowerCase())) continue;
-      await copyFile(`${srcDir}/${name}`, `${iwadsDir}/${name}`);
+      const srcPath = await join(srcDir, name);
+      const destPath = await join(iwadsDir, name);
+      await copyFile(srcPath, destPath);
       copied.push({ name, from: srcDir });
       copiedNames.push(name);
     }
@@ -199,7 +201,7 @@ async function extractFromGOG(
   const extractedWads: string[] = [];
   for (const wad of GOG_IWADS_TO_EXTRACT) {
     try {
-      if (await exists(`${iwadsDir}/${wad}`)) {
+      if (await exists(await join(iwadsDir, wad))) {
         extractedWads.push(wad);
       }
     } catch {
@@ -218,8 +220,8 @@ export function useSettings() {
     if (initialized.value) return;
 
     const h = await getHome();
-    const newConfigDir = `${h}/Library/Application Support/${APP_NAME}`;
-    const newDefaultLibrary = newConfigDir;  // New users get new folder
+    const newConfigDir = await join(h, "Library", "Application Support", APP_NAME);
+    const newDefaultLibrary = await appDataDir();  // New users get app data folder
 
     const newPath = await getSettingsPath();
     const oldPath = await getOldSettingsPath();
@@ -315,7 +317,7 @@ export function useSettings() {
     if (!innoCmd) {
       throw new Error("innoextract not found. Install it with: brew install innoextract");
     }
-    const iwadsDir = `${settings.value.libraryPath}/iwads`;
+    const iwadsDir = await join(settings.value.libraryPath, "iwads");
     return extractFromGOG(installerPath, iwadsDir, innoCmd);
   }
 
