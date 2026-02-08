@@ -1,11 +1,11 @@
 import { ref } from "vue";
-import { exists, mkdir, remove, readTextFile, writeTextFile, readFile, rename, stat } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, remove, readFile, rename, stat } from "@tauri-apps/plugin-fs";
 import { download as tauriDownload } from "@tauri-apps/plugin-upload";
+import { invoke } from "@tauri-apps/api/core";
 import type { WadEntry } from "../lib/schema";
-import { LauncherDownloadsSchema, type LauncherDownloads } from "../lib/schema";
+import { type LauncherDownloads } from "../lib/schema";
 import { useSettings } from "./useSettings";
 import { useLevelNames } from "./useLevelNames";
-import { isNotFoundError } from "../lib/errors";
 
 // Progress info for a download
 export interface DownloadProgress {
@@ -52,22 +52,11 @@ export function useDownload() {
 
   async function loadState() {
     const dir = settings.value.libraryPath;
-    try {
-      const content = await readTextFile(`${dir}/launcher-downloads.json`);
-      const parsed = LauncherDownloadsSchema.safeParse(JSON.parse(content));
-      if (parsed.success) {
-        downloads.value = parsed.data;
-      } else {
-        console.error("launcher-downloads.json schema validation failed:", parsed.error);
-      }
-    } catch (e) {
-      if (!isNotFoundError(e)) throw e;
-      // File doesn't exist yet - that's expected on first run
-    }
+    downloads.value = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: dir });
   }
 
   async function saveState() {
-    await writeTextFile(`${settings.value.libraryPath}/launcher-downloads.json`, JSON.stringify(downloads.value, null, 2));
+    await invoke("write_launcher_downloads", { libraryPath: settings.value.libraryPath, state: downloads.value });
   }
 
   function isDownloaded(slug: string): boolean {

@@ -1,9 +1,10 @@
 import { ref } from "vue";
 import { readFile, readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 import { unzipSync, strFromU8 } from "fflate";
 import { extractLevelNames, extractLevelNamesFromData } from "../lib/wadParser";
 import { useSettings } from "./useSettings";
-import { LauncherDownloadsSchema } from "../lib/schema";
+import type { LauncherDownloads } from "../lib/schema";
 import { isNotFoundError } from "../lib/errors";
 
 // Singleton cache: slug -> (mapId -> levelName)
@@ -60,15 +61,10 @@ export function useLevelNames() {
    */
   async function getDownloadInfo(slug: string): Promise<{ filename: string } | null> {
     try {
-      const content = await readTextFile(`${settings.value.libraryPath}/launcher-downloads.json`);
-      const parsed = LauncherDownloadsSchema.safeParse(JSON.parse(content));
-      if (parsed.success && parsed.data.downloads[slug]) {
-        return parsed.data.downloads[slug];
-      }
+      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: settings.value.libraryPath });
+      if (state.downloads[slug]) return state.downloads[slug];
     } catch (e) {
-      if (!isNotFoundError(e)) {
-        console.error(`Error reading launcher-downloads.json for ${slug}:`, e);
-      }
+      console.error(`Error reading launcher-downloads.json for ${slug}:`, e);
     }
     return null;
   }
@@ -202,16 +198,9 @@ export function useLevelNames() {
    */
   async function rescanAllWads(): Promise<number> {
     try {
-      const content = await readTextFile(`${settings.value.libraryPath}/launcher-downloads.json`);
-      const parsed = LauncherDownloadsSchema.safeParse(JSON.parse(content));
-
-      if (!parsed.success) {
-        console.error("Failed to parse launcher-downloads.json");
-        return 0;
-      }
-
+      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: settings.value.libraryPath });
       let count = 0;
-      for (const slug of Object.keys(parsed.data.downloads)) {
+      for (const slug of Object.keys(state.downloads)) {
         // Clear cache to force re-parse
         levelNamesCache.value.delete(slug);
         const levels = await loadLevelNames(slug);
