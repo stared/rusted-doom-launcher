@@ -52,6 +52,11 @@
               "name": "innoextract-homebrew-intel",
               "cmd": "/usr/local/bin/innoextract",
               "args": true
+            },
+            {
+              "name": "innoextract-exe",
+              "cmd": "innoextract.exe",
+              "args": true
             }
           ]
         },
@@ -71,6 +76,11 @@
             {
               "name": "innoextract-homebrew-intel",
               "cmd": "/usr/local/bin/innoextract",
+              "args": true
+            },
+            {
+              "name": "innoextract-exe",
+              "cmd": "innoextract.exe",
               "args": true
             }
           ]
@@ -94,7 +104,13 @@
             "/usr/local/bin/uzdoom",
             "/usr/local/bin/gzdoom",
             "$HOME/Applications/UZDoom.app/**",
-            "$HOME/Applications/GZDoom.app/**"
+            "$HOME/Applications/GZDoom.app/**",
+            "$HOME/AppData/Local/GZDoom/**",
+            "$HOME/AppData/Local/UZDoom/**",
+            "C:/Program Files/GZDoom/**",
+            "C:/Program Files (x86)/GZDoom/**",
+            "C:/Program Files/UZDoom/**",
+            "C:/Program Files (x86)/UZDoom/**"
           ]
         },
         "shell:default",
@@ -139,6 +155,36 @@
             {
               "name": "gzdoom-user-apps",
               "cmd": "$HOME/Applications/GZDoom.app/Contents/MacOS/gzdoom",
+              "args": true
+            },
+            {
+              "name": "gzdoom-appdata",
+              "cmd": "$HOME/AppData/Local/GZDoom/gzdoom.exe",
+              "args": true
+            },
+            {
+              "name": "uzdoom-appdata",
+              "cmd": "$HOME/AppData/Local/UZDoom/uzdoom.exe",
+              "args": true
+            },
+            {
+              "name": "gzdoom-progfiles",
+              "cmd": "C:/Program Files/GZDoom/gzdoom.exe",
+              "args": true
+            },
+            {
+              "name": "gzdoom-progfiles-x86",
+              "cmd": "C:/Program Files (x86)/GZDoom/gzdoom.exe",
+              "args": true
+            },
+            {
+              "name": "uzdoom-progfiles",
+              "cmd": "C:/Program Files/UZDoom/uzdoom.exe",
+              "args": true
+            },
+            {
+              "name": "uzdoom-progfiles-x86",
+              "cmd": "C:/Program Files (x86)/UZDoom/uzdoom.exe",
               "args": true
             }
           ]

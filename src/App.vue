@@ -90,7 +90,9 @@ async function handlePlay(wad: WadEntry) {
     return;
   }
   if (!availableIwads.value.includes(wad.iwad)) {
-    const shortPath = settings.value.libraryPath.replace(/^\/Users\/[^/]+/, "~");
+    const shortPath = settings.value.libraryPath
+      .replace(/^\/(?:Users|home)\/[^/]+/, "~")
+      .replace(/^[A-Z]:[/\\]Users[/\\][^/\\]+/, "~");
     errorMsg.value = `${wad.iwad.toUpperCase()}.WAD not found in ${shortPath}. This IWAD is required to run the mod.`;
     return;
   }

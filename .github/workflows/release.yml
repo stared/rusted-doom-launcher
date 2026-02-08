@@ -9,7 +9,17 @@ jobs:
   release:
     permissions:
       contents: write
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - name: macOS
+            os: macos-latest
+            args: --target aarch64-apple-darwin
+          - name: Windows
+            os: windows-latest
+            args: ""
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.name }})
 
     steps:
       - uses: actions/checkout@v4
@@ -45,20 +55,27 @@ jobs:
           releaseBody: |
             A modern launcher for classic Doom. Browse community-made maps and episodes, then install and launch them with a single click.
 
-            ## Install via Homebrew (recommended)
+            ## macOS — Install via Homebrew (recommended)
             ```
             brew install --cask stared/doom/rusted-doom-launcher
             ```
 
-            ## Manual Install
+            ## macOS — Manual Install
             1. Download the `.dmg` file below (Apple Silicon)
             2. Drag to Applications
             3. Run: `xattr -cr /Applications/Rusted\ Doom\ Launcher.app`
             4. Open the app
 
+            ## Windows — Install
+            1. Download the `.msi` installer below
+            2. Run the installer
+            3. Open "Rusted Doom Launcher" from the Start menu
+
             ## Requirements
-            - [UZDoom](https://github.com/UZDoom/UZDoom) or [GZDoom](https://github.com/ZDoom/gzdoom) - `brew install --cask stared/doom/uzdoom`
+            - [UZDoom](https://github.com/UZDoom/UZDoom) or [GZDoom](https://github.com/ZDoom/gzdoom)
+              - macOS: `brew install --cask stared/doom/uzdoom`
+              - Windows: download from [UZDoom releases](https://github.com/UZDoom/UZDoom/releases) or [GZDoom releases](https://github.com/ZDoom/gzdoom/releases)
             - doom.wad or doom2.wad from [GOG](https://www.gog.com/en/game/doom_doom_ii) or Steam
           releaseDraft: true
           prerelease: false
-          args: --target aarch64-apple-darwin
+          args: ${{ matrix.args }}

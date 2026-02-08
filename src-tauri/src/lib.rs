@@ -43,8 +43,9 @@ impl GZDoomSession {
     }
 }
 
-/// Get the version of GZDoom/UZDoom from the app bundle's Info.plist.
-/// Returns the version string (e.g., "g4.14.2") or an error.
+/// Get the version of GZDoom/UZDoom.
+/// On macOS: reads from the app bundle's Info.plist.
+/// On Windows: runs the engine with --version and parses the output.
 #[tauri::command]
 async fn get_engine_version(engine_path: String) -> Result<String, String> {
     // Security: Validate the path looks like a doom engine
@@ -53,9 +54,12 @@ async fn get_engine_version(engine_path: String) -> Result<String, String> {
         return Err("Invalid path: must be GZDoom or UZDoom".to_string());
     }
 
-    // Extract app bundle path from executable path
-    // e.g., /Applications/GZDoom.app/Contents/MacOS/gzdoom -> /Applications/GZDoom.app
-    let path = Path::new(&engine_path);
+    get_engine_version_impl(&engine_path)
+}
+
+#[cfg(target_os = "macos")]
+fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
+    let path = Path::new(engine_path);
     let app_path = path
         .ancestors()
         .find(|p| p.extension().map_or(false, |ext| ext == "app"))
@@ -63,7 +67,6 @@ async fn get_engine_version(engine_path: String) -> Result<String, String> {
 
     let info_plist = app_path.join("Contents/Info.plist");
 
-    // Use defaults read to get CFBundleShortVersionString
     let output = Command::new("defaults")
         .arg("read")
         .arg(&info_plist)
@@ -81,16 +84,82 @@ async fn get_engine_version(engine_path: String) -> Result<String, String> {
     Err("Could not read version from Info.plist".to_string())
 }
 
+#[cfg(target_os = "windows")]
+fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
+    let output = Command::new(engine_path)
+        .arg("--version")
+        .output()
+        .map_err(|e| format!("Failed to run engine --version: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{}{}", stdout, stderr);
+
+    extract_version_from_line(&combined)
+        .ok_or_else(|| "Could not parse version from engine output".to_string())
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
+    let output = Command::new(engine_path)
+        .arg("--version")
+        .output()
+        .map_err(|e| format!("Failed to run engine --version: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{}{}", stdout, stderr);
+
+    extract_version_from_line(&combined)
+        .ok_or_else(|| "Could not parse version from engine output".to_string())
+}
+
+/// Extract a version string like "g4.14.2" or "4.14.2" from engine output.
+#[cfg(not(target_os = "macos"))]
+fn extract_version_from_line(text: &str) -> Option<String> {
+    // Look for patterns like "g4.14.2", "4.14.2", "GZDoom 4.14.2"
+    let re = regex::Regex::new(r"[gG]?(\d+\.\d+\.\d+)").ok()?;
+    re.captures(text).map(|caps| {
+        let full = caps.get(0).unwrap().as_str();
+        full.to_string()
+    })
+}
+
 /// Check if a process with the given name is running.
 #[tauri::command]
 async fn is_process_running(process_name: String) -> Result<bool, String> {
+    is_process_running_impl(&process_name)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
     let output = Command::new("pgrep")
         .arg("-x")
-        .arg(&process_name)
+        .arg(process_name)
         .output()
         .map_err(|e| format!("Failed to run pgrep: {}", e))?;
 
     Ok(output.status.success())
+}
+
+#[cfg(target_os = "windows")]
+fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
+    // Ensure we check for .exe suffix on Windows
+    let exe_name = if process_name.ends_with(".exe") {
+        process_name.to_string()
+    } else {
+        format!("{}.exe", process_name)
+    };
+
+    let output = Command::new("tasklist")
+        .arg("/FI")
+        .arg(format!("IMAGENAME eq {}", exe_name))
+        .arg("/NH")
+        .output()
+        .map_err(|e| format!("Failed to run tasklist: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(stdout.to_lowercase().contains(&exe_name.to_lowercase()))
 }
 
 /// Extract level names from a WAD file's MAPINFO/ZMAPINFO/UMAPINFO/DEHACKED lumps.

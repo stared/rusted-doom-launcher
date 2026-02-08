@@ -2,6 +2,7 @@ import { ref } from "vue";
 import { exists, mkdir, remove, readFile, rename, stat } from "@tauri-apps/plugin-fs";
 import { download as tauriDownload } from "@tauri-apps/plugin-upload";
 import { invoke } from "@tauri-apps/api/core";
+import { join } from "@tauri-apps/api/path";
 import type { WadEntry } from "../lib/schema";
 import { type LauncherDownloads } from "../lib/schema";
 import { useSettings } from "./useSettings";
@@ -85,7 +86,7 @@ export function useDownload() {
       throw new Error(`Download not available for "${wad.title}" - URL not configured`);
     }
 
-    const path = `${dir}/${filename}`;
+    const path = await join(dir, filename);
     const partPath = `${path}.part`;  // Atomic download: write to .part file first
 
     if (await exists(path)) {
@@ -162,7 +163,7 @@ export function useDownload() {
     if (!info) return;
     const dir = settings.value.libraryPath;
     try {
-      await remove(`${dir}/${info.filename}`);
+      await remove(await join(dir, info.filename));
     } catch (e) {
       console.error(`Failed to delete ${info.filename}:`, e);
       // Continue anyway - we still want to remove from state

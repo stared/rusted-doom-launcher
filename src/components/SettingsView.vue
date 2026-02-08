@@ -7,6 +7,7 @@ import { useSettings } from "../composables/useSettings";
 import { useGZDoom } from "../composables/useGZDoom";
 import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
+import { platform } from "../lib/platform";
 
 const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, checkInnoextract, importFromGOG } = useSettings();
 const { availableIwads, detectIwads } = useGZDoom();
@@ -73,9 +74,12 @@ async function handleGOGButtonClick() {
   if (!hasInnoextract.value) {
     hasInnoextract.value = await checkInnoextract();
     if (!hasInnoextract.value) {
+      const installHint = platform === "macos" ? "brew install innoextract"
+        : platform === "windows" ? "Download from https://constexpr.org/innoextract/"
+        : "sudo apt install innoextract";
       gogImportResult.value = {
         success: false,
-        message: "innoextract not found. Install with: brew install innoextract",
+        message: `innoextract not found. Install with: ${installHint}`,
       };
     }
     return;
@@ -123,13 +127,12 @@ async function browseAndImportGOG() {
 }
 
 async function browseGZDoom() {
-  const os = getOsForFilters();
   const macFilter = { name: "Mac Application", extensions: ["app"] };
   const winFilter = { name: "Windows Executable", extensions: ["exe"] };
   const anyFilter = { name: "Any", extensions: ["*"] };
-  const filters = os === "mac"
+  const filters = platform === "macos"
     ? [macFilter, winFilter, anyFilter]
-    : os === "win"
+    : platform === "windows"
       ? [winFilter, macFilter, anyFilter]
       : [anyFilter, macFilter, winFilter];
   const selected = await open({
@@ -140,14 +143,18 @@ async function browseGZDoom() {
   });
   if (selected) {
     const path = typeof selected === "string" ? selected : selected[0];
-    const appName = path.split("/").pop()?.toLowerCase() ?? "";
+    const appName = path.split(/[/\\]/).pop()?.toLowerCase() ?? "";
     if (!appName.includes("gzdoom") && !appName.includes("uzdoom")) {
-      errorMsg.value = `"${appName}" doesn't appear to be a Doom engine. Please select UZDoom.app or GZDoom.app`;
+      const expected = platform === "windows" ? "gzdoom.exe or uzdoom.exe" : "UZDoom.app or GZDoom.app";
+      errorMsg.value = `"${appName}" doesn't appear to be a Doom engine. Please select ${expected}`;
       return;
     }
-    // Derive executable name from app name (e.g., UZDoom.app -> uzdoom)
-    const execName = appName.replace(".app", "").toLowerCase();
-    const execPath = path.endsWith(".app") ? `${path}/Contents/MacOS/${execName}` : path;
+    // On macOS, derive executable path from .app bundle; otherwise use path directly
+    let execPath = path;
+    if (path.endsWith(".app")) {
+      const execName = appName.replace(".app", "").toLowerCase();
+      execPath = `${path}/Contents/MacOS/${execName}`;
+    }
     await setGZDoomPath(execPath);
     errorMsg.value = "";
   }
@@ -168,8 +175,12 @@ async function browseLibrary() {
 
 function shortenPath(path: string | null): string {
   if (!path) return "Not found";
-  const home = path.match(/^\/Users\/[^/]+/)?.[0];
-  if (home) return path.replace(home, "~");
+  // macOS/Linux: /Users/<name> or /home/<name>
+  const unixHome = path.match(/^\/(?:Users|home)\/[^/]+/)?.[0];
+  if (unixHome) return path.replace(unixHome, "~");
+  // Windows: C:\Users\<name>
+  const winHome = path.match(/^[A-Z]:[/\\]Users[/\\][^/\\]+/)?.[0];
+  if (winHome) return path.replace(winHome, "~");
   return path;
 }
 
@@ -180,12 +191,6 @@ function getEngineName(path: string | null): string {
   return "Doom engine";
 }
 
-function getOsForFilters(): "mac" | "win" | "linux" {
-  const ua = navigator.userAgent;
-  if (/Mac|iPhone|iPad|iPod/i.test(ua)) return "mac";
-  if (/Win/i.test(ua)) return "win";
-  return "linux";
-}
 
 </script>
 

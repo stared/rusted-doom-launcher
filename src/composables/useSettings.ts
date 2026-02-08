@@ -3,8 +3,8 @@ import { appConfigDir, appDataDir, homeDir, join } from "@tauri-apps/api/path";
 import { exists, readTextFile, writeTextFile, mkdir, readDir, readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { Command } from "@tauri-apps/plugin-shell";
 import { isNotFoundError } from "../lib/errors";
+import { platform } from "../lib/platform";
 
-const APP_NAME = "rusted-doom-launcher";
 const OLD_APP_NAME = "gzdoom";
 
 interface Settings {
@@ -12,14 +12,38 @@ interface Settings {
   libraryPath: string;        // Never null after init
 }
 
-const GZDOOM_LOCATIONS = [
-  "/Applications/UZDoom.app/Contents/MacOS/uzdoom",
-  "/Applications/GZDoom.app/Contents/MacOS/gzdoom",
-  "/opt/homebrew/bin/uzdoom",
-  "/opt/homebrew/bin/gzdoom",
-  "/usr/local/bin/uzdoom",
-  "/usr/local/bin/gzdoom",
-];
+async function getEngineLocations(): Promise<string[]> {
+  const h = await getHome();
+  switch (platform) {
+    case "macos":
+      return [
+        "/Applications/UZDoom.app/Contents/MacOS/uzdoom",
+        "/Applications/GZDoom.app/Contents/MacOS/gzdoom",
+        "/opt/homebrew/bin/uzdoom",
+        "/opt/homebrew/bin/gzdoom",
+        "/usr/local/bin/uzdoom",
+        "/usr/local/bin/gzdoom",
+        await join(h, "Applications", "UZDoom.app", "Contents", "MacOS", "uzdoom"),
+        await join(h, "Applications", "GZDoom.app", "Contents", "MacOS", "gzdoom"),
+      ];
+    case "windows":
+      return [
+        await join(h, "AppData", "Local", "UZDoom", "uzdoom.exe"),
+        await join(h, "AppData", "Local", "GZDoom", "gzdoom.exe"),
+        "C:\\Program Files\\GZDoom\\gzdoom.exe",
+        "C:\\Program Files (x86)\\GZDoom\\gzdoom.exe",
+        "C:\\Program Files\\UZDoom\\uzdoom.exe",
+        "C:\\Program Files (x86)\\UZDoom\\uzdoom.exe",
+      ];
+    default: // linux
+      return [
+        "/usr/bin/uzdoom",
+        "/usr/bin/gzdoom",
+        "/usr/local/bin/uzdoom",
+        "/usr/local/bin/gzdoom",
+      ];
+  }
+}
 
 const KNOWN_IWADS = [
   "doom.wad", "doom2.wad", "plutonia.wad", "tnt.wad",
@@ -54,12 +78,7 @@ async function getOldSettingsPath(): Promise<string> {
 }
 
 async function findGZDoom(): Promise<string | null> {
-  const h = await getHome();
-  const allLocations = [
-    ...GZDOOM_LOCATIONS,
-    await join(h, "Applications", "UZDoom.app", "Contents", "MacOS", "uzdoom"),
-    await join(h, "Applications", "GZDoom.app", "Contents", "MacOS", "gzdoom"),
-  ];
+  const allLocations = await getEngineLocations();
   for (const path of allLocations) {
     try {
       if (await exists(path)) return path;
@@ -100,9 +119,14 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
   if (existing.length > 0) return [];
 
   // Source locations (priority order)
+  const gzdoomConfigDir = platform === "windows"
+    ? await join(h, "AppData", "Local", "GZDoom")
+    : platform === "macos"
+      ? await join(h, "Library", "Application Support", "gzdoom")
+      : await join(h, ".config", "gzdoom");
   const sources = [
-    libraryPath,                                    // Data folder root
-    await join(h, "Library", "Application Support", "gzdoom"),     // GZDoom folder
+    libraryPath,       // Data folder root
+    gzdoomConfigDir,   // GZDoom config folder
   ];
 
   await mkdir(iwadsDir, { recursive: true });
@@ -129,6 +153,7 @@ const INNOEXTRACT_COMMANDS = [
   { name: "innoextract", cmd: "innoextract" },
   { name: "innoextract-homebrew-arm", cmd: "/opt/homebrew/bin/innoextract" },
   { name: "innoextract-homebrew-intel", cmd: "/usr/local/bin/innoextract" },
+  { name: "innoextract-exe", cmd: "innoextract.exe" },
 ];
 
 // Check if innoextract is available and return the command name to use
@@ -219,8 +244,7 @@ export function useSettings() {
   async function initSettings(): Promise<void> {
     if (initialized.value) return;
 
-    const h = await getHome();
-    const newConfigDir = await join(h, "Library", "Application Support", APP_NAME);
+    const newConfigDir = await appConfigDir();
     const newDefaultLibrary = await appDataDir();  // New users get app data folder
 
     const newPath = await getSettingsPath();
@@ -315,7 +339,10 @@ export function useSettings() {
   async function importFromGOG(installerPath: string): Promise<GOGExtractResult> {
     const innoCmd = await findInnoextract();
     if (!innoCmd) {
-      throw new Error("innoextract not found. Install it with: brew install innoextract");
+      const installHint = platform === "macos" ? "brew install innoextract"
+        : platform === "windows" ? "Download from https://constexpr.org/innoextract/"
+        : "sudo apt install innoextract";
+      throw new Error(`innoextract not found. Install it with: ${installHint}`);
     }
     const iwadsDir = await join(settings.value.libraryPath, "iwads");
     return extractFromGOG(installerPath, iwadsDir, innoCmd);
