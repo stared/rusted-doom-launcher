@@ -66,10 +66,8 @@ jobs:
             3. Run: `xattr -cr /Applications/Rusted\ Doom\ Launcher.app`
             4. Open the app
 
-            ## Windows — Install
-            1. Download the `.msi` installer below
-            2. Run the installer
-            3. Open "Rusted Doom Launcher" from the Start menu
+            ## Windows
+            Download and run the `.exe` setup file below.
 
             ## Requirements
             - [UZDoom](https://github.com/UZDoom/UZDoom) or [GZDoom](https://github.com/ZDoom/gzdoom)
