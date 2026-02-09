@@ -45,7 +45,7 @@ impl GZDoomSession {
 
 /// Get the version of GZDoom/UZDoom.
 /// On macOS: reads from the app bundle's Info.plist.
-/// On Windows: runs the engine with --version and parses the output.
+/// On Windows: reads version from exe file properties (PE metadata).
 #[tauri::command]
 async fn get_engine_version(engine_path: String) -> Result<String, String> {
     // Security: Validate the path looks like a doom engine
@@ -86,17 +86,24 @@ fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
 
 #[cfg(target_os = "windows")]
 fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
-    let output = Command::new(engine_path)
-        .arg("--version")
+    // Read version from exe file properties (PE metadata) without launching the engine.
+    // GZDoom doesn't support --version as a headless flag — it opens the full GUI.
+    let script = format!(
+        "(Get-Item '{}').VersionInfo.ProductVersion",
+        engine_path.replace('\'', "''")
+    );
+    let output = Command::new("powershell")
+        .args(["-NoProfile", "-Command", &script])
         .output()
-        .map_err(|e| format!("Failed to run engine --version: {}", e))?;
+        .map_err(|e| format!("Failed to read file version: {}", e))?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    let combined = format!("{}{}", stdout, stderr);
+    let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if version.is_empty() {
+        return Err("Could not read version from exe file properties".to_string());
+    }
 
-    extract_version_from_line(&combined)
-        .ok_or_else(|| "Could not parse version from engine output".to_string())
+    extract_version_from_line(&version)
+        .ok_or_else(|| format!("Could not parse version from: {}", version))
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Rusted Doom Launcher",
-  "version": "0.2.0-alpha2",
+  "version": "0.2.0-alpha3",
   "identifier": "rusted-doom-launcher",
   "build": {
     "beforeDevCommand": "pnpm dev",
