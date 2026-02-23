@@ -88,7 +88,7 @@ watch(isRunning, async (running, wasRunning) => {
   }
 });
 
-async function handlePlay(wad: WadEntry) {
+async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
   errorMsg.value = "";
   if (!settings.value.gzdoomPath) {
     errorMsg.value = "Doom engine not found. Configure path in Settings.";
@@ -103,7 +103,7 @@ async function handlePlay(wad: WadEntry) {
   try {
     const { wadPath, depPaths } = await downloadWithDeps(wad, wads.value);
     lastPlayedSlug.value = wad.slug;
-    await launch(wadPath, wad.iwad, depPaths, wad.slug);
+    await launch(wadPath, wad.iwad, depPaths, wad.slug, "HMP", extraArgs ?? []);
   } catch (e) {
     console.error(`[Play] Error launching ${wad.slug}:`, e);
     errorMsg.value = getErrorMessage(e);
@@ -142,7 +142,7 @@ async function handleDelete(wad: WadEntry) {
         :is-downloading="isDownloading"
         :download-progress="downloadProgress"
         :get-save-info="getCachedSaveInfo"
-        @play="handlePlay"
+        @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
       />
@@ -154,7 +154,7 @@ async function handleDelete(wad: WadEntry) {
         :download-progress="downloadProgress"
         :get-save-info="getCachedSaveInfo"
         :initial-query="exploreInitialQuery"
-        @play="handlePlay"
+        @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
       />
       <RunsView
