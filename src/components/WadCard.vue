@@ -5,7 +5,7 @@ import type { WadSaveInfo } from "../composables/useSaves";
 import type { DownloadProgress } from "../composables/useDownload";
 import { useLevelNames } from "../composables/useLevelNames";
 
-const { loadLevelNames, getLevelDisplayName } = useLevelNames();
+const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
 
 const TYPE_LABELS: Record<WadEntry["type"], string> = {
   "single-level": "Level", episode: "Episode", megawad: "Megawad",
@@ -49,6 +49,17 @@ const progressText = computed(() => {
   const { progress, total } = props.downloadProgress;
   if (total === 0) return `${formatBytes(progress)}`;
   return `${formatBytes(progress)} / ${formatBytes(total)} (${progressPercent.value}%)`;
+});
+
+// Level completion progress
+const totalLevels = computed(() => {
+  const names = getCachedLevelNames(props.wad.slug);
+  return names ? names.size : null;
+});
+
+const completionPercent = computed(() => {
+  if (!totalLevels.value || !props.saveInfo) return 0;
+  return Math.min(100, Math.round((props.saveInfo.mapsPlayed / totalLevels.value) * 100));
 });
 
 const emit = defineEmits<{ play: [wad: WadEntry]; delete: [wad: WadEntry] }>();
@@ -109,10 +120,27 @@ function formatTime(tics: number): string {
       <!-- Save/Progress info (clickable to show details) -->
       <button
         v-if="saveInfo && saveInfo.levels.length > 0"
-        class="mt-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors text-left"
+        class="mt-1 w-full text-left"
         @click="showStatsModal = true"
       >
-        {{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.saveCount }} saves
+        <!-- Progress bar when total level count is known -->
+        <template v-if="totalLevels">
+          <div class="flex items-center gap-2">
+            <div class="flex-1 h-1.5 rounded-full bg-zinc-700 overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all duration-300 bg-red-500"
+                :style="{ width: `${completionPercent}%` }"
+              />
+            </div>
+            <span class="text-xs text-zinc-400 tabular-nums shrink-0">{{ saveInfo.mapsPlayed }}/{{ totalLevels }}</span>
+          </div>
+        </template>
+        <!-- Fallback text when total unknown -->
+        <template v-else>
+          <span class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+            {{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.saveCount }} saves
+          </span>
+        </template>
       </button>
 
       <div class="mt-3 flex gap-2">
@@ -215,7 +243,8 @@ function formatTime(tics: number): string {
 
         <!-- Footer with totals -->
         <div class="p-4 border-t border-zinc-700 text-sm text-zinc-400">
-          {{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.saveCount }} saves
+          <template v-if="totalLevels">{{ saveInfo.mapsPlayed }}/{{ totalLevels }} maps completed • {{ saveInfo.saveCount }} saves</template>
+          <template v-else>{{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.saveCount }} saves</template>
         </div>
       </div>
     </div>
