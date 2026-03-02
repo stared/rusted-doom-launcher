@@ -64,6 +64,7 @@ export const LauncherDownloadsSchema = z.object({
   version: z.literal(1),
   downloads: z.record(z.string(), z.object({
     filename: z.string().min(1),
+    wadFilename: z.string().optional(),
     downloadedAt: z.string().datetime(),
     size: z.number().int().nonnegative(),
   })),

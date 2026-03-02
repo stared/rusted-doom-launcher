@@ -1,11 +1,12 @@
 import { ref } from "vue";
-import { exists, mkdir, remove, readFile, rename, stat } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, remove, readFile, rename, stat, writeFile } from "@tauri-apps/plugin-fs";
 import { download as tauriDownload } from "@tauri-apps/plugin-upload";
 import { invoke } from "@tauri-apps/api/core";
 import type { WadEntry } from "../lib/schema";
 import { type LauncherDownloads } from "../lib/schema";
 import { useSettings } from "./useSettings";
 import { useLevelNames } from "./useLevelNames";
+import { findGameFilesInZip, selectPrimaryGameFile } from "../lib/zipExtract";
 
 // Progress info for a download
 export interface DownloadProgress {
@@ -44,6 +45,33 @@ async function validateDownload(path: string, filename: string): Promise<void> {
       throw new Error(`Invalid WAD file: ${filename} - expected IWAD/PWAD header, got "${magic}"`);
     }
   }
+}
+
+/**
+ * Extract game files (.wad/.pk3) from a ZIP archive and write them to disk.
+ * Returns the primary wadFilename and any additional file paths.
+ */
+async function extractAndWriteGameFiles(
+  zipPath: string,
+  libraryDir: string
+): Promise<{ wadFilename: string; additionalFiles: string[] }> {
+  const zipData = await readFile(zipPath);
+  const gameFiles = findGameFilesInZip(new Uint8Array(zipData));
+  const { primary, additional } = selectPrimaryGameFile(gameFiles);
+
+  // Write primary file
+  await writeFile(`${libraryDir}/${primary.name}`, primary.data);
+  console.log(`[extract] Extracted primary: ${primary.name} (${primary.data.length} bytes)`);
+
+  // Write additional files
+  const additionalFiles: string[] = [];
+  for (const file of additional) {
+    await writeFile(`${libraryDir}/${file.name}`, file.data);
+    additionalFiles.push(file.name);
+    console.log(`[extract] Extracted additional: ${file.name} (${file.data.length} bytes)`);
+  }
+
+  return { wadFilename: primary.name, additionalFiles };
 }
 
 export function useDownload() {
@@ -88,15 +116,36 @@ export function useDownload() {
     const path = `${dir}/${filename}`;
     const partPath = `${path}.part`;  // Atomic download: write to .part file first
 
-    if (await exists(path)) {
-      // File exists - validate it before marking as downloaded
-      await validateDownload(path, filename);
-      if (!isDownloaded(wad.slug)) {
-        const fileStat = await stat(path);
-        downloads.value.downloads[wad.slug] = { filename, downloadedAt: new Date().toISOString(), size: fileStat.size };
-        await saveState();
+    // Check if already downloaded
+    const info = downloads.value.downloads[wad.slug];
+    if (info) {
+      const wadFile = info.wadFilename ?? info.filename;
+      const wadPath = `${dir}/${wadFile}`;
+
+      if (await exists(wadPath)) {
+        // L1: extracted file exists → return directly
+        return wadPath;
       }
-      return path;
+
+      if (info.wadFilename && info.filename.endsWith('.zip') && await exists(`${dir}/${info.filename}`)) {
+        // L3: extracted file missing but ZIP exists → re-extract
+        const { wadFilename } = await extractAndWriteGameFiles(`${dir}/${info.filename}`, dir);
+        info.wadFilename = wadFilename;
+        await saveState();
+        return `${dir}/${wadFilename}`;
+      }
+
+      if (info.filename.endsWith('.zip') && !info.wadFilename && await exists(`${dir}/${info.filename}`)) {
+        // L2: legacy download → extract and update state
+        const { wadFilename } = await extractAndWriteGameFiles(`${dir}/${info.filename}`, dir);
+        info.wadFilename = wadFilename;
+        await saveState();
+        return `${dir}/${wadFilename}`;
+      }
+
+      // L4: nothing on disk → clear stale state, fall through to re-download
+      delete downloads.value.downloads[wad.slug];
+      await saveState();
     }
 
     downloading.value.add(wad.slug);
@@ -134,13 +183,32 @@ export function useDownload() {
       await rename(partPath, path);
 
       const fileStat = await stat(path);
-      downloads.value.downloads[wad.slug] = { filename, downloadedAt: new Date().toISOString(), size: fileStat.size };
-      await saveState();
+      const isZip = filename.toLowerCase().endsWith('.zip');
 
-      // Extract and persist level names from the WAD
-      await loadLevelNames(wad.slug);
+      if (isZip) {
+        // Extract game files from ZIP
+        const { wadFilename } = await extractAndWriteGameFiles(path, dir);
+        downloads.value.downloads[wad.slug] = {
+          filename, wadFilename, downloadedAt: new Date().toISOString(), size: fileStat.size,
+        };
+        await saveState();
 
-      return path;
+        // Extract and persist level names from the extracted WAD
+        await loadLevelNames(wad.slug);
+
+        return `${dir}/${wadFilename}`;
+      } else {
+        // Direct .pk3 or .wad download — wadFilename = filename
+        downloads.value.downloads[wad.slug] = {
+          filename, wadFilename: filename, downloadedAt: new Date().toISOString(), size: fileStat.size,
+        };
+        await saveState();
+
+        // Extract and persist level names from the WAD
+        await loadLevelNames(wad.slug);
+
+        return path;
+      }
     } finally {
       downloading.value.delete(wad.slug);
       const { [wad.slug]: _, ...rest } = downloadProgress.value;
@@ -161,11 +229,19 @@ export function useDownload() {
     const info = downloads.value.downloads[slug];
     if (!info) return;
     const dir = settings.value.libraryPath;
+    // Delete original download file
     try {
       await remove(`${dir}/${info.filename}`);
     } catch (e) {
       console.error(`Failed to delete ${info.filename}:`, e);
-      // Continue anyway - we still want to remove from state
+    }
+    // Also delete extracted file if different from original
+    if (info.wadFilename && info.wadFilename !== info.filename) {
+      try {
+        await remove(`${dir}/${info.wadFilename}`);
+      } catch (e) {
+        console.error(`Failed to delete ${info.wadFilename}:`, e);
+      }
     }
     delete downloads.value.downloads[slug];
     await saveState();
