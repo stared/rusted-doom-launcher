@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar.vue";
 import MainView from "./components/MainView.vue";
 import ExploreView from "./components/ExploreView.vue";
@@ -90,7 +91,7 @@ async function handlePlay(wad: WadEntry) {
     return;
   }
   if (!availableIwads.value.includes(wad.iwad)) {
-    const shortPath = settings.value.libraryPath.replace(/^\/Users\/[^/]+/, "~");
+    const shortPath = shortenPath(settings.value.libraryPath);
     errorMsg.value = `${wad.iwad.toUpperCase()}.WAD not found in ${shortPath}. This IWAD is required to run the mod.`;
     return;
   }
@@ -106,10 +107,23 @@ async function handlePlay(wad: WadEntry) {
 
 async function handleDelete(wad: WadEntry) {
   try {
+    const ok = await confirm(
+      `Delete downloaded files for "${wad.title}"?`,
+      { title: "Delete WAD", kind: "warning" }
+    );
+    if (!ok) return;
     await deleteWad(wad.slug);
   } catch (e) {
     errorMsg.value = getErrorMessage(e);
   }
+}
+
+function shortenPath(path: string): string {
+  const unixHome = path.match(/^\/(?:Users|home)\/[^/]+/)?.[0];
+  if (unixHome) return path.replace(unixHome, "~");
+  const winHome = path.match(/^[A-Za-z]:\\Users\\[^\\]+/)?.[0];
+  if (winHome) return path.replace(winHome, "~");
+  return path;
 }
 </script>
 

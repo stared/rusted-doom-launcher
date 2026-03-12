@@ -9,6 +9,7 @@
         "core:default",
         "mcp-bridge:default",
         "dialog:default",
+        "shell:allow-open",
         "fs:default",
         "fs:allow-app-write-recursive",
         "fs:allow-app-meta-recursive",
@@ -52,6 +53,11 @@
               "name": "innoextract-homebrew-intel",
               "cmd": "/usr/local/bin/innoextract",
               "args": true
+            },
+            {
+              "name": "innoextract-exe",
+              "cmd": "innoextract.exe",
+              "args": true
             }
           ]
         },
@@ -71,6 +77,11 @@
             {
               "name": "innoextract-homebrew-intel",
               "cmd": "/usr/local/bin/innoextract",
+              "args": true
+            },
+            {
+              "name": "innoextract-exe",
+              "cmd": "innoextract.exe",
               "args": true
             }
           ]
@@ -93,8 +104,19 @@
             "/opt/homebrew/bin/gzdoom",
             "/usr/local/bin/uzdoom",
             "/usr/local/bin/gzdoom",
+            "/usr/bin/uzdoom",
+            "/usr/bin/gzdoom",
+            "/snap/bin/gzdoom",
             "$HOME/Applications/UZDoom.app/**",
-            "$HOME/Applications/GZDoom.app/**"
+            "$HOME/Applications/GZDoom.app/**",
+            "$HOME/.local/bin/uzdoom",
+            "$HOME/.local/bin/gzdoom",
+            "C:\\Program Files\\GZDoom\\gzdoom.exe",
+            "C:\\Program Files\\UZDoom\\uzdoom.exe",
+            "C:\\Program Files (x86)\\GZDoom\\gzdoom.exe",
+            "C:\\Program Files (x86)\\UZDoom\\uzdoom.exe",
+            "$HOME/scoop/apps/gzdoom/current/gzdoom.exe",
+            "$HOME/scoop/apps/uzdoom/current/uzdoom.exe"
           ]
         },
         "shell:default",

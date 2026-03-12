@@ -53,17 +53,26 @@ async fn get_engine_version(engine_path: String) -> Result<String, String> {
         return Err("Invalid path: must be GZDoom or UZDoom".to_string());
     }
 
+    get_engine_version_impl(&engine_path)
+}
+
+/// Check if a process with the given name is running.
+#[tauri::command]
+async fn is_process_running(process_name: String) -> Result<bool, String> {
+    is_process_running_impl(&process_name)
+}
+
+#[cfg(target_os = "macos")]
+fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
     // Extract app bundle path from executable path
     // e.g., /Applications/GZDoom.app/Contents/MacOS/gzdoom -> /Applications/GZDoom.app
-    let path = Path::new(&engine_path);
+    let path = Path::new(engine_path);
     let app_path = path
         .ancestors()
-        .find(|p| p.extension().map_or(false, |ext| ext == "app"))
+        .find(|p| p.extension().is_some_and(|ext| ext == "app"))
         .ok_or("Could not find .app bundle")?;
 
     let info_plist = app_path.join("Contents/Info.plist");
-
-    // Use defaults read to get CFBundleShortVersionString
     let output = Command::new("defaults")
         .arg("read")
         .arg(&info_plist)
@@ -81,16 +90,73 @@ async fn get_engine_version(engine_path: String) -> Result<String, String> {
     Err("Could not read version from Info.plist".to_string())
 }
 
-/// Check if a process with the given name is running.
-#[tauri::command]
-async fn is_process_running(process_name: String) -> Result<bool, String> {
+#[cfg(target_os = "linux")]
+fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
+    let output = Command::new(engine_path)
+        .arg("--version")
+        .output()
+        .map_err(|e| format!("Failed to run engine with --version: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let first_line = stdout
+        .lines()
+        .chain(stderr.lines())
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .ok_or("Engine did not return a version string")?;
+
+    Ok(first_line.to_string())
+}
+
+#[cfg(target_os = "windows")]
+fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
+    // Read executable metadata instead of launching the engine.
+    let ps_cmd = format!(
+        "(Get-Item -LiteralPath '{}').VersionInfo.ProductVersion",
+        engine_path.replace('\'', "''")
+    );
+    let output = Command::new("powershell")
+        .args(["-NoProfile", "-Command", &ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to query file version: {}", e))?;
+
+    if !output.status.success() {
+        return Err("Could not read executable version metadata".to_string());
+    }
+
+    let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if version.is_empty() {
+        return Err("Executable version metadata is empty".to_string());
+    }
+
+    Ok(version)
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
     let output = Command::new("pgrep")
         .arg("-x")
-        .arg(&process_name)
+        .arg(process_name)
         .output()
         .map_err(|e| format!("Failed to run pgrep: {}", e))?;
-
     Ok(output.status.success())
+}
+
+#[cfg(target_os = "windows")]
+fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
+    let filter = format!("IMAGENAME eq {}", process_name);
+    let output = Command::new("tasklist")
+        .args(["/FI", &filter])
+        .output()
+        .map_err(|e| format!("Failed to run tasklist: {}", e))?;
+
+    if !output.status.success() {
+        return Err("tasklist failed".to_string());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_lowercase();
+    Ok(stdout.contains(&process_name.to_lowercase()))
 }
 
 /// Extract level names from a WAD file's MAPINFO/ZMAPINFO/UMAPINFO/DEHACKED lumps.
