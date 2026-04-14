@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from "vue";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openShell } from "@tauri-apps/plugin-shell";
 import { invoke } from "@tauri-apps/api/core";
+import { join } from "@tauri-apps/api/path";
+import { mkdir } from "@tauri-apps/plugin-fs";
 import { Check, X } from "lucide-vue-next";
 import { useSettings } from "../composables/useSettings";
 import { useGZDoom } from "../composables/useGZDoom";
 import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
+import { shortenPath, getOs } from "../lib/platform";
 
-const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, checkInnoextract, importFromGOG } = useSettings();
+const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, checkInnoextract, importFromGOG, innoextractInstallHint } = useSettings();
 const { availableIwads, detectIwads } = useGZDoom();
 const { wads } = useWads();
 
@@ -44,6 +48,7 @@ const engineVersion = ref<string | null>(null);
 const hasInnoextract = ref(false);
 const gogImporting = ref(false);
 const gogImportResult = ref<{ success: boolean; message: string } | null>(null);
+const refreshingIwads = ref(false);
 
 async function fetchEngineVersion() {
   if (!settings.value.gzdoomPath) {
@@ -75,7 +80,7 @@ async function handleGOGButtonClick() {
     if (!hasInnoextract.value) {
       gogImportResult.value = {
         success: false,
-        message: "innoextract not found. Install with: brew install innoextract",
+        message: `innoextract not found. Install with: ${innoextractInstallHint()}`,
       };
     }
     return;
@@ -88,7 +93,7 @@ async function handleGOGButtonClick() {
 // Import from GOG installer
 async function browseAndImportGOG() {
   gogImportResult.value = null;
-  const selected = await open({
+  const selected = await openDialog({
     title: "Select GOG Doom Installer",
     filters: [{ name: "Installer", extensions: ["exe"] }],
     directory: false,
@@ -123,7 +128,7 @@ async function browseAndImportGOG() {
 }
 
 async function browseGZDoom() {
-  const os = getOsForFilters();
+  const os = getOs();
   const macFilter = { name: "Mac Application", extensions: ["app"] };
   const winFilter = { name: "Windows Executable", extensions: ["exe"] };
   const anyFilter = { name: "Any", extensions: ["*"] };
@@ -132,7 +137,7 @@ async function browseGZDoom() {
     : os === "win"
       ? [winFilter, macFilter, anyFilter]
       : [anyFilter, macFilter, winFilter];
-  const selected = await open({
+  const selected = await openDialog({
     title: "Select Doom Engine (UZDoom or GZDoom)",
     filters,
     directory: false,
@@ -140,9 +145,9 @@ async function browseGZDoom() {
   });
   if (selected) {
     const path = typeof selected === "string" ? selected : selected[0];
-    const appName = path.split("/").pop()?.toLowerCase() ?? "";
+    const appName = path.split(/[\\/]/).pop()?.toLowerCase() ?? "";
     if (!appName.includes("gzdoom") && !appName.includes("uzdoom")) {
-      errorMsg.value = `"${appName}" doesn't appear to be a Doom engine. Please select UZDoom.app or GZDoom.app`;
+      errorMsg.value = `"${appName}" doesn't appear to be a Doom engine. Please select UZDoom/GZDoom executable.`;
       return;
     }
     // Derive executable name from app name (e.g., UZDoom.app -> uzdoom)
@@ -154,7 +159,7 @@ async function browseGZDoom() {
 }
 
 async function browseLibrary() {
-  const selected = await open({
+  const selected = await openDialog({
     title: "Select Data Folder",
     directory: true,
     multiple: false,
@@ -166,11 +171,23 @@ async function browseLibrary() {
   }
 }
 
-function shortenPath(path: string | null): string {
-  if (!path) return "Not found";
-  const home = path.match(/^\/Users\/[^/]+/)?.[0];
-  if (home) return path.replace(home, "~");
-  return path;
+async function openIwadsDirectory() {
+  try {
+    const iwadsDir = await join(settings.value.libraryPath, "iwads");
+    await mkdir(iwadsDir, { recursive: true });
+    await openShell(iwadsDir);
+  } catch (e) {
+    errorMsg.value = e instanceof Error ? e.message : String(e);
+  }
+}
+
+async function refreshIwads() {
+  refreshingIwads.value = true;
+  try {
+    await detectIwads();
+  } finally {
+    refreshingIwads.value = false;
+  }
 }
 
 function getEngineName(path: string | null): string {
@@ -180,12 +197,6 @@ function getEngineName(path: string | null): string {
   return "Doom engine";
 }
 
-function getOsForFilters(): "mac" | "win" | "linux" {
-  const ua = navigator.userAgent;
-  if (/Mac|iPhone|iPad|iPod/i.test(ua)) return "mac";
-  if (/Win/i.test(ua)) return "win";
-  return "linux";
-}
 
 </script>
 
@@ -242,7 +253,24 @@ function getOsForFilters(): "mac" | "win" | "linux" {
 
       <!-- Available IWADs -->
       <div class="rounded-lg bg-zinc-800/50 p-4">
-        <label class="text-sm font-medium text-zinc-300">Available IWADs</label>
+        <div class="flex items-center justify-between gap-4">
+          <label class="text-sm font-medium text-zinc-300">Available IWADs</label>
+          <div class="flex items-center gap-2">
+            <button
+              class="rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-600"
+              @click="openIwadsDirectory"
+            >
+              Open IWAD Folder
+            </button>
+            <button
+              class="rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="refreshingIwads"
+              @click="refreshIwads"
+            >
+              {{ refreshingIwads ? "Refreshing..." : "Refresh" }}
+            </button>
+          </div>
+        </div>
         <p class="text-sm text-zinc-400 mt-2 flex flex-wrap gap-x-4 gap-y-1">
           <span v-for="iwad in requiredIwads" :key="iwad" class="whitespace-nowrap inline-flex items-center gap-1">
             <Check v-if="availableIwads.includes(iwad)" class="w-4 h-4 text-green-400" />

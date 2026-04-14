@@ -3,8 +3,8 @@ import { appConfigDir, appDataDir, homeDir, join } from "@tauri-apps/api/path";
 import { exists, readTextFile, writeTextFile, mkdir, readDir, readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { Command } from "@tauri-apps/plugin-shell";
 import { isNotFoundError } from "../lib/errors";
+import { getOs } from "../lib/platform";
 
-const APP_NAME = "rusted-doom-launcher";
 const OLD_APP_NAME = "gzdoom";
 
 interface Settings {
@@ -12,14 +12,44 @@ interface Settings {
   libraryPath: string;        // Never null after init
 }
 
-const GZDOOM_LOCATIONS = [
-  "/Applications/UZDoom.app/Contents/MacOS/uzdoom",
-  "/Applications/GZDoom.app/Contents/MacOS/gzdoom",
-  "/opt/homebrew/bin/uzdoom",
-  "/opt/homebrew/bin/gzdoom",
-  "/usr/local/bin/uzdoom",
-  "/usr/local/bin/gzdoom",
-];
+async function getEngineLocations(): Promise<string[]> {
+  const h = await getHome();
+  const os = getOs();
+
+  if (os === "mac") {
+    return [
+      "/Applications/UZDoom.app/Contents/MacOS/uzdoom",
+      "/Applications/GZDoom.app/Contents/MacOS/gzdoom",
+      "/opt/homebrew/bin/uzdoom",
+      "/opt/homebrew/bin/gzdoom",
+      "/usr/local/bin/uzdoom",
+      "/usr/local/bin/gzdoom",
+      await join(h, "Applications", "UZDoom.app", "Contents", "MacOS", "uzdoom"),
+      await join(h, "Applications", "GZDoom.app", "Contents", "MacOS", "gzdoom"),
+    ];
+  }
+
+  if (os === "linux") {
+    return [
+      "/usr/bin/uzdoom",
+      "/usr/bin/gzdoom",
+      "/usr/local/bin/uzdoom",
+      "/usr/local/bin/gzdoom",
+      "/snap/bin/gzdoom",
+      await join(h, ".local", "bin", "uzdoom"),
+      await join(h, ".local", "bin", "gzdoom"),
+    ];
+  }
+
+  return [
+    "C:\\Program Files\\GZDoom\\gzdoom.exe",
+    "C:\\Program Files\\UZDoom\\uzdoom.exe",
+    "C:\\Program Files (x86)\\GZDoom\\gzdoom.exe",
+    "C:\\Program Files (x86)\\UZDoom\\uzdoom.exe",
+    await join(h, "scoop", "apps", "gzdoom", "current", "gzdoom.exe"),
+    await join(h, "scoop", "apps", "uzdoom", "current", "uzdoom.exe"),
+  ];
+}
 
 const KNOWN_IWADS = [
   "doom.wad", "doom2.wad", "plutonia.wad", "tnt.wad",
@@ -54,12 +84,7 @@ async function getOldSettingsPath(): Promise<string> {
 }
 
 async function findGZDoom(): Promise<string | null> {
-  const h = await getHome();
-  const allLocations = [
-    ...GZDOOM_LOCATIONS,
-    await join(h, "Applications", "UZDoom.app", "Contents", "MacOS", "uzdoom"),
-    await join(h, "Applications", "GZDoom.app", "Contents", "MacOS", "gzdoom"),
-  ];
+  const allLocations = await getEngineLocations();
   for (const path of allLocations) {
     try {
       if (await exists(path)) return path;
@@ -93,6 +118,7 @@ async function copyFile(src: string, dest: string): Promise<void> {
 // Populate iwads/ folder from known locations (data folder root, GZDoom folder)
 async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]> {
   const h = await getHome();
+  const os = getOs();
   const iwadsDir = await join(libraryPath, "iwads");
 
   // Skip if iwads/ already has content
@@ -100,10 +126,16 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
   if (existing.length > 0) return [];
 
   // Source locations (priority order)
-  const sources = [
-    libraryPath,                                    // Data folder root
-    await join(h, "Library", "Application Support", "gzdoom"),     // GZDoom folder
-  ];
+  const sources = [libraryPath];
+  if (os === "mac") {
+    sources.push(await join(h, "Library", "Application Support", "gzdoom"));
+  } else if (os === "linux") {
+    sources.push(await join(h, ".config", "gzdoom"));
+    sources.push(await join(h, ".local", "share", "gzdoom"));
+  } else {
+    sources.push(await join(h, "Saved Games", "GZDoom"));
+    sources.push(await join(h, "Documents", "My Games", "GZDoom"));
+  }
 
   await mkdir(iwadsDir, { recursive: true });
 
@@ -125,15 +157,34 @@ async function populateIwadsFolder(libraryPath: string): Promise<MigratedIwad[]>
 }
 
 // INNOEXTRACT locations to try (in order)
-const INNOEXTRACT_COMMANDS = [
-  { name: "innoextract", cmd: "innoextract" },
-  { name: "innoextract-homebrew-arm", cmd: "/opt/homebrew/bin/innoextract" },
-  { name: "innoextract-homebrew-intel", cmd: "/usr/local/bin/innoextract" },
-];
+function getInnoextractCommands(): Array<{ name: string; cmd: string }> {
+  const os = getOs();
+  if (os === "mac") {
+    return [
+      { name: "innoextract", cmd: "innoextract" },
+      { name: "innoextract-homebrew-arm", cmd: "/opt/homebrew/bin/innoextract" },
+      { name: "innoextract-homebrew-intel", cmd: "/usr/local/bin/innoextract" },
+    ];
+  }
+  if (os === "win") {
+    return [
+      { name: "innoextract", cmd: "innoextract" },
+      { name: "innoextract-exe", cmd: "innoextract.exe" },
+    ];
+  }
+  return [{ name: "innoextract", cmd: "innoextract" }];
+}
+
+function innoextractInstallHint(): string {
+  const os = getOs();
+  if (os === "mac") return "brew install innoextract";
+  if (os === "linux") return "sudo apt install innoextract (or your distro package manager)";
+  return "install innoextract and add it to PATH";
+}
 
 // Check if innoextract is available and return the command name to use
 async function findInnoextract(): Promise<string | null> {
-  for (const { name, cmd } of INNOEXTRACT_COMMANDS) {
+  for (const { name, cmd } of getInnoextractCommands()) {
     try {
       const result = await Command.create(name, ["--version"]).execute();
       if (result.code === 0) {
@@ -219,12 +270,11 @@ export function useSettings() {
   async function initSettings(): Promise<void> {
     if (initialized.value) return;
 
-    const h = await getHome();
-    const newConfigDir = await join(h, "Library", "Application Support", APP_NAME);
+    const newConfigDir = await appConfigDir();
     const newDefaultLibrary = await appDataDir();  // New users get app data folder
 
     const newPath = await getSettingsPath();
-    const oldPath = await getOldSettingsPath();
+    const oldPath = getOs() === "mac" ? await getOldSettingsPath() : null;
     let needsMigration = false;
     let settingsExist = false;
 
@@ -242,7 +292,7 @@ export function useSettings() {
     }
 
     // 2. Try old location (only if new didn't exist)
-    if (!settingsExist) {
+    if (!settingsExist && oldPath) {
       try {
         if (await exists(oldPath)) {
           settingsExist = true;
@@ -315,7 +365,7 @@ export function useSettings() {
   async function importFromGOG(installerPath: string): Promise<GOGExtractResult> {
     const innoCmd = await findInnoextract();
     if (!innoCmd) {
-      throw new Error("innoextract not found. Install it with: brew install innoextract");
+      throw new Error(`innoextract not found. Install it with: ${innoextractInstallHint()}`);
     }
     const iwadsDir = await join(settings.value.libraryPath, "iwads");
     return extractFromGOG(installerPath, iwadsDir, innoCmd);
@@ -335,5 +385,6 @@ export function useSettings() {
     setLibraryPath,
     checkInnoextract,
     importFromGOG,
+    innoextractInstallHint,
   };
 }

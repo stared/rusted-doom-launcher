@@ -24,6 +24,11 @@
       "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com https://s.ytimg.com; frame-src https://www.youtube.com; connect-src 'self' https://*; img-src 'self' data: https://*; style-src 'self' 'unsafe-inline'"
     }
   },
+  "plugins": {
+    "shell": {
+      "open": "^(/|[A-Za-z]:\\\\|https://)"
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar.vue";
 import MainView from "./components/MainView.vue";
 import ExploreView from "./components/ExploreView.vue";
@@ -16,6 +17,7 @@ import { useLevelNames } from "./composables/useLevelNames";
 import { useStats } from "./composables/useStats";
 import type { WadEntry } from "./lib/schema";
 import { getErrorMessage } from "./lib/errors";
+import { shortenPath } from "./lib/platform";
 
 declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unknown };
 
@@ -96,7 +98,7 @@ async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
     return;
   }
   if (!availableIwads.value.includes(wad.iwad)) {
-    const shortPath = settings.value.libraryPath.replace(/^\/Users\/[^/]+/, "~");
+    const shortPath = shortenPath(settings.value.libraryPath);
     errorMsg.value = `${wad.iwad.toUpperCase()}.WAD not found in ${shortPath}. This IWAD is required to run the mod.`;
     return;
   }
@@ -112,11 +114,17 @@ async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
 
 async function handleDelete(wad: WadEntry) {
   try {
+    const ok = await confirm(
+      `Delete downloaded files for "${wad.title}"?`,
+      { title: "Delete WAD", kind: "warning" }
+    );
+    if (!ok) return;
     await deleteWad(wad.slug);
   } catch (e) {
     errorMsg.value = getErrorMessage(e);
   }
 }
+
 </script>
 
 <template>
