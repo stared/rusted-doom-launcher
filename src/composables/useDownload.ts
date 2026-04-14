@@ -47,36 +47,33 @@ async function validateDownload(path: string, filename: string): Promise<void> {
   }
 }
 
-/**
- * Extract game files (.wad/.pk3) from a ZIP archive and write them to disk.
- * Returns the primary wadFilename and any additional file paths.
- */
-async function extractAndWriteGameFiles(
-  zipPath: string,
-  libraryDir: string
-): Promise<{ wadFilename: string; additionalFiles: string[] }> {
-  const zipData = await readFile(zipPath);
-  const gameFiles = findGameFilesInZip(new Uint8Array(zipData));
-  const { primary, additional } = selectPrimaryGameFile(gameFiles);
-
-  // Write primary file
-  await writeFile(`${libraryDir}/${primary.name}`, primary.data);
-  console.log(`[extract] Extracted primary: ${primary.name} (${primary.data.length} bytes)`);
-
-  // Write additional files
-  const additionalFiles: string[] = [];
-  for (const file of additional) {
-    await writeFile(`${libraryDir}/${file.name}`, file.data);
-    additionalFiles.push(file.name);
-    console.log(`[extract] Extracted additional: ${file.name} (${file.data.length} bytes)`);
-  }
-
-  return { wadFilename: primary.name, additionalFiles };
-}
-
 export function useDownload() {
   const { loadLevelNames } = useLevelNames();
   const { base, wadFile } = useLibrary();
+
+  /**
+   * Extract game files (.wad/.pk3) from a ZIP archive and write them to disk.
+   * Returns the primary wadFilename and any additional file paths.
+   */
+  async function extractAndWriteGameFiles(
+    zipPath: string
+  ): Promise<{ wadFilename: string; additionalFiles: string[] }> {
+    const zipData = await readFile(zipPath);
+    const gameFiles = findGameFilesInZip(new Uint8Array(zipData));
+    const { primary, additional } = selectPrimaryGameFile(gameFiles);
+
+    await writeFile(wadFile(primary.name), primary.data);
+    console.log(`[extract] Extracted primary: ${primary.name} (${primary.data.length} bytes)`);
+
+    const additionalFiles: string[] = [];
+    for (const file of additional) {
+      await writeFile(wadFile(file.name), file.data);
+      additionalFiles.push(file.name);
+      console.log(`[extract] Extracted additional: ${file.name} (${file.data.length} bytes)`);
+    }
+
+    return { wadFilename: primary.name, additionalFiles };
+  }
 
   async function loadState() {
     downloads.value = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
@@ -103,8 +100,6 @@ export function useDownload() {
   }
 
   async function downloadWad(wad: WadEntry): Promise<string> {
-    const dir = base();
-
     if (!wad.downloads || wad.downloads.length === 0) {
       throw new Error(`No download URL configured for "${wad.title}"`);
     }
@@ -116,34 +111,34 @@ export function useDownload() {
       throw new Error(`Download not available for "${wad.title}" - URL not configured`);
     }
 
-    const path = await wadFile(filename);
+    const path = wadFile(filename);
     const partPath = `${path}.part`;  // Atomic download: write to .part file first
 
     // Check if already downloaded
     const info = downloads.value.downloads[wad.slug];
     if (info) {
       const wadFileName = info.wadFilename ?? info.filename;
-      const wadPath = await wadFile(wadFileName);
+      const wadPath = wadFile(wadFileName);
 
       if (await exists(wadPath)) {
         // L1: extracted file exists → return directly
         return wadPath;
       }
 
-      if (info.wadFilename && info.filename.endsWith('.zip') && await exists(await wadFile(info.filename))) {
+      if (info.wadFilename && info.filename.endsWith('.zip') && await exists(wadFile(info.filename))) {
         // L3: extracted file missing but ZIP exists → re-extract
-        const { wadFilename } = await extractAndWriteGameFiles(await wadFile(info.filename), dir);
+        const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
-        return await wadFile(wadFilename);
+        return wadFile(wadFilename);
       }
 
-      if (info.filename.endsWith('.zip') && !info.wadFilename && await exists(await wadFile(info.filename))) {
+      if (info.filename.endsWith('.zip') && !info.wadFilename && await exists(wadFile(info.filename))) {
         // L2: legacy download → extract and update state
-        const { wadFilename } = await extractAndWriteGameFiles(await wadFile(info.filename), dir);
+        const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
-        return await wadFile(wadFilename);
+        return wadFile(wadFilename);
       }
 
       // L4: nothing on disk → clear stale state, fall through to re-download
@@ -154,7 +149,7 @@ export function useDownload() {
     downloading.value.add(wad.slug);
     downloadProgress.value = { ...downloadProgress.value, [wad.slug]: { progress: 0, total: 0 } };
     try {
-      await mkdir(dir, { recursive: true });
+      await mkdir(base(), { recursive: true });
 
       // Use tauri-plugin-upload for streaming download with progress
       let lastUpdate = 0;
@@ -185,13 +180,13 @@ export function useDownload() {
       const isZip = filename.toLowerCase().endsWith('.zip');
 
       if (isZip) {
-        const { wadFilename } = await extractAndWriteGameFiles(path, dir);
+        const { wadFilename } = await extractAndWriteGameFiles(path);
         downloads.value.downloads[wad.slug] = {
           filename, wadFilename, downloadedAt: new Date().toISOString(), size: fileStat.size,
         };
         await saveState();
         await loadLevelNames(wad.slug);
-        return await wadFile(wadFilename);
+        return wadFile(wadFilename);
       } else {
         downloads.value.downloads[wad.slug] = {
           filename, wadFilename: filename, downloadedAt: new Date().toISOString(), size: fileStat.size,
@@ -221,14 +216,14 @@ export function useDownload() {
     if (!info) return;
     // Delete original download file
     try {
-      await remove(await wadFile(info.filename));
+      await remove(wadFile(info.filename));
     } catch (e) {
       console.error(`Failed to delete ${info.filename}:`, e);
     }
     // Also delete extracted file if different from original
     if (info.wadFilename && info.wadFilename !== info.filename) {
       try {
-        await remove(await wadFile(info.wadFilename));
+        await remove(wadFile(info.wadFilename));
       } catch (e) {
         console.error(`Failed to delete ${info.wadFilename}:`, e);
       }

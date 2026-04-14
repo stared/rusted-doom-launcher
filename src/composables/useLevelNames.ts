@@ -18,7 +18,7 @@ export function useLevelNames() {
    */
   async function loadFromStorage(slug: string): Promise<Map<string, string> | null> {
     try {
-      const path = await levelNamesPath(slug);
+      const path = levelNamesPath(slug);
       if (await exists(path)) {
         const content = await readTextFile(path);
         const data = JSON.parse(content) as Record<string, string>;
@@ -37,10 +37,10 @@ export function useLevelNames() {
    */
   async function saveToStorage(slug: string, levels: Map<string, string>): Promise<void> {
     try {
-      const dir = await levelNamesDir();
+      const dir = levelNamesDir();
       await mkdir(dir, { recursive: true });
 
-      const path = await levelNamesPath(slug);
+      const path = levelNamesPath(slug);
       const data = Object.fromEntries(levels);
       await writeTextFile(path, JSON.stringify(data, null, 2));
       console.log(`[LevelNames] Saved ${levels.size} level names for ${slug}`);
@@ -89,7 +89,7 @@ export function useLevelNames() {
         return null;
       }
 
-      const filePath = await wadFile(downloadInfo.filename);
+      const filePath = wadFile(downloadInfo.filename);
       const filename = downloadInfo.filename.toLowerCase();
 
       let allLevels = new Map<string, string>();

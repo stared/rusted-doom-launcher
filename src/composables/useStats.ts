@@ -155,8 +155,8 @@ export function useStats() {
 
   // Capture stats from all save files for a WAD
   async function captureStats(slug: string): Promise<number> {
-    const savesDirPath = await savesDir(slug);
-    const statsDirPath = await statsDir(slug);
+    const savesDirPath = savesDir(slug);
+    const statsDirPath = statsDir(slug);
 
     // Check if saves directory exists
     try {
@@ -274,7 +274,7 @@ export function useStats() {
 
   // Load all play sessions for a WAD
   async function loadAllSessions(slug: string): Promise<PlaySession[]> {
-    const statsDirPath = await statsDir(slug);
+    const statsDirPath = statsDir(slug);
 
     try {
       if (!(await exists(statsDirPath))) {

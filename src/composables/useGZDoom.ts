@@ -34,7 +34,7 @@ export function useGZDoom() {
       console.warn("[detectIwads] No libraryPath set, skipping");
       return;
     }
-    const iwadsDir = await lib.iwadsDir();
+    const iwadsDir = lib.iwadsDir();
     let entries: Awaited<ReturnType<typeof readDir>> = [];
     try {
       entries = await readDir(iwadsDir);
@@ -66,10 +66,10 @@ export function useGZDoom() {
   ) {
     const filename = iwadFilenames.get(iwad);
     if (!filename) throw new Error(`IWAD ${iwad} not detected`);
-    const iwadPath = await lib.iwadFile(filename);
+    const iwadPath = lib.iwadFile(filename);
 
     // Create per-WAD save directory if slug provided
-    const saveDir = wadSlug ? await lib.savesDir(wadSlug) : null;
+    const saveDir = wadSlug ? lib.savesDir(wadSlug) : null;
     if (saveDir) {
       try {
         await mkdir(saveDir, { recursive: true });

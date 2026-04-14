@@ -1,10 +1,13 @@
 /**
  * Central library directory layout.
  * Every path into the data folder goes through here.
+ * All functions return synchronous strings — no IPC needed for path joining.
  */
 
-import { join } from "@tauri-apps/api/path";
 import { useSettings } from "./useSettings";
+import { getOs } from "../lib/platform";
+
+const SEP = getOs() === "win" ? "\\" : "/";
 
 export function useLibrary() {
   const { settings } = useSettings();
@@ -13,24 +16,29 @@ export function useLibrary() {
     return settings.value.libraryPath;
   }
 
+  /** Join segments under the library root with OS-appropriate separator. */
+  function p(...parts: string[]): string {
+    return [base(), ...parts].join(SEP);
+  }
+
   return {
     /** Root library path. */
     base,
     /** iwads/ — IWAD files (doom2.wad, etc.) */
-    iwadsDir: () => join(base(), "iwads"),
+    iwadsDir: () => p("iwads"),
     /** saves/{slug}/ — GZDoom .zds save files */
-    savesDir: (slug: string) => join(base(), "saves", slug),
+    savesDir: (slug: string) => p("saves", slug),
     /** stats/{slug}/ — Captured play session JSONs */
-    statsDir: (slug: string) => join(base(), "stats", slug),
+    statsDir: (slug: string) => p("stats", slug),
     /** sessions/{slug}/ — Gameplay log JSONs */
-    sessionsDir: (slug: string) => join(base(), "sessions", slug),
+    sessionsDir: (slug: string) => p("sessions", slug),
     /** level-names/{slug}.json — Cached level name mappings */
-    levelNamesPath: (slug: string) => join(base(), "level-names", `${slug}.json`),
+    levelNamesPath: (slug: string) => p("level-names", `${slug}.json`),
     /** level-names/ directory */
-    levelNamesDir: () => join(base(), "level-names"),
+    levelNamesDir: () => p("level-names"),
     /** Path to a specific IWAD file */
-    iwadFile: (filename: string) => join(base(), "iwads", filename),
+    iwadFile: (filename: string) => p("iwads", filename),
     /** Path to a downloaded WAD/ZIP file in library root */
-    wadFile: (filename: string) => join(base(), filename),
+    wadFile: (filename: string) => p(filename),
   };
 }

@@ -101,7 +101,7 @@ export function useGameplayLog() {
     startedAt: Date,
     endedAt: Date
   ): Promise<string> {
-    const sessionsDirPath = await sessionsDir(slug);
+    const sessionsDirPath = sessionsDir(slug);
 
     // Ensure directory exists
     try {
@@ -145,7 +145,7 @@ export function useGameplayLog() {
    * Load all gameplay logs for a WAD
    */
   async function loadAllGameplayLogs(slug: string): Promise<GameplayLog[]> {
-    const sessionsDirPath = await sessionsDir(slug);
+    const sessionsDirPath = sessionsDir(slug);
 
     try {
       if (!(await exists(sessionsDirPath))) {
