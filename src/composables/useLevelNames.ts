@@ -1,17 +1,17 @@
 import { ref } from "vue";
 import { readFile, readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-fs";
-import { invoke } from "@tauri-apps/api/core";
 import { unzipSync, strFromU8 } from "fflate";
 import { extractLevelNames, extractLevelNamesFromData, parseLevelNamesFromContent } from "../lib/wadParser";
-import type { LauncherDownloads } from "../lib/schema";
 import { isNotFoundError } from "../lib/errors";
 import { useLibrary } from "./useLibrary";
+import { useDownload } from "./useDownload";
 
 // Singleton cache: slug -> (mapId -> levelName)
 const levelNamesCache = ref<Map<string, Map<string, string>>>(new Map());
 
 export function useLevelNames() {
-  const { base, levelNamesPath, levelNamesDir, wadFile } = useLibrary();
+  const { levelNamesPath, levelNamesDir, wadFile } = useLibrary();
+  const { getDownloadInfo: getDownloadInfoFromCache } = useDownload();
 
   /**
    * Load level names from persistent storage.
@@ -50,16 +50,10 @@ export function useLevelNames() {
   }
 
   /**
-   * Get download info for a slug from launcher-downloads.json
+   * Get download info for a slug from useDownload's cached state.
    */
-  async function getDownloadInfo(slug: string): Promise<{ filename: string } | null> {
-    try {
-      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
-      if (state.downloads[slug]) return state.downloads[slug];
-    } catch (e) {
-      console.error(`Error reading launcher-downloads.json for ${slug}:`, e);
-    }
-    return null;
+  function getDownloadInfo(slug: string): { filename: string } | null {
+    return getDownloadInfoFromCache(slug);
   }
 
   /**
@@ -186,31 +180,6 @@ export function useLevelNames() {
   }
 
   /**
-   * Rescan all downloaded WADs and extract level names.
-   * Use this to populate level names for already-installed WADs.
-   */
-  async function rescanAllWads(): Promise<number> {
-    try {
-      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
-      let count = 0;
-      for (const slug of Object.keys(state.downloads)) {
-        // Clear cache to force re-parse
-        levelNamesCache.value.delete(slug);
-        const levels = await loadLevelNames(slug);
-        if (levels && levels.size > 0) {
-          count++;
-        }
-      }
-
-      console.log(`[LevelNames] Rescanned ${count} WADs`);
-      return count;
-    } catch (e) {
-      console.error("Failed to rescan WADs:", e);
-      return 0;
-    }
-  }
-
-  /**
    * Load level names for multiple WADs in parallel.
    */
   async function loadAllLevelNames(slugs: string[]): Promise<void> {
@@ -223,6 +192,5 @@ export function useLevelNames() {
     getCachedLevelNames,
     getLevelDisplayName,
     clearCache,
-    rescanAllWads,
   };
 }

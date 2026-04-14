@@ -98,6 +98,10 @@ export function useDownload() {
     return downloadProgress.value[slug];
   }
 
+  function getDownloadInfo(slug: string): { filename: string; wadFilename?: string } | null {
+    return downloads.value.downloads[slug] ?? null;
+  }
+
   async function downloadWad(wad: WadEntry): Promise<string> {
     const dir = base();
 
@@ -233,5 +237,5 @@ export function useDownload() {
     await saveState();
   }
 
-  return { loadState, isDownloaded, isDownloading, getDownloadProgress, downloadProgress, downloadWad, downloadWithDeps, deleteWad };
+  return { loadState, isDownloaded, isDownloading, getDownloadProgress, getDownloadInfo, downloadProgress, downloadWad, downloadWithDeps, deleteWad };
 }
