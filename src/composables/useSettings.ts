@@ -3,21 +3,13 @@ import { appConfigDir, appDataDir, homeDir, join } from "@tauri-apps/api/path";
 import { exists, readTextFile, writeTextFile, mkdir, readDir, readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { Command } from "@tauri-apps/plugin-shell";
 import { isNotFoundError } from "../lib/errors";
+import { getOs } from "../lib/platform";
 
 const OLD_APP_NAME = "gzdoom";
 
 interface Settings {
   gzdoomPath: string | null;  // null = not found
   libraryPath: string;        // Never null after init
-}
-
-type OsName = "mac" | "win" | "linux";
-
-function getOs(): OsName {
-  const ua = navigator.userAgent;
-  if (/Mac|iPhone|iPad|iPod/i.test(ua)) return "mac";
-  if (/Win/i.test(ua)) return "win";
-  return "linux";
 }
 
 async function getEngineLocations(): Promise<string[]> {
@@ -393,5 +385,6 @@ export function useSettings() {
     setLibraryPath,
     checkInnoextract,
     importFromGOG,
+    innoextractInstallHint,
   };
 }

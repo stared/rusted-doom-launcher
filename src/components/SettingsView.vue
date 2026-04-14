@@ -10,8 +10,9 @@ import { useSettings } from "../composables/useSettings";
 import { useGZDoom } from "../composables/useGZDoom";
 import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
+import { shortenPath, getOs } from "../lib/platform";
 
-const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, checkInnoextract, importFromGOG } = useSettings();
+const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, checkInnoextract, importFromGOG, innoextractInstallHint } = useSettings();
 const { availableIwads, detectIwads } = useGZDoom();
 const { wads } = useWads();
 
@@ -79,7 +80,7 @@ async function handleGOGButtonClick() {
     if (!hasInnoextract.value) {
       gogImportResult.value = {
         success: false,
-        message: "innoextract not found. Install it and retry.",
+        message: `innoextract not found. Install with: ${innoextractInstallHint()}`,
       };
     }
     return;
@@ -127,7 +128,7 @@ async function browseAndImportGOG() {
 }
 
 async function browseGZDoom() {
-  const os = getOsForFilters();
+  const os = getOs();
   const macFilter = { name: "Mac Application", extensions: ["app"] };
   const winFilter = { name: "Windows Executable", extensions: ["exe"] };
   const anyFilter = { name: "Any", extensions: ["*"] };
@@ -189,15 +190,6 @@ async function refreshIwads() {
   }
 }
 
-function shortenPath(path: string | null): string {
-  if (!path) return "Not found";
-  const unixHome = path.match(/^\/(?:Users|home)\/[^/]+/)?.[0];
-  if (unixHome) return path.replace(unixHome, "~");
-  const winHome = path.match(/^[A-Za-z]:\\Users\\[^\\]+/)?.[0];
-  if (winHome) return path.replace(winHome, "~");
-  return path;
-}
-
 function getEngineName(path: string | null): string {
   if (!path) return "";
   if (path.toLowerCase().includes("uzdoom")) return "UZDoom";
@@ -205,12 +197,6 @@ function getEngineName(path: string | null): string {
   return "Doom engine";
 }
 
-function getOsForFilters(): "mac" | "win" | "linux" {
-  const ua = navigator.userAgent;
-  if (/Mac|iPhone|iPad|iPod/i.test(ua)) return "mac";
-  if (/Win/i.test(ua)) return "win";
-  return "linux";
-}
 
 </script>
 

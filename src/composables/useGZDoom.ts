@@ -7,6 +7,7 @@ import type { SkillLevel } from "../lib/statsSchema";
 import { useSettings } from "./useSettings";
 import { useGameplayLog } from "./useGameplayLog";
 import { isExistsError } from "../lib/errors";
+import { getOs } from "../lib/platform";
 
 const IWADS: Iwad[] = ["doom", "doom2", "plutonia", "tnt", "heretic", "hexen", "freedoom1", "freedoom2"];
 
@@ -111,7 +112,7 @@ export function useGZDoom() {
     // Derive process name from path for each platform (e.g., C:\...\gzdoom.exe -> gzdoom.exe)
     const enginePath = settings.value.gzdoomPath;
     const engineName = enginePath?.split(/[\\/]/).pop() ?? "gzdoom";
-    const isWindows = /Win/i.test(navigator.userAgent);
+    const isWindows = getOs() === "win";
     const processName =
       isWindows && !engineName.toLowerCase().endsWith(".exe")
         ? `${engineName}.exe`

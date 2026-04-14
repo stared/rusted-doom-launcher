@@ -16,6 +16,7 @@ import { useSaves } from "./composables/useSaves";
 import { useStats } from "./composables/useStats";
 import type { WadEntry } from "./lib/schema";
 import { getErrorMessage } from "./lib/errors";
+import { shortenPath } from "./lib/platform";
 
 declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unknown };
 
@@ -118,13 +119,6 @@ async function handleDelete(wad: WadEntry) {
   }
 }
 
-function shortenPath(path: string): string {
-  const unixHome = path.match(/^\/(?:Users|home)\/[^/]+/)?.[0];
-  if (unixHome) return path.replace(unixHome, "~");
-  const winHome = path.match(/^[A-Za-z]:\\Users\\[^\\]+/)?.[0];
-  if (winHome) return path.replace(winHome, "~");
-  return path;
-}
 </script>
 
 <template>
