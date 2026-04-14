@@ -12,7 +12,6 @@ import { useWads } from "./composables/useWads";
 import { useGZDoom } from "./composables/useGZDoom";
 import { useDownload } from "./composables/useDownload";
 import { useSettings } from "./composables/useSettings";
-import { useSaves } from "./composables/useSaves";
 import { useLevelNames } from "./composables/useLevelNames";
 import { useStats } from "./composables/useStats";
 import type { WadEntry } from "./lib/schema";
@@ -27,9 +26,8 @@ const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
 const { loadState: loadDownloadState, downloadWithDeps, deleteWad } = useDownload();
 const { settings, isFirstRun, migratedIwads, initSettings } = useSettings();
-const { loadAllSaveInfo, refreshSaveInfo } = useSaves();
 const { loadAllLevelNames } = useLevelNames();
-const { captureStats } = useStats();
+const { captureStats, loadAllPlaySummaries, refreshPlaySummary } = useStats();
 
 const activeView = ref<View>("main");
 const errorMsg = ref("");
@@ -59,7 +57,7 @@ onMounted(async () => {
     // (the watch fires before initSettings completes, so we retry here)
     if (wads.value.length > 0) {
       const slugs = wads.value.map(w => w.slug);
-      await loadAllSaveInfo(slugs);
+      await loadAllPlaySummaries(slugs);
       await loadAllLevelNames(slugs);
     }
 
@@ -77,7 +75,7 @@ onMounted(async () => {
 watch(wads, async (newWads) => {
   if (newWads.length > 0 && settings.value.libraryPath) {
     const slugs = newWads.map(w => w.slug);
-    await loadAllSaveInfo(slugs);
+    await loadAllPlaySummaries(slugs);
     await loadAllLevelNames(slugs);
   }
 });
@@ -85,7 +83,7 @@ watch(wads, async (newWads) => {
 // Refresh save info and capture stats when game closes
 watch(isRunning, async (running, wasRunning) => {
   if (wasRunning && !running && lastPlayedSlug.value) {
-    await refreshSaveInfo(lastPlayedSlug.value);
+    await refreshPlaySummary(lastPlayedSlug.value);
     await captureStats(lastPlayedSlug.value);
   }
 });

@@ -5,7 +5,7 @@ import FilterBar from "./FilterBar.vue";
 import WadCard from "./WadCard.vue";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
-import { useSaves } from "../composables/useSaves";
+import { useStats } from "../composables/useStats";
 import { useWadSummaries } from "../composables/useWadSummaries";
 
 const props = defineProps<{
@@ -21,7 +21,7 @@ const emit = defineEmits<{
 }>();
 
 const { isDownloaded } = useDownload();
-const { getCachedSaveInfo } = useSaves();
+const { getCachedPlaySummary } = useStats();
 const { getVibe } = useWadSummaries();
 
 // Filter/sort state
@@ -39,8 +39,8 @@ const sortOptions = [
 // WADs that are downloaded OR have saves (ready to play)
 const playableWads = computed(() =>
   props.wads.filter(w => {
-    const info = getCachedSaveInfo(w.slug);
-    const hasSaves = info && info.saveCount > 0;
+    const info = getCachedPlaySummary(w.slug);
+    const hasSaves = info && info.sessionCount > 0;
     return isDownloaded(w.slug) || hasSaves;
   })
 );
@@ -60,8 +60,8 @@ const filteredWads = computed(() => {
 
   // Sort
   result.sort((a, b) => {
-    const infoA = getCachedSaveInfo(a.slug);
-    const infoB = getCachedSaveInfo(b.slug);
+    const infoA = getCachedPlaySummary(a.slug);
+    const infoB = getCachedPlaySummary(b.slug);
 
     switch (sortBy.value) {
       case "last-played": {
@@ -70,8 +70,8 @@ const filteredWads = computed(() => {
         return dateB - dateA;
       }
       case "most-saves": {
-        const savesA = infoA?.saveCount ?? 0;
-        const savesB = infoB?.saveCount ?? 0;
+        const savesA = infoA?.sessionCount ?? 0;
+        const savesB = infoB?.sessionCount ?? 0;
         return savesB - savesA;
       }
       case "most-maps": {
@@ -95,8 +95,8 @@ const exploreMatchCount = computed(() => {
 
   const q = searchQuery.value.toLowerCase();
   return props.wads.filter(w => {
-    const info = getCachedSaveInfo(w.slug);
-    const hasSaves = info && info.saveCount > 0;
+    const info = getCachedPlaySummary(w.slug);
+    const hasSaves = info && info.sessionCount > 0;
     if (isDownloaded(w.slug) || hasSaves) return false;
 
     const vibe = getVibe(w.slug) ?? "";

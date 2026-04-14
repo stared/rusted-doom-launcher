@@ -1,6 +1,6 @@
 /**
  * Shared parser for GZDoom .zds save files.
- * Both useSaves and useStats need to parse the same ZIP→JSON structure.
+ * Parser for GZDoom .zds save files (ZIP archives with globals.json).
  */
 
 import { readFile } from "@tauri-apps/plugin-fs";

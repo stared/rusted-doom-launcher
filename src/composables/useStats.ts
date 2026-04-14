@@ -1,3 +1,4 @@
+import { ref } from "vue";
 import { readDir, readTextFile, writeTextFile, mkdir, exists, stat } from "@tauri-apps/plugin-fs";
 import { isNotFoundError } from "../lib/errors";
 import {
@@ -9,6 +10,23 @@ import {
 } from "../lib/statsSchema";
 import { parseSaveFile } from "../lib/saveParser";
 import { useLibrary } from "./useLibrary";
+
+/** Aggregated level stats with skill from session. */
+export interface AggregatedLevel extends LevelPlayStats {
+  skill: SkillLevel;
+}
+
+/** Summary of all play data for a WAD. */
+export interface WadPlaySummary {
+  slug: string;
+  sessionCount: number;
+  mapsPlayed: number;
+  lastPlayed: Date | null;
+  levels: AggregatedLevel[];
+}
+
+// Singleton cache
+const summaryCache = ref<Map<string, WadPlaySummary>>(new Map());
 
 // Parse level name from GZDoom info.json Comment field
 // Format: "MAP13 - Polychromatic Terrace" or "E1M1 - Hangar"
@@ -306,48 +324,74 @@ export function useStats() {
     return sessions;
   }
 
-  // Get aggregated stats for display (best run per level+skill combo)
-  async function getAggregatedStats(slug: string): Promise<Map<string, LevelPlayStats>> {
-    const sessions = await loadAllSessions(slug);
-    const bestByLevelSkill = new Map<string, LevelPlayStats & { skill: SkillLevel }>();
-
+  /** Build a WadPlaySummary from sessions (best-per-level aggregation). */
+  function buildSummary(slug: string, sessions: PlaySession[]): WadPlaySummary {
+    // Best level stats per level+skill combo
+    const bestByKey = new Map<string, AggregatedLevel>();
     for (const session of sessions) {
       for (const level of session.levels) {
         const key = `${level.id}_${session.skill}`;
-        const existing = bestByLevelSkill.get(key);
-
-        // Keep the run with most kills (or fastest time if kills equal)
+        const existing = bestByKey.get(key);
         if (
           !existing ||
           level.kills > existing.kills ||
           (level.kills === existing.kills && level.timeTics < existing.timeTics)
         ) {
-          bestByLevelSkill.set(key, { ...level, skill: session.skill });
+          bestByKey.set(key, { ...level, skill: session.skill });
         }
       }
     }
 
-    return bestByLevelSkill as Map<string, LevelPlayStats>;
+    const levels = Array.from(bestByKey.values()).sort((a, b) => {
+      const nameCompare = a.id.localeCompare(b.id, undefined, { numeric: true });
+      if (nameCompare !== 0) return nameCompare;
+      return a.skill.localeCompare(b.skill);
+    });
+
+    const uniqueLevels = new Set(levels.map(l => l.id));
+    const lastPlayed = sessions.length > 0
+      ? new Date(Math.max(...sessions.map(s => new Date(s.capturedAt).getTime())))
+      : null;
+
+    return {
+      slug,
+      sessionCount: sessions.length,
+      mapsPlayed: uniqueLevels.size,
+      lastPlayed,
+      levels,
+    };
   }
 
-  // Count unique levels played across all sessions
-  async function getUniqueLevelsPlayed(slug: string): Promise<number> {
-    const sessions = await loadAllSessions(slug);
-    const uniqueLevels = new Set<string>();
-
-    for (const session of sessions) {
-      for (const level of session.levels) {
-        uniqueLevels.add(level.id);
-      }
+  /** Load play summary for a WAD (cached). */
+  async function getPlaySummary(slug: string): Promise<WadPlaySummary | null> {
+    if (summaryCache.value.has(slug)) {
+      return summaryCache.value.get(slug)!;
     }
+    const sessions = await loadAllSessions(slug);
+    if (sessions.length === 0) return null;
+    const summary = buildSummary(slug, sessions);
+    summaryCache.value.set(slug, summary);
+    return summary;
+  }
 
-    return uniqueLevels.size;
+  function getCachedPlaySummary(slug: string): WadPlaySummary | null {
+    return summaryCache.value.get(slug) ?? null;
+  }
+
+  async function loadAllPlaySummaries(slugs: string[]): Promise<void> {
+    await Promise.all(slugs.map(slug => getPlaySummary(slug)));
+  }
+
+  async function refreshPlaySummary(slug: string): Promise<WadPlaySummary | null> {
+    summaryCache.value.delete(slug);
+    return getPlaySummary(slug);
   }
 
   return {
     captureStats,
     loadAllSessions,
-    getAggregatedStats,
-    getUniqueLevelsPlayed,
+    getCachedPlaySummary,
+    loadAllPlaySummaries,
+    refreshPlaySummary,
   };
 }

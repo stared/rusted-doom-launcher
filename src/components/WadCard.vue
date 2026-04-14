@@ -2,14 +2,14 @@
 import { ref, computed, watch } from "vue";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
-import { useSaves } from "../composables/useSaves";
+import { useStats } from "../composables/useStats";
 import { useLevelNames } from "../composables/useLevelNames";
 import { formatTics } from "../lib/format";
-import { SKILL_FROM_NUMBER } from "../lib/statsSchema";
+import { SKILL_FULL_NAMES } from "../lib/statsSchema";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 
 const { isDownloaded: checkDownloaded } = useDownload();
-const { getCachedSaveInfo } = useSaves();
+const { getCachedPlaySummary } = useStats();
 const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
 
 const TYPE_LABELS: Record<WadEntry["type"], string> = {
@@ -31,7 +31,7 @@ const props = defineProps<{
 }>();
 
 const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
-const saveInfo = computed(() => getCachedSaveInfo(props.wad.slug));
+const saveInfo = computed(() => getCachedPlaySummary(props.wad.slug));
 
 // Level completion progress
 const totalLevels = computed(() => {
@@ -118,7 +118,7 @@ watch(showStatsModal, async (isOpen) => {
         <!-- Fallback text when total unknown -->
         <template v-else>
           <span class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-            {{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.saveCount }} saves
+            {{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.sessionCount }} sessions
           </span>
         </template>
       </button>
@@ -182,38 +182,38 @@ watch(showStatsModal, async (isOpen) => {
             <tbody>
               <tr
                 v-for="(level, idx) in saveInfo.levels"
-                :key="`${level.levelname}-${level.skill}-${idx}`"
+                :key="`${level.id}-${level.skill}-${idx}`"
                 class="group border-b border-zinc-700/50 text-zinc-300 cursor-pointer hover:bg-zinc-700/50"
-                :title="`Pistol start ${level.levelname}`"
-                @click="playLevel(level.levelname)"
+                :title="`Pistol start ${level.id}`"
+                @click="playLevel(level.id)"
               >
                 <td class="py-2 pr-4 font-medium">
                   <span class="flex items-center gap-2">
-                    {{ getLevelDisplayName(wad.slug, level.levelname) }}
+                    {{ getLevelDisplayName(wad.slug, level.id) }}
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity rounded bg-green-600 px-1.5 py-0.5 text-xs text-white shrink-0">▶ Play</span>
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-center">
-                  <span :class="level.killcount === level.totalkills ? 'text-green-400' : ''">
-                    {{ level.killcount }}/{{ level.totalkills }}
+                  <span :class="level.kills === level.totalKills ? 'text-green-400' : ''">
+                    {{ level.kills }}/{{ level.totalKills }}
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-center">
-                  <span :class="level.itemcount === level.totalitems ? 'text-green-400' : ''">
-                    {{ level.itemcount }}/{{ level.totalitems }}
+                  <span :class="level.items === level.totalItems ? 'text-green-400' : ''">
+                    {{ level.items }}/{{ level.totalItems }}
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-center">
-                  <span :class="level.secretcount === level.totalsecrets ? 'text-green-400' : ''">
-                    {{ level.secretcount }}/{{ level.totalsecrets }}
+                  <span :class="level.secrets === level.totalSecrets ? 'text-green-400' : ''">
+                    {{ level.secrets }}/{{ level.totalSecrets }}
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-center text-xs">
-                  <span :class="level.skill >= 3 ? 'text-red-400' : level.skill >= 2 ? 'text-yellow-400' : 'text-zinc-400'">
-                    {{ SKILL_FROM_NUMBER[level.skill] }}
+                  <span :class="['UV', 'NM'].includes(level.skill) ? 'text-red-400' : level.skill === 'HMP' ? 'text-yellow-400' : 'text-zinc-400'">
+                    {{ SKILL_FULL_NAMES[level.skill] }}
                   </span>
                 </td>
-                <td class="py-2 text-right font-mono">{{ formatTics(level.leveltime) }}</td>
+                <td class="py-2 text-right font-mono">{{ formatTics(level.timeTics) }}</td>
               </tr>
             </tbody>
           </table>
@@ -222,8 +222,8 @@ watch(showStatsModal, async (isOpen) => {
         <!-- Footer with totals -->
         <div class="p-4 border-t border-zinc-700 text-sm text-zinc-400 flex justify-between">
           <span>
-            <template v-if="totalLevels">{{ saveInfo.mapsPlayed }}/{{ totalLevels }} maps completed • {{ saveInfo.saveCount }} saves</template>
-            <template v-else>{{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.saveCount }} saves</template>
+            <template v-if="totalLevels">{{ saveInfo.mapsPlayed }}/{{ totalLevels }} maps completed • {{ saveInfo.sessionCount }} sessions</template>
+            <template v-else>{{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.sessionCount }} sessions</template>
           </span>
           <span class="text-zinc-500">Click a level to pistol start</span>
         </div>
