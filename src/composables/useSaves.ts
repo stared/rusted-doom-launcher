@@ -15,15 +15,6 @@ export interface LevelStats {
   skill: number; // 0-4, skill level this was played on
 }
 
-// GZDoom skill levels
-export const SKILL_NAMES = [
-  "I'm too young to die",
-  "Hey, not too rough",
-  "Hurt me plenty",
-  "Ultra-Violence",
-  "Nightmare",
-] as const;
-
 export interface WadSaveInfo {
   slug: string;
   saveCount: number;

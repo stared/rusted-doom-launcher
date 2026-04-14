@@ -7,6 +7,7 @@ import type { WadEntry } from "../lib/schema";
 import type { WadSaveInfo } from "../composables/useSaves";
 import type { DownloadProgress } from "../composables/useDownload";
 import { useWadSummaries } from "../composables/useWadSummaries";
+import { TYPE_LABELS, IWAD_LABELS } from "../lib/constants";
 
 const props = defineProps<{
   wads: WadEntry[];
@@ -79,30 +80,11 @@ const filterDefs = computed(() => {
 });
 
 function formatIwad(iwad: string): string {
-  const names: Record<string, string> = {
-    doom: "Doom",
-    doom2: "Doom II",
-    plutonia: "Plutonia",
-    tnt: "TNT",
-    heretic: "Heretic",
-    hexen: "Hexen",
-    freedoom1: "Freedoom 1",
-    freedoom2: "Freedoom 2",
-  };
-  return names[iwad] ?? iwad;
+  return IWAD_LABELS[iwad] ?? iwad;
 }
 
 function formatType(type: string): string {
-  const names: Record<string, string> = {
-    "single-level": "Single Level",
-    episode: "Episode",
-    megawad: "Megawad",
-    "gameplay-mod": "Mod",
-    "total-conversion": "TC",
-    "resource-pack": "Resource",
-    deathmatch: "Deathmatch",
-  };
-  return names[type] ?? type;
+  return TYPE_LABELS[type as keyof typeof TYPE_LABELS] ?? type;
 }
 
 // Filtered and sorted WADs

@@ -5,6 +5,7 @@ import type { WadSaveInfo } from "../composables/useSaves";
 import type { DownloadProgress } from "../composables/useDownload";
 import { useLevelNames } from "../composables/useLevelNames";
 import { formatBytes, formatTics } from "../lib/format";
+import { SKILL_FROM_NUMBER } from "../lib/statsSchema";
 
 const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
 
@@ -229,7 +230,7 @@ watch(showStatsModal, async (isOpen) => {
                 </td>
                 <td class="py-2 pr-4 text-center text-xs">
                   <span :class="level.skill >= 3 ? 'text-red-400' : level.skill >= 2 ? 'text-yellow-400' : 'text-zinc-400'">
-                    {{ ['ITYTD', 'HNTR', 'HMP', 'UV', 'NM'][level.skill] }}
+                    {{ SKILL_FROM_NUMBER[level.skill] }}
                   </span>
                 </td>
                 <td class="py-2 text-right font-mono">{{ formatTics(level.leveltime) }}</td>
