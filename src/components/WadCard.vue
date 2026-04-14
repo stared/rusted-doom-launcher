@@ -4,6 +4,7 @@ import type { WadEntry } from "../lib/schema";
 import type { WadSaveInfo } from "../composables/useSaves";
 import type { DownloadProgress } from "../composables/useDownload";
 import { useLevelNames } from "../composables/useLevelNames";
+import { formatBytes, formatTics } from "../lib/format";
 
 const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
 
@@ -28,15 +29,6 @@ const props = defineProps<{
   downloadProgress?: DownloadProgress;
   saveInfo: WadSaveInfo | null;
 }>();
-
-// Format bytes to human readable
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
-}
 
 // Compute download progress percentage
 const progressPercent = computed(() => {
@@ -88,13 +80,6 @@ watch(showStatsModal, async (isOpen) => {
   }
 });
 
-// Format time from tics (35 tics = 1 second) to MM:SS
-function formatTime(tics: number): string {
-  const totalSeconds = Math.floor(tics / 35);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-}
 </script>
 
 <template>
@@ -247,7 +232,7 @@ function formatTime(tics: number): string {
                     {{ ['ITYTD', 'HNTR', 'HMP', 'UV', 'NM'][level.skill] }}
                   </span>
                 </td>
-                <td class="py-2 text-right font-mono">{{ formatTime(level.leveltime) }}</td>
+                <td class="py-2 text-right font-mono">{{ formatTics(level.leveltime) }}</td>
               </tr>
             </tbody>
           </table>

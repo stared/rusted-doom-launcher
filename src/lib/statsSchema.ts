@@ -50,16 +50,3 @@ export const PlaySessionSchema = z.object({
   levels: z.array(LevelPlayStatsSchema).min(1),
 });
 export type PlaySession = z.infer<typeof PlaySessionSchema>;
-
-// Helper to convert tics to seconds
-export function ticsToSeconds(tics: number): number {
-  return tics / 35;
-}
-
-// Helper to format time from tics to MM:SS
-export function formatTimeFromTics(tics: number): string {
-  const totalSeconds = Math.floor(tics / 35);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}

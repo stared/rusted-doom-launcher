@@ -3,6 +3,7 @@ import { ref, computed, onUnmounted } from "vue";
 import type { WadEntry } from "../lib/schema";
 import type { DownloadProgress } from "../composables/useDownload";
 import { useWadSummaries } from "../composables/useWadSummaries";
+import { formatBytes } from "../lib/format";
 
 // Slideshow interval in milliseconds
 const SLIDESHOW_INTERVAL_MS = 2000;
@@ -34,15 +35,6 @@ const difficultyConfig = computed(() => {
   if (d <= 8) return { color: "bg-red-500", textColor: "text-red-400", label: "Slaughter" };
   return { color: "bg-red-700", textColor: "text-red-300", label: "Nightmare" };
 });
-
-// Format bytes to human readable
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
-}
 
 // Compute download progress percentage
 const progressPercent = computed(() => {

@@ -16,7 +16,7 @@ import type { SkillLevel } from "../lib/statsSchema";
 
 // Re-export for convenience
 export type { GameplayLog, GameEvent } from "../lib/gameplayLogSchema";
-export { getDeathCount, getLevelsVisited, formatDuration } from "../lib/gameplayLogSchema";
+export { getDeathCount, getLevelsVisited } from "../lib/gameplayLogSchema";
 
 // Sanitize ISO timestamp for use as filename (replace colons)
 function sanitizeTimestamp(isoString: string): string {

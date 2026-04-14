@@ -3,8 +3,9 @@ import { ref, onMounted } from "vue";
 import { History, Skull, KeyRound, Package, Clock } from "lucide-vue-next";
 import { useStats } from "../composables/useStats";
 import { useLevelNames } from "../composables/useLevelNames";
-import type { SkillLevel } from "../lib/statsSchema";
+import { SKILL_FULL_NAMES, type SkillLevel } from "../lib/statsSchema";
 import type { WadEntry } from "../lib/schema";
+import { formatTics, getDateKey, formatDateHeader } from "../lib/format";
 
 interface LevelEntry {
   levelId: string;
@@ -40,40 +41,6 @@ const { loadLevelNames } = useLevelNames();
 const dateGroups = ref<DateGroup[]>([]);
 const loading = ref(true);
 
-// Format tics to M:SS or H:MM:SS
-function formatTime(tics: number): string {
-  const seconds = Math.floor(tics / 35);
-  const hrs = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
-
-// Full skill names
-const SKILL_NAMES: Record<SkillLevel, string> = {
-  ITYTD: "I'm too young to die!",
-  HNTR: "Hey, not too rough!",
-  HMP: "Hurt me plenty!",
-  UV: "Ultra-Violence!",
-  NM: "Nightmare!",
-};
-
-// Get local date key for grouping (YYYY-MM-DD in local timezone)
-function getDateKey(isoString: string): string {
-  const date = new Date(isoString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-// Format date key as "18 Dec 2025"
-function formatDateHeader(dateKey: string): string {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${day} ${months[month - 1]} ${year}`;
-}
 
 onMounted(async () => {
   loading.value = true;
@@ -207,7 +174,7 @@ onMounted(async () => {
               </div>
 
               <!-- Skill -->
-              <span class="text-[10px] text-zinc-500 w-28 text-right" :title="level.skill">{{ SKILL_NAMES[level.skill] }}</span>
+              <span class="text-[10px] text-zinc-500 w-28 text-right" :title="level.skill">{{ SKILL_FULL_NAMES[level.skill] }}</span>
 
               <!-- Stats with colors and icons (icon on right, fixed widths) -->
               <div class="flex items-center gap-5 font-mono text-xs tabular-nums">
@@ -234,7 +201,7 @@ onMounted(async () => {
                 </div>
                 <!-- Time -->
                 <div class="w-16 flex items-center justify-end gap-1 text-zinc-400">
-                  <span>{{ formatTime(level.timeTics) }}</span>
+                  <span>{{ formatTics(level.timeTics) }}</span>
                   <Clock :size="11" class="text-zinc-500/60 ml-1" />
                 </div>
               </div>
