@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -7,7 +6,6 @@ use std::thread;
 use tauri::Manager;
 
 pub mod launcher_downloads;
-mod wad_parser;
 
 #[tauri::command]
 async fn read_launcher_downloads(library_path: String) -> Result<launcher_downloads::LauncherDownloads, String> {
@@ -161,32 +159,6 @@ fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
     Ok(stdout.contains(&process_name.to_lowercase()))
 }
 
-/// Extract level names from a WAD file's MAPINFO/ZMAPINFO/UMAPINFO/DEHACKED lumps.
-/// Returns a map of level ID (e.g., "MAP01") to level name (e.g., "Entryway").
-/// Only includes levels that have names defined in the WAD.
-#[tauri::command]
-async fn extract_wad_level_names(wad_path: String) -> Result<HashMap<String, String>, String> {
-    wad_parser::extract_level_names(&wad_path)
-}
-
-/// Extract level names and save them to a JSON file alongside the WAD.
-/// Creates a file named "{wad_filename}.levels.json" in the same directory.
-#[tauri::command]
-async fn extract_and_save_level_names(wad_path: String) -> Result<String, String> {
-    let names = wad_parser::extract_level_names(&wad_path)?;
-
-    let path = Path::new(&wad_path);
-    let json_path = path.with_extension("levels.json");
-
-    let json = serde_json::to_string_pretty(&names)
-        .map_err(|e| format!("Failed to serialize level names: {}", e))?;
-
-    std::fs::write(&json_path, &json)
-        .map_err(|e| format!("Failed to write level names file: {}", e))?;
-
-    Ok(json_path.to_string_lossy().to_string())
-}
-
 /// Launch GZDoom/UZDoom with the specified executable path and arguments.
 /// Captures stdout/stderr for later retrieval via get_gzdoom_log.
 #[tauri::command]
@@ -289,8 +261,6 @@ pub fn run() {
             get_gzdoom_log,
             get_engine_version,
             is_process_running,
-            extract_wad_level_names,
-            extract_and_save_level_names,
             read_launcher_downloads,
             write_launcher_downloads
         ]);
