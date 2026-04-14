@@ -4,10 +4,11 @@ import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useSaves } from "../composables/useSaves";
 import { useLevelNames } from "../composables/useLevelNames";
-import { formatBytes, formatTics } from "../lib/format";
+import { formatTics } from "../lib/format";
 import { SKILL_FROM_NUMBER } from "../lib/statsSchema";
+import DownloadPlayButton from "./DownloadPlayButton.vue";
 
-const { isDownloaded: checkDownloaded, isDownloading: checkDownloading, getDownloadProgress } = useDownload();
+const { isDownloaded: checkDownloaded } = useDownload();
 const { getCachedSaveInfo } = useSaves();
 const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
 
@@ -29,24 +30,8 @@ const props = defineProps<{
   wad: WadEntry;
 }>();
 
-// Reactive download state from composable
 const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
-const isDownloading = computed(() => checkDownloading(props.wad.slug));
-const downloadProgress = computed(() => getDownloadProgress(props.wad.slug));
 const saveInfo = computed(() => getCachedSaveInfo(props.wad.slug));
-
-const progressPercent = computed(() => {
-  const dp = downloadProgress.value;
-  if (!dp || dp.total === 0) return 0;
-  return Math.round((dp.progress / dp.total) * 100);
-});
-
-const progressText = computed(() => {
-  const dp = downloadProgress.value;
-  if (!dp) return "Downloading...";
-  if (dp.total === 0) return `${formatBytes(dp.progress)}`;
-  return `${formatBytes(dp.progress)} / ${formatBytes(dp.total)} (${progressPercent.value}%)`;
-});
 
 // Level completion progress
 const totalLevels = computed(() => {
@@ -139,22 +124,13 @@ watch(showStatsModal, async (isOpen) => {
       </button>
 
       <div class="mt-3 flex gap-2">
-        <button
-          class="flex-1 rounded px-3 py-1.5 text-sm font-medium text-white transition-colors relative overflow-hidden"
-          :class="isDownloading ? 'bg-zinc-700 cursor-wait' : isDownloaded ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'"
-          :disabled="isDownloading"
-          @click="emit('play', wad)"
-        >
-          <!-- Progress bar background -->
-          <div
-            v-if="isDownloading && downloadProgress"
-            class="absolute inset-0 bg-blue-600 transition-all duration-300"
-            :style="{ width: `${progressPercent}%` }"
-          />
-          <span class="relative z-10">
-            {{ isDownloading ? progressText : isDownloaded ? "▶ Play" : "▶ Download & Play" }}
-          </span>
-        </button>
+        <DownloadPlayButton
+          class="flex-1"
+          :wad="wad"
+          play-label="Play"
+          download-label="▶ Download & Play"
+          @play="emit('play', wad)"
+        />
         <button
           v-if="isDownloaded"
           class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-red-900 hover:text-red-400"

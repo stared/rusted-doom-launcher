@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from "vue";
 import type { WadEntry } from "../lib/schema";
-import { useDownload } from "../composables/useDownload";
 import { useWadSummaries } from "../composables/useWadSummaries";
-import { formatBytes } from "../lib/format";
+import DownloadPlayButton from "./DownloadPlayButton.vue";
 
 // Slideshow interval in milliseconds
 const SLIDESHOW_INTERVAL_MS = 2000;
 
-const { isDownloaded: checkDownloaded, isDownloading: checkDownloading, getDownloadProgress } = useDownload();
 const { getDifficulty, getVibe } = useWadSummaries();
 
 const props = defineProps<{
@@ -16,11 +14,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ play: [wad: WadEntry] }>();
-
-// Reactive download state from composable
-const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
-const isDownloading = computed(() => checkDownloading(props.wad.slug));
-const downloadProgress = computed(() => getDownloadProgress(props.wad.slug));
 
 // Get difficulty from summaries
 const difficulty = computed(() => getDifficulty(props.wad.slug));
@@ -37,20 +30,6 @@ const difficultyConfig = computed(() => {
   if (d <= 6.5) return { color: "bg-orange-500", textColor: "text-orange-400", label: "Brutal" };
   if (d <= 8) return { color: "bg-red-500", textColor: "text-red-400", label: "Slaughter" };
   return { color: "bg-red-700", textColor: "text-red-300", label: "Nightmare" };
-});
-
-// Compute download progress percentage
-const progressPercent = computed(() => {
-  const dp = downloadProgress.value;
-  if (!dp || dp.total === 0) return 0;
-  return Math.round((dp.progress / dp.total) * 100);
-});
-
-const progressText = computed(() => {
-  const dp = downloadProgress.value;
-  if (!dp) return "Downloading...";
-  if (dp.total === 0) return `${formatBytes(dp.progress)}`;
-  return `${formatBytes(dp.progress)} / ${formatBytes(dp.total)}`;
 });
 
 // All available images: thumbnail first, then screenshots
@@ -168,22 +147,7 @@ const authorDisplay = computed(() => {
       </p>
 
       <!-- Play/Download button -->
-      <button
-        class="w-full rounded px-4 py-2 text-sm font-bold text-white transition-all duration-200 relative overflow-hidden"
-        :class="isDownloading ? 'bg-zinc-700 cursor-wait' : isDownloaded ? 'bg-green-600 hover:bg-green-500 hover:shadow-lg hover:shadow-green-600/20' : 'bg-red-600 hover:bg-red-500 hover:shadow-lg hover:shadow-red-600/20'"
-        :disabled="isDownloading"
-        @click="emit('play', wad)"
-      >
-        <!-- Progress bar background -->
-        <div
-          v-if="isDownloading && downloadProgress"
-          class="absolute inset-0 bg-blue-600 transition-all duration-300"
-          :style="{ width: `${progressPercent}%` }"
-        />
-        <span class="relative z-10">
-          {{ isDownloading ? progressText : isDownloaded ? "▶ Play" : "Download & Play" }}
-        </span>
-      </button>
+      <DownloadPlayButton :wad="wad" @play="emit('play', wad)" />
     </div>
   </div>
 </template>
