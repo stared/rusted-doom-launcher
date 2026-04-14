@@ -26,7 +26,7 @@
   },
   "plugins": {
     "shell": {
-      "open": "^(/|[A-Za-z]:\\\\)"
+      "open": "^(/|[A-Za-z]:\\\\|https://)"
     }
   },
   "bundle": {
