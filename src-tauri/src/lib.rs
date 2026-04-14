@@ -24,8 +24,10 @@ async fn write_launcher_downloads(
     launcher_downloads::write_launcher_downloads(path, &state)
 }
 
-// Global state to hold the running GZDoom process output collector
-static GZDOOM_LOG: std::sync::OnceLock<Arc<Mutex<GZDoomSession>>> = std::sync::OnceLock::new();
+// Global state to hold the running GZDoom process output collector.
+// Using Mutex<Option<...>> instead of OnceLock so we can reset between launches.
+static GZDOOM_LOG: std::sync::LazyLock<Mutex<Option<Arc<Mutex<GZDoomSession>>>>> =
+    std::sync::LazyLock::new(|| Mutex::new(None));
 
 struct GZDoomSession {
     start_time: std::time::Instant,
@@ -198,15 +200,9 @@ async fn launch_gzdoom(
         return Err("Invalid path: must be GZDoom or UZDoom".to_string());
     }
 
-    // Initialize or reset the session
+    // Create a new session (replaces any previous one)
     let session = Arc::new(Mutex::new(GZDoomSession::new()));
-    let _ = GZDOOM_LOG.set(session.clone());
-
-    // If already set, reset it
-    if let Some(existing) = GZDOOM_LOG.get() {
-        let mut guard = existing.lock().unwrap();
-        *guard = GZDoomSession::new();
-    }
+    *GZDOOM_LOG.lock().unwrap() = Some(session.clone());
 
     // Spawn GZDoom with piped stdout/stderr
     let mut child = Command::new(&gzdoom_path)
@@ -222,7 +218,7 @@ async fn launch_gzdoom(
 
     // Spawn thread to read stdout
     if let Some(stdout) = stdout {
-        let session_clone = GZDOOM_LOG.get().unwrap().clone();
+        let session_clone = session.clone();
         thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines().map_while(Result::ok) {
@@ -235,7 +231,7 @@ async fn launch_gzdoom(
 
     // Spawn thread to read stderr (merge with stdout)
     if let Some(stderr) = stderr {
-        let session_clone = GZDOOM_LOG.get().unwrap().clone();
+        let session_clone = session.clone();
         thread::spawn(move || {
             let reader = BufReader::new(stderr);
             for line in reader.lines().map_while(Result::ok) {
@@ -249,10 +245,8 @@ async fn launch_gzdoom(
     // Spawn thread to wait for process exit and mark session as finished
     thread::spawn(move || {
         let _ = child.wait();
-        if let Some(session) = GZDOOM_LOG.get() {
-            let mut guard = session.lock().unwrap();
-            guard.finished = true;
-        }
+        let mut guard = session.lock().unwrap();
+        guard.finished = true;
     });
 
     Ok(())
@@ -262,7 +256,8 @@ async fn launch_gzdoom(
 /// Returns JSON array of [time_ms, text] pairs, or null if no session/not finished.
 #[tauri::command]
 async fn get_gzdoom_log() -> Result<Option<Vec<(u64, String)>>, String> {
-    match GZDOOM_LOG.get() {
+    let slot = GZDOOM_LOG.lock().unwrap();
+    match slot.as_ref() {
         Some(session) => {
             let guard = session.lock().unwrap();
             if guard.finished {
