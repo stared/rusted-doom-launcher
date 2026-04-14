@@ -1,5 +1,4 @@
 import { readDir, readTextFile, writeTextFile, mkdir, exists, stat } from "@tauri-apps/plugin-fs";
-import { useSettings } from "./useSettings";
 import { isNotFoundError } from "../lib/errors";
 import {
   PlaySessionSchema,
@@ -9,6 +8,7 @@ import {
   type SkillLevel,
 } from "../lib/statsSchema";
 import { parseSaveFile } from "../lib/saveParser";
+import { useLibrary } from "./useLibrary";
 
 // Parse level name from GZDoom info.json Comment field
 // Format: "MAP13 - Polychromatic Terrace" or "E1M1 - Hangar"
@@ -52,15 +52,7 @@ function generateSessionHash(session: Omit<PlaySession, "capturedAt">): string {
 }
 
 export function useStats() {
-  const { settings } = useSettings();
-
-  function getStatsDir(slug: string): string {
-    return `${settings.value.libraryPath}/stats/${slug}`;
-  }
-
-  function getSavesDir(slug: string): string {
-    return `${settings.value.libraryPath}/saves/${slug}`;
-  }
+  const { statsDir, savesDir } = useLibrary();
 
   // Load or create level names mapping for a WAD
   async function loadLevelNames(statsDir: string): Promise<Map<string, string>> {
@@ -145,12 +137,12 @@ export function useStats() {
 
   // Capture stats from all save files for a WAD
   async function captureStats(slug: string): Promise<number> {
-    const savesDir = getSavesDir(slug);
-    const statsDir = getStatsDir(slug);
+    const savesDirPath = await savesDir(slug);
+    const statsDirPath = await statsDir(slug);
 
     // Check if saves directory exists
     try {
-      if (!(await exists(savesDir))) {
+      if (!(await exists(savesDirPath))) {
         return 0;
       }
     } catch (e) {
@@ -162,7 +154,7 @@ export function useStats() {
 
     // Ensure stats directory exists
     try {
-      await mkdir(statsDir, { recursive: true });
+      await mkdir(statsDirPath, { recursive: true });
     } catch (e) {
       if (!isNotFoundError(e)) {
         console.error(`Error creating stats dir for ${slug}:`, e);
@@ -171,19 +163,19 @@ export function useStats() {
     }
 
     // Load existing level names mapping
-    const levelNames = await loadLevelNames(statsDir);
+    const levelNames = await loadLevelNames(statsDirPath);
     let levelNamesUpdated = false;
 
     // Read all save files
     let saveFiles: { name: string; mtime: Date }[];
     try {
-      const entries = await readDir(savesDir);
+      const entries = await readDir(savesDirPath);
       saveFiles = [];
 
       for (const entry of entries) {
         if (entry.name?.endsWith(".zds")) {
           try {
-            const fileStat = await stat(`${savesDir}/${entry.name}`);
+            const fileStat = await stat(`${savesDirPath}/${entry.name}`);
             const mtime = fileStat.mtime ? new Date(fileStat.mtime) : new Date();
             saveFiles.push({ name: entry.name, mtime });
           } catch {
@@ -200,7 +192,7 @@ export function useStats() {
 
     // Process each save file
     for (const save of saveFiles) {
-      const savePath = `${savesDir}/${save.name}`;
+      const savePath = `${savesDirPath}/${save.name}`;
       const session = await parseSaveForStats(savePath, save.name);
 
       if (!session) continue;
@@ -224,7 +216,7 @@ export function useStats() {
       const hash = generateSessionHash(session);
 
       // Check if we already have a session with identical content
-      if (await sessionHashExists(statsDir, hash)) {
+      if (await sessionHashExists(statsDirPath, hash)) {
         continue;
       }
 
@@ -238,7 +230,7 @@ export function useStats() {
       };
 
       const filename = `${hash}.json`;
-      const filepath = `${statsDir}/${filename}`;
+      const filepath = `${statsDirPath}/${filename}`;
 
       try {
         await writeTextFile(filepath, JSON.stringify(fullSession, null, 2));
@@ -252,7 +244,7 @@ export function useStats() {
     // Save updated level names if changed
     if (levelNamesUpdated) {
       try {
-        await saveLevelNames(statsDir, levelNames);
+        await saveLevelNames(statsDirPath, levelNames);
         console.log(`[Stats] Updated level names for ${slug}`);
       } catch (e) {
         console.error(`Error saving level names for ${slug}:`, e);
@@ -264,10 +256,10 @@ export function useStats() {
 
   // Load all play sessions for a WAD
   async function loadAllSessions(slug: string): Promise<PlaySession[]> {
-    const statsDir = getStatsDir(slug);
+    const statsDirPath = await statsDir(slug);
 
     try {
-      if (!(await exists(statsDir))) {
+      if (!(await exists(statsDirPath))) {
         return [];
       }
     } catch {
@@ -275,11 +267,11 @@ export function useStats() {
     }
 
     // Load level names mapping
-    const levelNames = await loadLevelNames(statsDir);
+    const levelNames = await loadLevelNames(statsDirPath);
 
     let files: string[];
     try {
-      const entries = await readDir(statsDir);
+      const entries = await readDir(statsDirPath);
       files = entries
         .filter((e) => e.name?.endsWith(".json") && e.name !== "level-names.json")
         .map((e) => e.name!)
@@ -292,7 +284,7 @@ export function useStats() {
 
     for (const filename of files) {
       try {
-        const content = await readTextFile(`${statsDir}/${filename}`);
+        const content = await readTextFile(`${statsDirPath}/${filename}`);
         const parsed = PlaySessionSchema.safeParse(JSON.parse(content));
         if (parsed.success) {
           const session = parsed.data;
@@ -357,6 +349,5 @@ export function useStats() {
     loadAllSessions,
     getAggregatedStats,
     getUniqueLevelsPlayed,
-    getStatsDir,
   };
 }

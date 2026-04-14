@@ -3,29 +3,22 @@ import { readFile, readTextFile, writeTextFile, exists, mkdir } from "@tauri-app
 import { invoke } from "@tauri-apps/api/core";
 import { unzipSync, strFromU8 } from "fflate";
 import { extractLevelNames, extractLevelNamesFromData, parseLevelNamesFromContent } from "../lib/wadParser";
-import { useSettings } from "./useSettings";
 import type { LauncherDownloads } from "../lib/schema";
 import { isNotFoundError } from "../lib/errors";
+import { useLibrary } from "./useLibrary";
 
 // Singleton cache: slug -> (mapId -> levelName)
 const levelNamesCache = ref<Map<string, Map<string, string>>>(new Map());
 
 export function useLevelNames() {
-  const { settings } = useSettings();
-
-  /**
-   * Get the path to the level names JSON file for a slug.
-   */
-  function getLevelNamesPath(slug: string): string {
-    return `${settings.value.libraryPath}/level-names/${slug}.json`;
-  }
+  const { base, levelNamesPath, levelNamesDir, wadFile } = useLibrary();
 
   /**
    * Load level names from persistent storage.
    */
   async function loadFromStorage(slug: string): Promise<Map<string, string> | null> {
     try {
-      const path = getLevelNamesPath(slug);
+      const path = await levelNamesPath(slug);
       if (await exists(path)) {
         const content = await readTextFile(path);
         const data = JSON.parse(content) as Record<string, string>;
@@ -44,10 +37,10 @@ export function useLevelNames() {
    */
   async function saveToStorage(slug: string, levels: Map<string, string>): Promise<void> {
     try {
-      const dir = `${settings.value.libraryPath}/level-names`;
+      const dir = await levelNamesDir();
       await mkdir(dir, { recursive: true });
 
-      const path = getLevelNamesPath(slug);
+      const path = await levelNamesPath(slug);
       const data = Object.fromEntries(levels);
       await writeTextFile(path, JSON.stringify(data, null, 2));
       console.log(`[LevelNames] Saved ${levels.size} level names for ${slug}`);
@@ -61,7 +54,7 @@ export function useLevelNames() {
    */
   async function getDownloadInfo(slug: string): Promise<{ filename: string } | null> {
     try {
-      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: settings.value.libraryPath });
+      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
       if (state.downloads[slug]) return state.downloads[slug];
     } catch (e) {
       console.error(`Error reading launcher-downloads.json for ${slug}:`, e);
@@ -95,7 +88,7 @@ export function useLevelNames() {
         return null;
       }
 
-      const filePath = `${settings.value.libraryPath}/${downloadInfo.filename}`;
+      const filePath = await wadFile(downloadInfo.filename);
       const filename = downloadInfo.filename.toLowerCase();
 
       let allLevels = new Map<string, string>();
@@ -198,7 +191,7 @@ export function useLevelNames() {
    */
   async function rescanAllWads(): Promise<number> {
     try {
-      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: settings.value.libraryPath });
+      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
       let count = 0;
       for (const slug of Object.keys(state.downloads)) {
         // Clear cache to force re-parse

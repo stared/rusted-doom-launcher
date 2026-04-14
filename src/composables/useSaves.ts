@@ -2,6 +2,7 @@ import { ref } from "vue";
 import { exists, readDir, stat } from "@tauri-apps/plugin-fs";
 import { useSettings } from "./useSettings";
 import { parseSaveFile } from "../lib/saveParser";
+import { useLibrary } from "./useLibrary";
 
 export interface LevelStats {
   levelname: string;
@@ -28,10 +29,7 @@ const saveInfoCache = ref<Map<string, WadSaveInfo>>(new Map());
 
 export function useSaves() {
   const { settings } = useSettings();
-
-  function getSaveDir(slug: string): string {
-    return `${settings.value.libraryPath}/saves/${slug}`;
-  }
+  const { savesDir } = useLibrary();
 
   async function getSaveInfo(slug: string): Promise<WadSaveInfo | null> {
     // Check cache first
@@ -45,7 +43,7 @@ export function useSaves() {
     }
 
     try {
-      const saveDir = getSaveDir(slug);
+      const saveDir = await savesDir(slug);
 
       // No save directory = no saves
       if (!(await exists(saveDir))) {

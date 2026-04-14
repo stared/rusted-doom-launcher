@@ -1,11 +1,11 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { join } from "@tauri-apps/api/path";
 import { readDir, mkdir } from "@tauri-apps/plugin-fs";
 import type { Iwad } from "../lib/schema";
 import type { SkillLevel } from "../lib/statsSchema";
 import { useSettings } from "./useSettings";
 import { useGameplayLog } from "./useGameplayLog";
+import { useLibrary } from "./useLibrary";
 import { isExistsError } from "../lib/errors";
 import { getOs } from "../lib/platform";
 
@@ -27,14 +27,14 @@ const iwadFilenames = new Map<Iwad, string>(); // e.g., "doom" -> "doom.wad"
 export function useGZDoom() {
   const { settings } = useSettings();
   const { saveGameplayLog } = useGameplayLog();
+  const lib = useLibrary();
 
   async function detectIwads() {
-    const dir = settings.value.libraryPath;
-    if (!dir) {
+    if (!settings.value.libraryPath) {
       console.warn("[detectIwads] No libraryPath set, skipping");
       return;
     }
-    const iwadsDir = await join(dir, "iwads");
+    const iwadsDir = await lib.iwadsDir();
     let entries: Awaited<ReturnType<typeof readDir>> = [];
     try {
       entries = await readDir(iwadsDir);
@@ -64,13 +64,12 @@ export function useGZDoom() {
     skill: SkillLevel = "HMP",
     extraArgs: string[] = []
   ) {
-    const dir = settings.value.libraryPath;
     const filename = iwadFilenames.get(iwad);
     if (!filename) throw new Error(`IWAD ${iwad} not detected`);
-    const iwadPath = await join(dir, "iwads", filename);
+    const iwadPath = await lib.iwadFile(filename);
 
     // Create per-WAD save directory if slug provided
-    const saveDir = wadSlug ? await join(dir, "saves", wadSlug) : null;
+    const saveDir = wadSlug ? await lib.savesDir(wadSlug) : null;
     if (saveDir) {
       try {
         await mkdir(saveDir, { recursive: true });

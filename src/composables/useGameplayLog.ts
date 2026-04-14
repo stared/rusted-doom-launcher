@@ -1,6 +1,6 @@
 import { readDir, readTextFile, writeTextFile, mkdir, exists } from "@tauri-apps/plugin-fs";
-import { useSettings } from "./useSettings";
 import { isNotFoundError } from "../lib/errors";
+import { useLibrary } from "./useLibrary";
 import {
   PATTERNS,
   GameplayLogSchema,
@@ -24,11 +24,7 @@ function sanitizeTimestamp(isoString: string): string {
 }
 
 export function useGameplayLog() {
-  const { settings } = useSettings();
-
-  function getSessionsDir(slug: string): string {
-    return `${settings.value.libraryPath}/sessions/${slug}`;
-  }
+  const { sessionsDir } = useLibrary();
 
   /**
    * Parse a single log line into a GameEvent
@@ -105,11 +101,11 @@ export function useGameplayLog() {
     startedAt: Date,
     endedAt: Date
   ): Promise<string> {
-    const sessionsDir = getSessionsDir(slug);
+    const sessionsDirPath = await sessionsDir(slug);
 
     // Ensure directory exists
     try {
-      await mkdir(sessionsDir, { recursive: true });
+      await mkdir(sessionsDirPath, { recursive: true });
     } catch (e) {
       if (!isNotFoundError(e)) {
         console.error(`Error creating sessions dir for ${slug}:`, e);
@@ -137,7 +133,7 @@ export function useGameplayLog() {
 
     // Write to file
     const filename = `${sanitizeTimestamp(startedAt.toISOString())}.json`;
-    const filepath = `${sessionsDir}/${filename}`;
+    const filepath = `${sessionsDirPath}/${filename}`;
 
     await writeTextFile(filepath, JSON.stringify(log, null, 2));
     console.log(`[GameplayLog] Saved session to ${filename} (${events.length} events)`);
@@ -149,10 +145,10 @@ export function useGameplayLog() {
    * Load all gameplay logs for a WAD
    */
   async function loadAllGameplayLogs(slug: string): Promise<GameplayLog[]> {
-    const sessionsDir = getSessionsDir(slug);
+    const sessionsDirPath = await sessionsDir(slug);
 
     try {
-      if (!(await exists(sessionsDir))) {
+      if (!(await exists(sessionsDirPath))) {
         return [];
       }
     } catch {
@@ -161,7 +157,7 @@ export function useGameplayLog() {
 
     let files: string[];
     try {
-      const entries = await readDir(sessionsDir);
+      const entries = await readDir(sessionsDirPath);
       files = entries
         .filter((e) => e.name?.endsWith(".json"))
         .map((e) => e.name!)
@@ -174,7 +170,7 @@ export function useGameplayLog() {
 
     for (const filename of files) {
       try {
-        const content = await readTextFile(`${sessionsDir}/${filename}`);
+        const content = await readTextFile(`${sessionsDirPath}/${filename}`);
         const parsed = GameplayLogSchema.safeParse(JSON.parse(content));
         if (parsed.success) {
           logs.push(parsed.data);
@@ -190,7 +186,6 @@ export function useGameplayLog() {
   }
 
   return {
-    getSessionsDir,
     parseLogLine,
     parseRawLog,
     saveGameplayLog,
