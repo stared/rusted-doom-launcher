@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import type { WadEntry } from "../lib/schema";
-import type { WadSaveInfo } from "../composables/useSaves";
-import type { DownloadProgress } from "../composables/useDownload";
+import { useDownload } from "../composables/useDownload";
+import { useSaves } from "../composables/useSaves";
 import { useLevelNames } from "../composables/useLevelNames";
 import { formatBytes, formatTics } from "../lib/format";
 import { SKILL_FROM_NUMBER } from "../lib/statsSchema";
 
+const { isDownloaded: checkDownloaded, isDownloading: checkDownloading, getDownloadProgress } = useDownload();
+const { getCachedSaveInfo } = useSaves();
 const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
 
 const TYPE_LABELS: Record<WadEntry["type"], string> = {
@@ -25,23 +27,25 @@ const DIFFICULTY_CONFIG: Record<WadEntry["difficulty"], { label: string; color: 
 
 const props = defineProps<{
   wad: WadEntry;
-  isDownloaded: boolean;
-  isDownloading: boolean;
-  downloadProgress?: DownloadProgress;
-  saveInfo: WadSaveInfo | null;
 }>();
 
-// Compute download progress percentage
+// Reactive download state from composable
+const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
+const isDownloading = computed(() => checkDownloading(props.wad.slug));
+const downloadProgress = computed(() => getDownloadProgress(props.wad.slug));
+const saveInfo = computed(() => getCachedSaveInfo(props.wad.slug));
+
 const progressPercent = computed(() => {
-  if (!props.downloadProgress || props.downloadProgress.total === 0) return 0;
-  return Math.round((props.downloadProgress.progress / props.downloadProgress.total) * 100);
+  const dp = downloadProgress.value;
+  if (!dp || dp.total === 0) return 0;
+  return Math.round((dp.progress / dp.total) * 100);
 });
 
 const progressText = computed(() => {
-  if (!props.downloadProgress) return "Downloading...";
-  const { progress, total } = props.downloadProgress;
-  if (total === 0) return `${formatBytes(progress)}`;
-  return `${formatBytes(progress)} / ${formatBytes(total)} (${progressPercent.value}%)`;
+  const dp = downloadProgress.value;
+  if (!dp) return "Downloading...";
+  if (dp.total === 0) return `${formatBytes(dp.progress)}`;
+  return `${formatBytes(dp.progress)} / ${formatBytes(dp.total)} (${progressPercent.value}%)`;
 });
 
 // Level completion progress
@@ -51,8 +55,8 @@ const totalLevels = computed(() => {
 });
 
 const completionPercent = computed(() => {
-  if (!totalLevels.value || !props.saveInfo) return 0;
-  return Math.min(100, Math.round((props.saveInfo.mapsPlayed / totalLevels.value) * 100));
+  if (!totalLevels.value || !saveInfo.value) return 0;
+  return Math.min(100, Math.round((saveInfo.value.mapsPlayed / totalLevels.value) * 100));
 });
 
 const emit = defineEmits<{ play: [wad: WadEntry, extraArgs?: string[]]; delete: [wad: WadEntry] }>();

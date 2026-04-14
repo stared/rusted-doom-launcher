@@ -25,9 +25,9 @@ type View = "main" | "explore" | "runs" | "logs" | "settings" | "about";
 
 const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
-const { loadState: loadDownloadState, isDownloaded, isDownloading, downloadProgress, downloadWithDeps, deleteWad } = useDownload();
+const { loadState: loadDownloadState, downloadWithDeps, deleteWad } = useDownload();
 const { settings, isFirstRun, migratedIwads, initSettings } = useSettings();
-const { loadAllSaveInfo, getCachedSaveInfo, refreshSaveInfo } = useSaves();
+const { loadAllSaveInfo, refreshSaveInfo } = useSaves();
 const { loadAllLevelNames } = useLevelNames();
 const { captureStats } = useStats();
 
@@ -146,10 +146,6 @@ async function handleDelete(wad: WadEntry) {
         :wads="wads"
         :loading="loading"
         :error="error"
-        :is-downloaded="isDownloaded"
-        :is-downloading="isDownloading"
-        :download-progress="downloadProgress"
-        :get-save-info="getCachedSaveInfo"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
@@ -157,10 +153,6 @@ async function handleDelete(wad: WadEntry) {
       <ExploreView
         v-else-if="activeView === 'explore'"
         :wads="wads"
-        :is-downloaded="isDownloaded"
-        :is-downloading="isDownloading"
-        :download-progress="downloadProgress"
-        :get-save-info="getCachedSaveInfo"
         :initial-query="exploreInitialQuery"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"

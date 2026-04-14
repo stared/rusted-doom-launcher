@@ -1,23 +1,26 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from "vue";
 import type { WadEntry } from "../lib/schema";
-import type { DownloadProgress } from "../composables/useDownload";
+import { useDownload } from "../composables/useDownload";
 import { useWadSummaries } from "../composables/useWadSummaries";
 import { formatBytes } from "../lib/format";
 
 // Slideshow interval in milliseconds
 const SLIDESHOW_INTERVAL_MS = 2000;
 
+const { isDownloaded: checkDownloaded, isDownloading: checkDownloading, getDownloadProgress } = useDownload();
 const { getDifficulty, getVibe } = useWadSummaries();
 
 const props = defineProps<{
   wad: WadEntry;
-  isDownloaded: boolean;
-  isDownloading: boolean;
-  downloadProgress?: DownloadProgress;
 }>();
 
 const emit = defineEmits<{ play: [wad: WadEntry] }>();
+
+// Reactive download state from composable
+const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
+const isDownloading = computed(() => checkDownloading(props.wad.slug));
+const downloadProgress = computed(() => getDownloadProgress(props.wad.slug));
 
 // Get difficulty from summaries
 const difficulty = computed(() => getDifficulty(props.wad.slug));
@@ -38,15 +41,16 @@ const difficultyConfig = computed(() => {
 
 // Compute download progress percentage
 const progressPercent = computed(() => {
-  if (!props.downloadProgress || props.downloadProgress.total === 0) return 0;
-  return Math.round((props.downloadProgress.progress / props.downloadProgress.total) * 100);
+  const dp = downloadProgress.value;
+  if (!dp || dp.total === 0) return 0;
+  return Math.round((dp.progress / dp.total) * 100);
 });
 
 const progressText = computed(() => {
-  if (!props.downloadProgress) return "Downloading...";
-  const { progress, total } = props.downloadProgress;
-  if (total === 0) return `${formatBytes(progress)}`;
-  return `${formatBytes(progress)} / ${formatBytes(total)}`;
+  const dp = downloadProgress.value;
+  if (!dp) return "Downloading...";
+  if (dp.total === 0) return `${formatBytes(dp.progress)}`;
+  return `${formatBytes(dp.progress)} / ${formatBytes(dp.total)}`;
 });
 
 // All available images: thumbnail first, then screenshots

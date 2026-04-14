@@ -4,24 +4,13 @@ import { Compass } from "lucide-vue-next";
 import FilterBar from "./FilterBar.vue";
 import ExploreCard from "./ExploreCard.vue";
 import type { WadEntry } from "../lib/schema";
-import type { WadSaveInfo } from "../composables/useSaves";
-import type { DownloadProgress } from "../composables/useDownload";
 import { useWadSummaries } from "../composables/useWadSummaries";
 import { TYPE_LABELS, IWAD_LABELS } from "../lib/constants";
 
 const props = defineProps<{
   wads: WadEntry[];
-  isDownloaded: (slug: string) => boolean;
-  isDownloading: (slug: string) => boolean;
-  downloadProgress: Record<string, DownloadProgress>;
-  getSaveInfo: (slug: string) => WadSaveInfo | null;
   initialQuery?: string;
 }>();
-
-// Helper to get progress for a specific slug
-function getDownloadProgress(slug: string): DownloadProgress | undefined {
-  return props.downloadProgress[slug];
-}
 
 const emit = defineEmits<{
   play: [wad: WadEntry];
@@ -184,9 +173,6 @@ const filteredWads = computed(() => {
         v-for="wad in filteredWads"
         :key="wad.slug"
         :wad="wad"
-        :is-downloaded="isDownloaded(wad.slug)"
-        :is-downloading="isDownloading(wad.slug)"
-        :download-progress="getDownloadProgress(wad.slug)"
         @play="emit('play', $event)"
       />
     </div>
