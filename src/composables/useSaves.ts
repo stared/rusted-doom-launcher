@@ -1,7 +1,7 @@
 import { ref } from "vue";
-import { exists, readDir, readFile, stat } from "@tauri-apps/plugin-fs";
-import { unzipSync, strFromU8 } from "fflate";
+import { exists, readDir, stat } from "@tauri-apps/plugin-fs";
 import { useSettings } from "./useSettings";
+import { parseSaveFile } from "../lib/saveParser";
 
 export interface LevelStats {
   levelname: string;
@@ -101,14 +101,15 @@ export function useSaves() {
 
     for (const saveName of saveNames) {
       try {
-        const { levels } = await parseSaveFile(`${saveDir}/${saveName}`);
+        const parsed = await parseSaveFile(`${saveDir}/${saveName}`);
+        if (!parsed) continue;
 
-        for (const level of levels) {
-          const key = `${level.levelname.toUpperCase()}_${level.skill}`;
+        for (const level of parsed.levels) {
+          const key = `${level.levelname.toUpperCase()}_${parsed.skill}`;
           const existing = levelMap.get(key);
 
           if (!existing) {
-            levelMap.set(key, level);
+            levelMap.set(key, { ...level, skill: parsed.skill });
           } else {
             // Same level+skill: keep best stats
             levelMap.set(key, {
@@ -120,7 +121,7 @@ export function useSaves() {
               itemcount: Math.max(existing.itemcount, level.itemcount),
               totalitems: level.totalitems,
               leveltime: Math.min(existing.leveltime, level.leveltime),
-              skill: level.skill,
+              skill: parsed.skill,
             });
           }
         }
@@ -135,52 +136,6 @@ export function useSaves() {
       if (nameCompare !== 0) return nameCompare;
       return a.skill - b.skill;
     });
-  }
-
-  async function parseSaveFile(path: string): Promise<{ levels: LevelStats[]; skill: number }> {
-    const data = await readFile(path);
-    const uint8 = new Uint8Array(data);
-
-    try {
-      // .zds files are ZIP archives in modern GZDoom
-      const unzipped = unzipSync(uint8);
-
-      // Look for globals.json which contains statistics
-      const globalsEntry = unzipped["globals.json"];
-      if (!globalsEntry) {
-        return { levels: [], skill: 2 };
-      }
-
-      const globalsJson = strFromU8(globalsEntry);
-      const globals = JSON.parse(globalsJson);
-
-      // Extract skill level from servercvars.skill
-      const skill = Number(globals?.servercvars?.skill ?? 2);
-
-      // Extract level stats from statistics.levels
-      const statsLevels = globals?.statistics?.levels;
-      if (!Array.isArray(statsLevels)) {
-        return { levels: [], skill };
-      }
-
-      const levels = statsLevels.map((level: Record<string, unknown>) => ({
-        levelname: String(level.levelname || ""),
-        killcount: Number(level.killcount || 0),
-        totalkills: Number(level.totalkills || 0),
-        secretcount: Number(level.secretcount || 0),
-        totalsecrets: Number(level.totalsecrets || 0),
-        itemcount: Number(level.itemcount || 0),
-        totalitems: Number(level.totalitems || 0),
-        leveltime: Number(level.leveltime || 0),
-        skill,
-      }));
-
-      return { levels, skill };
-    } catch (e) {
-      // Not a valid ZIP or JSON - might be old binary format
-      console.warn(`Save file ${path} couldn't be parsed (may be old binary format):`, e);
-      return { levels: [], skill: 2 };
-    }
   }
 
   async function loadAllSaveInfo(slugs: string[]): Promise<void> {

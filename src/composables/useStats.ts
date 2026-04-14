@@ -1,5 +1,4 @@
-import { readDir, readFile, readTextFile, writeTextFile, mkdir, exists, stat } from "@tauri-apps/plugin-fs";
-import { unzipSync, strFromU8 } from "fflate";
+import { readDir, readTextFile, writeTextFile, mkdir, exists, stat } from "@tauri-apps/plugin-fs";
 import { useSettings } from "./useSettings";
 import { isNotFoundError } from "../lib/errors";
 import {
@@ -9,6 +8,7 @@ import {
   type LevelPlayStats,
   type SkillLevel,
 } from "../lib/statsSchema";
+import { parseSaveFile } from "../lib/saveParser";
 
 // Parse level name from GZDoom info.json Comment field
 // Format: "MAP13 - Polychromatic Terrace" or "E1M1 - Hangar"
@@ -89,76 +89,48 @@ export function useStats() {
     savePath: string,
     saveFileName: string
   ): Promise<Omit<PlaySession, "capturedAt"> | null> {
-    try {
-      const data = await readFile(savePath);
-      const uint8 = new Uint8Array(data);
-      const unzipped = unzipSync(uint8);
+    const parsed = await parseSaveFile(savePath);
+    if (!parsed || parsed.levels.length === 0) return null;
 
-      // Parse globals.json for statistics
-      const globalsEntry = unzipped["globals.json"];
-      if (!globalsEntry) return null;
+    const skill: SkillLevel = SKILL_FROM_NUMBER[parsed.skill] ?? "HMP";
 
-      const globals = JSON.parse(strFromU8(globalsEntry));
-      const statsLevels = globals?.statistics?.levels;
-      if (!Array.isArray(statsLevels) || statsLevels.length === 0) return null;
-
-      // Get skill level
-      const skillNum = Number(globals?.servercvars?.skill ?? 2);
-      const skill: SkillLevel = SKILL_FROM_NUMBER[skillNum] ?? "HMP";
-
-      // Get start level
-      const startLevel = String(globals?.statistics?.startlevel ?? statsLevels[0]?.levelname ?? "MAP01");
-
-      // Parse info.json for level names
-      const infoEntry = unzipped["info.json"];
-      let levelNameMap: Map<string, string> = new Map();
-
-      if (infoEntry) {
-        try {
-          const info = JSON.parse(strFromU8(infoEntry));
-          // Current map name is in Comment field: "MAP13 - Polychromatic Terrace"
-          const parsed = parseLevelNameFromComment(info.Comment ?? "");
-          if (parsed) {
-            levelNameMap.set(parsed.id, parsed.name);
-          }
-        } catch {
-          // Ignore info.json parse errors
-        }
+    // Extract level name from info.json Comment if available
+    const levelNameMap = new Map<string, string>();
+    if (parsed.infoComment) {
+      const nameInfo = parseLevelNameFromComment(parsed.infoComment);
+      if (nameInfo) {
+        levelNameMap.set(nameInfo.id, nameInfo.name);
       }
-
-      // Build levels array
-      const levels: LevelPlayStats[] = statsLevels.map((level: Record<string, unknown>) => {
-        const id = String(level.levelname ?? "").toUpperCase();
-        return {
-          id,
-          name: levelNameMap.get(id) ?? id, // Fallback to ID if name unknown
-          kills: Number(level.killcount ?? 0),
-          totalKills: Number(level.totalkills ?? 0),
-          items: Number(level.itemcount ?? 0),
-          totalItems: Number(level.totalitems ?? 0),
-          secrets: Number(level.secretcount ?? 0),
-          totalSecrets: Number(level.totalsecrets ?? 0),
-          timeTics: Number(level.leveltime ?? 0),
-        };
-      });
-
-      // Extract slug from path (assumes path ends with /saves/{slug}/filename.zds)
-      const pathParts = savePath.split("/");
-      const slugIndex = pathParts.indexOf("saves") + 1;
-      const wadSlug = slugIndex > 0 ? pathParts[slugIndex] : "unknown";
-
-      return {
-        schemaVersion: 1,
-        wadSlug,
-        startLevel: startLevel.toUpperCase(),
-        skill,
-        sourceFile: saveFileName,
-        levels,
-      };
-    } catch (e) {
-      console.error(`Failed to parse save file ${savePath}:`, e);
-      return null;
     }
+
+    const levels: LevelPlayStats[] = parsed.levels.map((level) => {
+      const id = level.levelname.toUpperCase();
+      return {
+        id,
+        name: levelNameMap.get(id) ?? id,
+        kills: level.killcount,
+        totalKills: level.totalkills,
+        items: level.itemcount,
+        totalItems: level.totalitems,
+        secrets: level.secretcount,
+        totalSecrets: level.totalsecrets,
+        timeTics: level.leveltime,
+      };
+    });
+
+    // Extract slug from path (assumes path ends with /saves/{slug}/filename.zds)
+    const pathParts = savePath.split("/");
+    const slugIndex = pathParts.indexOf("saves") + 1;
+    const wadSlug = slugIndex > 0 ? pathParts[slugIndex] : "unknown";
+
+    return {
+      schemaVersion: 1,
+      wadSlug,
+      startLevel: parsed.startLevel.toUpperCase(),
+      skill,
+      sourceFile: saveFileName,
+      levels,
+    };
   }
 
   // Check if a session with this content hash already exists
