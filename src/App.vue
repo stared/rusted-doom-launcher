@@ -57,8 +57,8 @@ onMounted(async () => {
     // (the watch fires before initSettings completes, so we retry here)
     if (wads.value.length > 0) {
       const slugs = wads.value.map(w => w.slug);
-      await loadAllPlaySummaries(slugs);
       await loadAllLevelNames(slugs);
+      await loadAllPlaySummaries(slugs);
     }
 
     // On first run, open Settings so user can verify configuration
@@ -75,8 +75,8 @@ onMounted(async () => {
 watch(wads, async (newWads) => {
   if (newWads.length > 0 && settings.value.libraryPath) {
     const slugs = newWads.map(w => w.slug);
-    await loadAllPlaySummaries(slugs);
     await loadAllLevelNames(slugs);
+    await loadAllPlaySummaries(slugs);
   }
 });
 

@@ -10,6 +10,7 @@ import {
 } from "../lib/statsSchema";
 import { parseSaveFile } from "../lib/saveParser";
 import { useLibrary } from "./useLibrary";
+import { useLevelNames } from "./useLevelNames";
 
 /** Aggregated level stats with skill from session. */
 export interface AggregatedLevel extends LevelPlayStats {
@@ -30,7 +31,7 @@ const summaryCache = ref<Map<string, WadPlaySummary>>(new Map());
 
 // Parse level name from GZDoom info.json Comment field
 // Format: "MAP13 - Polychromatic Terrace" or "E1M1 - Hangar"
-export function parseLevelNameFromComment(comment: string): { id: string; name: string } | null {
+function parseLevelNameFromComment(comment: string): { id: string; name: string } | null {
   const match = comment.match(/^(MAP\d+|E\d+M\d+)\s*-\s*(.+)$/i);
   if (match) {
     return { id: match[1].toUpperCase(), name: match[2].trim() };
@@ -71,77 +72,7 @@ function generateSessionHash(session: Omit<PlaySession, "capturedAt">): string {
 
 export function useStats() {
   const { statsDir, savesDir } = useLibrary();
-
-  // Load or create level names mapping for a WAD
-  async function loadLevelNames(statsDir: string): Promise<Map<string, string>> {
-    const filepath = `${statsDir}/level-names.json`;
-    try {
-      if (await exists(filepath)) {
-        const content = await readTextFile(filepath);
-        const data = JSON.parse(content) as Record<string, string>;
-        return new Map(Object.entries(data));
-      }
-    } catch {
-      // Ignore errors, return empty map
-    }
-    return new Map();
-  }
-
-  // Save level names mapping
-  async function saveLevelNames(statsDir: string, names: Map<string, string>): Promise<void> {
-    const filepath = `${statsDir}/level-names.json`;
-    const data = Object.fromEntries(names);
-    await writeTextFile(filepath, JSON.stringify(data, null, 2));
-  }
-
-  // Parse a single .zds save file and extract session data
-  async function parseSaveForStats(
-    savePath: string,
-    saveFileName: string
-  ): Promise<Omit<PlaySession, "capturedAt"> | null> {
-    const parsed = await parseSaveFile(savePath);
-    if (!parsed || parsed.levels.length === 0) return null;
-
-    const skill: SkillLevel = SKILL_FROM_NUMBER[parsed.skill] ?? "HMP";
-
-    // Extract level name from info.json Comment if available
-    const levelNameMap = new Map<string, string>();
-    if (parsed.infoComment) {
-      const nameInfo = parseLevelNameFromComment(parsed.infoComment);
-      if (nameInfo) {
-        levelNameMap.set(nameInfo.id, nameInfo.name);
-      }
-    }
-
-    const levels: LevelPlayStats[] = parsed.levels.map((level) => {
-      const id = level.levelname.toUpperCase();
-      return {
-        id,
-        name: levelNameMap.get(id) ?? id,
-        kills: level.killcount,
-        totalKills: level.totalkills,
-        items: level.itemcount,
-        totalItems: level.totalitems,
-        secrets: level.secretcount,
-        totalSecrets: level.totalsecrets,
-        timeTics: level.leveltime,
-      };
-    });
-
-    // Extract slug from path (assumes path ends with /saves/{slug}/filename.zds)
-    const pathParts = savePath.split("/");
-    const slugIndex = pathParts.indexOf("saves") + 1;
-    const wadSlug = slugIndex > 0 ? pathParts[slugIndex] : "unknown";
-
-    return {
-      schemaVersion: 1,
-      wadSlug,
-      startLevel: parsed.startLevel.toUpperCase(),
-      skill,
-      sourceFile: saveFileName,
-      levels,
-    };
-  }
+  const { getCachedLevelNames, loadLevelNames, mergeLevelNames } = useLevelNames();
 
   // Check if a session with this content hash already exists
   async function sessionHashExists(statsDir: string, hash: string): Promise<boolean> {
@@ -180,25 +111,18 @@ export function useStats() {
       }
     }
 
-    // Load existing level names mapping
-    const levelNames = await loadLevelNames(statsDirPath);
-    let levelNamesUpdated = false;
-
     // Read all save files
     let saveFiles: { name: string; mtime: Date }[];
     try {
       const entries = await readDir(savesDirPath);
       saveFiles = [];
-
       for (const entry of entries) {
         if (entry.name?.endsWith(".zds")) {
           try {
             const fileStat = await stat(`${savesDirPath}/${entry.name}`);
             const mtime = fileStat.mtime ? new Date(fileStat.mtime) : new Date();
             saveFiles.push({ name: entry.name, mtime });
-          } catch {
-            // Skip files we can't stat
-          }
+          } catch { /* Skip files we can't stat */ }
         }
       }
     } catch (e) {
@@ -207,66 +131,59 @@ export function useStats() {
     }
 
     let capturedCount = 0;
+    const discoveredNames = new Map<string, string>();
 
-    // Process each save file
     for (const save of saveFiles) {
       const savePath = `${savesDirPath}/${save.name}`;
-      const session = await parseSaveForStats(savePath, save.name);
+      const parsed = await parseSaveFile(savePath);
+      if (!parsed || parsed.levels.length === 0) continue;
 
-      if (!session) continue;
+      const skill: SkillLevel = SKILL_FROM_NUMBER[parsed.skill] ?? "HMP";
 
-      // Accumulate any new level names we discovered
-      for (const level of session.levels) {
-        if (level.name !== level.id && !levelNames.has(level.id)) {
-          levelNames.set(level.id, level.name);
-          levelNamesUpdated = true;
-        }
+      // Collect level name from save file Comment for the central store
+      if (parsed.infoComment) {
+        const nameInfo = parseLevelNameFromComment(parsed.infoComment);
+        if (nameInfo) discoveredNames.set(nameInfo.id, nameInfo.name);
       }
 
-      // Apply known level names to session
-      for (const level of session.levels) {
-        if (level.name === level.id && levelNames.has(level.id)) {
-          level.name = levelNames.get(level.id)!;
-        }
-      }
+      // Session stores raw IDs as names; display names applied at read time
+      const levels: LevelPlayStats[] = parsed.levels.map((level) => ({
+        id: level.levelname.toUpperCase(),
+        name: level.levelname.toUpperCase(),
+        kills: level.killcount,
+        totalKills: level.totalkills,
+        items: level.itemcount,
+        totalItems: level.totalitems,
+        secrets: level.secretcount,
+        totalSecrets: level.totalsecrets,
+        timeTics: level.leveltime,
+      }));
 
-      // Generate content-based hash for deduplication
-      const hash = generateSessionHash(session);
-
-      // Check if we already have a session with identical content
-      if (await sessionHashExists(statsDirPath, hash)) {
-        continue;
-      }
-
-      // Use save file mtime as timestamp for display
-      const timestamp = save.mtime.toISOString();
-
-      // Write new session file using hash as filename
-      const fullSession: PlaySession = {
-        ...session,
-        capturedAt: timestamp,
+      const session: Omit<PlaySession, "capturedAt"> = {
+        schemaVersion: 1,
+        wadSlug: slug,
+        startLevel: parsed.startLevel.toUpperCase(),
+        skill,
+        sourceFile: save.name,
+        levels,
       };
 
-      const filename = `${hash}.json`;
-      const filepath = `${statsDirPath}/${filename}`;
+      const hash = generateSessionHash(session);
+      if (await sessionHashExists(statsDirPath, hash)) continue;
 
+      const fullSession: PlaySession = { ...session, capturedAt: save.mtime.toISOString() };
       try {
-        await writeTextFile(filepath, JSON.stringify(fullSession, null, 2));
+        await writeTextFile(`${statsDirPath}/${hash}.json`, JSON.stringify(fullSession, null, 2));
         capturedCount++;
-        console.log(`[Stats] Captured session from ${save.name} → ${filename}`);
+        console.log(`[Stats] Captured session from ${save.name} → ${hash}.json`);
       } catch (e) {
-        console.error(`Error writing stats file ${filepath}:`, e);
+        console.error(`Error writing stats file:`, e);
       }
     }
 
-    // Save updated level names if changed
-    if (levelNamesUpdated) {
-      try {
-        await saveLevelNames(statsDirPath, levelNames);
-        console.log(`[Stats] Updated level names for ${slug}`);
-      } catch (e) {
-        console.error(`Error saving level names for ${slug}:`, e);
-      }
+    // Merge any discovered level names into the central store
+    if (discoveredNames.size > 0) {
+      await mergeLevelNames(slug, discoveredNames);
     }
 
     return capturedCount;
@@ -277,39 +194,39 @@ export function useStats() {
     const statsDirPath = statsDir(slug);
 
     try {
-      if (!(await exists(statsDirPath))) {
-        return [];
-      }
+      if (!(await exists(statsDirPath))) return [];
     } catch {
       return [];
     }
-
-    // Load level names mapping
-    const levelNames = await loadLevelNames(statsDirPath);
 
     let files: string[];
     try {
       const entries = await readDir(statsDirPath);
       files = entries
-        .filter((e) => e.name?.endsWith(".json") && e.name !== "level-names.json")
+        .filter((e) => e.name?.endsWith(".json"))
         .map((e) => e.name!)
-        .sort(); // Chronological order by filename
+        .sort();
     } catch {
       return [];
     }
 
-    const sessions: PlaySession[] = [];
+    // Level names from central store (WAD MAPINFO + save file Comments)
+    const levelNames = getCachedLevelNames(slug) ?? await loadLevelNames(slug);
 
+    const sessions: PlaySession[] = [];
     for (const filename of files) {
       try {
         const content = await readTextFile(`${statsDirPath}/${filename}`);
         const parsed = PlaySessionSchema.safeParse(JSON.parse(content));
         if (parsed.success) {
           const session = parsed.data;
-          // Apply known level names
-          for (const level of session.levels) {
-            if (level.name === level.id && levelNames.has(level.id)) {
-              level.name = levelNames.get(level.id)!;
+          // Apply display names from central level names store
+          if (levelNames) {
+            for (const level of session.levels) {
+              if (level.name === level.id) {
+                const name = levelNames.get(level.id);
+                if (name) level.name = name;
+              }
             }
           }
           sessions.push(session);

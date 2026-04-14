@@ -176,6 +176,31 @@ export function useLevelNames() {
   }
 
   /**
+   * Merge externally discovered level names (e.g. from save file Comments)
+   * into the cache and persistent storage.
+   * Existing names (from WAD MAPINFO) take priority.
+   */
+  async function mergeLevelNames(slug: string, discovered: Map<string, string>): Promise<void> {
+    let existing = levelNamesCache.value.get(slug);
+    if (!existing) {
+      existing = await loadFromStorage(slug) ?? new Map();
+    }
+
+    let changed = false;
+    for (const [id, name] of discovered) {
+      if (!existing.has(id)) {
+        existing.set(id, name);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      levelNamesCache.value.set(slug, existing);
+      await saveToStorage(slug, existing);
+    }
+  }
+
+  /**
    * Clear the cache for a specific slug or all slugs.
    */
   function clearCache(slug?: string): void {
@@ -198,6 +223,7 @@ export function useLevelNames() {
     loadAllLevelNames,
     getCachedLevelNames,
     getLevelDisplayName,
+    mergeLevelNames,
     clearCache,
   };
 }
