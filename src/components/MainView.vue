@@ -24,7 +24,7 @@ function getDownloadProgress(slug: string): DownloadProgress | undefined {
 }
 
 const emit = defineEmits<{
-  play: [wad: WadEntry];
+  play: [wad: WadEntry, extraArgs?: string[]];
   delete: [wad: WadEntry];
   navigate: [view: "explore", query?: string];
 }>();
@@ -165,7 +165,7 @@ const exploreMatchCount = computed(() => {
           :is-downloading="isDownloading"
           :get-download-progress="getDownloadProgress"
           :get-save-info="getSaveInfo"
-          @play="emit('play', $event)"
+          @play="(wad: WadEntry, args?: string[]) => emit('play', wad, args)"
           @delete="emit('delete', $event)"
         />
       </div>

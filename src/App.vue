@@ -12,6 +12,7 @@ import { useGZDoom } from "./composables/useGZDoom";
 import { useDownload } from "./composables/useDownload";
 import { useSettings } from "./composables/useSettings";
 import { useSaves } from "./composables/useSaves";
+import { useLevelNames } from "./composables/useLevelNames";
 import { useStats } from "./composables/useStats";
 import type { WadEntry } from "./lib/schema";
 import { getErrorMessage } from "./lib/errors";
@@ -25,6 +26,7 @@ const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
 const { loadState: loadDownloadState, isDownloaded, isDownloading, downloadProgress, downloadWithDeps, deleteWad } = useDownload();
 const { settings, isFirstRun, migratedIwads, initSettings } = useSettings();
 const { loadAllSaveInfo, getCachedSaveInfo, refreshSaveInfo } = useSaves();
+const { loadAllLevelNames } = useLevelNames();
 const { captureStats } = useStats();
 
 const activeView = ref<View>("main");
@@ -51,10 +53,12 @@ onMounted(async () => {
       await detectIwads();
     }
 
-    // Load save info now that settings are initialized
+    // Load save info and level names now that settings are initialized
     // (the watch fires before initSettings completes, so we retry here)
     if (wads.value.length > 0) {
-      await loadAllSaveInfo(wads.value.map(w => w.slug));
+      const slugs = wads.value.map(w => w.slug);
+      await loadAllSaveInfo(slugs);
+      await loadAllLevelNames(slugs);
     }
 
     // On first run, open Settings so user can verify configuration
@@ -67,10 +71,12 @@ onMounted(async () => {
   }
 });
 
-// Load save info when WADs change (initial load handled in onMounted after initSettings)
+// Load save info and level names when WADs change (initial load handled in onMounted after initSettings)
 watch(wads, async (newWads) => {
   if (newWads.length > 0 && settings.value.libraryPath) {
-    await loadAllSaveInfo(newWads.map(w => w.slug));
+    const slugs = newWads.map(w => w.slug);
+    await loadAllSaveInfo(slugs);
+    await loadAllLevelNames(slugs);
   }
 });
 
@@ -82,7 +88,7 @@ watch(isRunning, async (running, wasRunning) => {
   }
 });
 
-async function handlePlay(wad: WadEntry) {
+async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
   errorMsg.value = "";
   if (!settings.value.gzdoomPath) {
     errorMsg.value = "Doom engine not found. Configure path in Settings.";
@@ -97,7 +103,7 @@ async function handlePlay(wad: WadEntry) {
   try {
     const { wadPath, depPaths } = await downloadWithDeps(wad, wads.value);
     lastPlayedSlug.value = wad.slug;
-    await launch(wadPath, wad.iwad, depPaths, wad.slug);
+    await launch(wadPath, wad.iwad, depPaths, wad.slug, "HMP", extraArgs ?? []);
   } catch (e) {
     console.error(`[Play] Error launching ${wad.slug}:`, e);
     errorMsg.value = getErrorMessage(e);
@@ -136,7 +142,7 @@ async function handleDelete(wad: WadEntry) {
         :is-downloading="isDownloading"
         :download-progress="downloadProgress"
         :get-save-info="getCachedSaveInfo"
-        @play="handlePlay"
+        @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
       />
@@ -148,7 +154,7 @@ async function handleDelete(wad: WadEntry) {
         :download-progress="downloadProgress"
         :get-save-info="getCachedSaveInfo"
         :initial-query="exploreInitialQuery"
-        @play="handlePlay"
+        @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
       />
       <RunsView

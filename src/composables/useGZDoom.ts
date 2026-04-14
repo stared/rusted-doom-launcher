@@ -59,7 +59,8 @@ export function useGZDoom() {
     iwad: Iwad,
     additionalFiles: string[] = [],
     wadSlug?: string,
-    skill: SkillLevel = "HMP"
+    skill: SkillLevel = "HMP",
+    extraArgs: string[] = []
   ) {
     const dir = settings.value.libraryPath;
     const filename = iwadFilenames.get(iwad);
@@ -82,6 +83,7 @@ export function useGZDoom() {
       "-file", wadPath,
       ...additionalFiles.flatMap(f => ["-file", f]),
       ...(saveDir ? ["-savedir", saveDir] : []),
+      ...extraArgs,
     ];
 
     const gzdoomPath = settings.value.gzdoomPath;

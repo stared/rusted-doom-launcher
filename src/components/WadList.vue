@@ -13,7 +13,7 @@ defineProps<{
 }>();
 
 defineEmits<{
-  play: [wad: WadEntry];
+  play: [wad: WadEntry, extraArgs?: string[]];
   delete: [wad: WadEntry];
 }>();
 </script>
@@ -27,7 +27,7 @@ defineEmits<{
     :is-downloading="isDownloading(wad.slug)"
     :download-progress="getDownloadProgress(wad.slug)"
     :save-info="getSaveInfo(wad.slug)"
-    @play="$emit('play', wad)"
+    @play="(w: WadEntry, args?: string[]) => $emit('play', w, args)"
     @delete="$emit('delete', wad)"
   />
 </template>
