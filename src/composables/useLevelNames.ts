@@ -2,16 +2,16 @@ import { ref } from "vue";
 import { readFile, readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-fs";
 import { unzipSync, strFromU8 } from "fflate";
 import { extractLevelNames, extractLevelNamesFromData, parseLevelNamesFromContent } from "../lib/wadParser";
+import { invoke } from "@tauri-apps/api/core";
 import { isNotFoundError } from "../lib/errors";
 import { useLibrary } from "./useLibrary";
-import { useDownload } from "./useDownload";
+import type { LauncherDownloads } from "../lib/schema";
 
 // Singleton cache: slug -> (mapId -> levelName)
 const levelNamesCache = ref<Map<string, Map<string, string>>>(new Map());
 
 export function useLevelNames() {
-  const { levelNamesPath, levelNamesDir, wadFile } = useLibrary();
-  const { getDownloadInfo: getDownloadInfoFromCache } = useDownload();
+  const { base, levelNamesPath, levelNamesDir, wadFile } = useLibrary();
 
   /**
    * Load level names from persistent storage.
@@ -50,10 +50,17 @@ export function useLevelNames() {
   }
 
   /**
-   * Get download info for a slug from useDownload's cached state.
+   * Get download info for a slug.
+   * Reads launcher-downloads.json via IPC rather than importing useDownload
+   * to avoid circular dependency (useDownload → useLevelNames → useDownload).
    */
-  function getDownloadInfo(slug: string): { filename: string } | null {
-    return getDownloadInfoFromCache(slug);
+  async function getDownloadInfo(slug: string): Promise<{ filename: string } | null> {
+    try {
+      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
+      return state.downloads[slug] ?? null;
+    } catch {
+      return null;
+    }
   }
 
   /**
