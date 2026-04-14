@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { ScrollText, Skull, MapPin, KeyRound, Package, Clock, ChevronDown, ChevronRight } from "lucide-vue-next";
-import { useGameplayLog, getDeathCount, getLevelsVisited, formatDuration } from "../composables/useGameplayLog";
+import { useGameplayLog, getDeathCount, getLevelsVisited } from "../composables/useGameplayLog";
 import type { GameplayLog, GameEvent } from "../composables/useGameplayLog";
 import type { WadEntry } from "../lib/schema";
+import { formatMs, getDateKey, formatDateHeader } from "../lib/format";
 
 interface SessionEntry {
   log: GameplayLog;
@@ -28,31 +29,6 @@ const dateGroups = ref<DateGroup[]>([]);
 const loading = ref(true);
 const expandedSessions = ref<Set<string>>(new Set());
 
-// Get local date key for grouping (YYYY-MM-DD in local timezone)
-function getDateKey(isoString: string): string {
-  const date = new Date(isoString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-// Format date key as "18 Dec 2025"
-function formatDateHeader(dateKey: string): string {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${day} ${months[month - 1]} ${year}`;
-}
-
-// Format time from ms to HH:MM:SS
-function formatTime(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  const hrs = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
 
 // Get session key for expansion tracking
 function getSessionKey(log: GameplayLog): string {
@@ -221,7 +197,7 @@ onMounted(async () => {
                 <!-- Duration -->
                 <div class="flex items-center gap-1.5 text-zinc-400" title="Duration">
                   <Clock :size="12" class="text-zinc-500/70" />
-                  <span>{{ formatDuration(session.log.durationMs) }}</span>
+                  <span>{{ formatMs(session.log.durationMs) }}</span>
                 </div>
               </div>
             </button>
@@ -235,7 +211,7 @@ onMounted(async () => {
               >
                 <!-- Time -->
                 <span class="font-mono text-[10px] text-zinc-600 w-14 text-right">
-                  {{ formatTime(event.time_ms) }}
+                  {{ formatMs(event.time_ms) }}
                 </span>
 
                 <!-- Icon -->

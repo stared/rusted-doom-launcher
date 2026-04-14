@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import type { WadEntry } from "../lib/schema";
-import type { WadSaveInfo } from "../composables/useSaves";
-import type { DownloadProgress } from "../composables/useDownload";
+import { useDownload } from "../composables/useDownload";
+import { useStats } from "../composables/useStats";
 import { useLevelNames } from "../composables/useLevelNames";
+import { formatTics } from "../lib/format";
+import { SKILL_FULL_NAMES } from "../lib/statsSchema";
+import DownloadPlayButton from "./DownloadPlayButton.vue";
 
+const { isDownloaded: checkDownloaded } = useDownload();
+const { getCachedPlaySummary } = useStats();
 const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
 
 const TYPE_LABELS: Record<WadEntry["type"], string> = {
@@ -23,33 +28,10 @@ const DIFFICULTY_CONFIG: Record<WadEntry["difficulty"], { label: string; color: 
 
 const props = defineProps<{
   wad: WadEntry;
-  isDownloaded: boolean;
-  isDownloading: boolean;
-  downloadProgress?: DownloadProgress;
-  saveInfo: WadSaveInfo | null;
 }>();
 
-// Format bytes to human readable
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
-}
-
-// Compute download progress percentage
-const progressPercent = computed(() => {
-  if (!props.downloadProgress || props.downloadProgress.total === 0) return 0;
-  return Math.round((props.downloadProgress.progress / props.downloadProgress.total) * 100);
-});
-
-const progressText = computed(() => {
-  if (!props.downloadProgress) return "Downloading...";
-  const { progress, total } = props.downloadProgress;
-  if (total === 0) return `${formatBytes(progress)}`;
-  return `${formatBytes(progress)} / ${formatBytes(total)} (${progressPercent.value}%)`;
-});
+const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
+const saveInfo = computed(() => getCachedPlaySummary(props.wad.slug));
 
 // Level completion progress
 const totalLevels = computed(() => {
@@ -58,8 +40,8 @@ const totalLevels = computed(() => {
 });
 
 const completionPercent = computed(() => {
-  if (!totalLevels.value || !props.saveInfo) return 0;
-  return Math.min(100, Math.round((props.saveInfo.mapsPlayed / totalLevels.value) * 100));
+  if (!totalLevels.value || !saveInfo.value) return 0;
+  return Math.min(100, Math.round((saveInfo.value.mapsPlayed / totalLevels.value) * 100));
 });
 
 const emit = defineEmits<{ play: [wad: WadEntry, extraArgs?: string[]]; delete: [wad: WadEntry] }>();
@@ -88,13 +70,6 @@ watch(showStatsModal, async (isOpen) => {
   }
 });
 
-// Format time from tics (35 tics = 1 second) to MM:SS
-function formatTime(tics: number): string {
-  const totalSeconds = Math.floor(tics / 35);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-}
 </script>
 
 <template>
@@ -143,28 +118,19 @@ function formatTime(tics: number): string {
         <!-- Fallback text when total unknown -->
         <template v-else>
           <span class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-            {{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.saveCount }} saves
+            {{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.sessionCount }} sessions
           </span>
         </template>
       </button>
 
       <div class="mt-3 flex gap-2">
-        <button
-          class="flex-1 rounded px-3 py-1.5 text-sm font-medium text-white transition-colors relative overflow-hidden"
-          :class="isDownloading ? 'bg-zinc-700 cursor-wait' : isDownloaded ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'"
-          :disabled="isDownloading"
-          @click="emit('play', wad)"
-        >
-          <!-- Progress bar background -->
-          <div
-            v-if="isDownloading && downloadProgress"
-            class="absolute inset-0 bg-blue-600 transition-all duration-300"
-            :style="{ width: `${progressPercent}%` }"
-          />
-          <span class="relative z-10">
-            {{ isDownloading ? progressText : isDownloaded ? "▶ Play" : "▶ Download & Play" }}
-          </span>
-        </button>
+        <DownloadPlayButton
+          class="flex-1"
+          :wad="wad"
+          play-label="Play"
+          download-label="▶ Download & Play"
+          @play="emit('play', wad)"
+        />
         <button
           v-if="isDownloaded"
           class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-red-900 hover:text-red-400"
@@ -216,38 +182,38 @@ function formatTime(tics: number): string {
             <tbody>
               <tr
                 v-for="(level, idx) in saveInfo.levels"
-                :key="`${level.levelname}-${level.skill}-${idx}`"
+                :key="`${level.id}-${level.skill}-${idx}`"
                 class="group border-b border-zinc-700/50 text-zinc-300 cursor-pointer hover:bg-zinc-700/50"
-                :title="`Pistol start ${level.levelname}`"
-                @click="playLevel(level.levelname)"
+                :title="`Pistol start ${level.id}`"
+                @click="playLevel(level.id)"
               >
                 <td class="py-2 pr-4 font-medium">
                   <span class="flex items-center gap-2">
-                    {{ getLevelDisplayName(wad.slug, level.levelname) }}
+                    {{ getLevelDisplayName(wad.slug, level.id) }}
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity rounded bg-green-600 px-1.5 py-0.5 text-xs text-white shrink-0">▶ Play</span>
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-center">
-                  <span :class="level.killcount === level.totalkills ? 'text-green-400' : ''">
-                    {{ level.killcount }}/{{ level.totalkills }}
+                  <span :class="level.kills === level.totalKills ? 'text-green-400' : ''">
+                    {{ level.kills }}/{{ level.totalKills }}
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-center">
-                  <span :class="level.itemcount === level.totalitems ? 'text-green-400' : ''">
-                    {{ level.itemcount }}/{{ level.totalitems }}
+                  <span :class="level.items === level.totalItems ? 'text-green-400' : ''">
+                    {{ level.items }}/{{ level.totalItems }}
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-center">
-                  <span :class="level.secretcount === level.totalsecrets ? 'text-green-400' : ''">
-                    {{ level.secretcount }}/{{ level.totalsecrets }}
+                  <span :class="level.secrets === level.totalSecrets ? 'text-green-400' : ''">
+                    {{ level.secrets }}/{{ level.totalSecrets }}
                   </span>
                 </td>
                 <td class="py-2 pr-4 text-center text-xs">
-                  <span :class="level.skill >= 3 ? 'text-red-400' : level.skill >= 2 ? 'text-yellow-400' : 'text-zinc-400'">
-                    {{ ['ITYTD', 'HNTR', 'HMP', 'UV', 'NM'][level.skill] }}
+                  <span :class="['UV', 'NM'].includes(level.skill) ? 'text-red-400' : level.skill === 'HMP' ? 'text-yellow-400' : 'text-zinc-400'">
+                    {{ SKILL_FULL_NAMES[level.skill] }}
                   </span>
                 </td>
-                <td class="py-2 text-right font-mono">{{ formatTime(level.leveltime) }}</td>
+                <td class="py-2 text-right font-mono">{{ formatTics(level.timeTics) }}</td>
               </tr>
             </tbody>
           </table>
@@ -256,8 +222,8 @@ function formatTime(tics: number): string {
         <!-- Footer with totals -->
         <div class="p-4 border-t border-zinc-700 text-sm text-zinc-400 flex justify-between">
           <span>
-            <template v-if="totalLevels">{{ saveInfo.mapsPlayed }}/{{ totalLevels }} maps completed • {{ saveInfo.saveCount }} saves</template>
-            <template v-else>{{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.saveCount }} saves</template>
+            <template v-if="totalLevels">{{ saveInfo.mapsPlayed }}/{{ totalLevels }} maps completed • {{ saveInfo.sessionCount }} sessions</template>
+            <template v-else>{{ saveInfo.mapsPlayed }} maps played • {{ saveInfo.sessionCount }} sessions</template>
           </span>
           <span class="text-zinc-500">Click a level to pistol start</span>
         </div>

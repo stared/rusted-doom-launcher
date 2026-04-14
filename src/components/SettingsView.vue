@@ -3,11 +3,11 @@ import { ref, watch, onMounted, computed } from "vue";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { open as openShell } from "@tauri-apps/plugin-shell";
 import { invoke } from "@tauri-apps/api/core";
-import { join } from "@tauri-apps/api/path";
 import { mkdir } from "@tauri-apps/plugin-fs";
 import { Check, X } from "lucide-vue-next";
 import { useSettings } from "../composables/useSettings";
 import { useGZDoom } from "../composables/useGZDoom";
+import { useLibrary } from "../composables/useLibrary";
 import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
 import { shortenPath, getOs } from "../lib/platform";
@@ -15,6 +15,7 @@ import { shortenPath, getOs } from "../lib/platform";
 const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, checkInnoextract, importFromGOG, innoextractInstallHint } = useSettings();
 const { availableIwads, detectIwads } = useGZDoom();
 const { wads } = useWads();
+const { iwadsDir } = useLibrary();
 
 // IWADs required by games in the catalog
 const requiredIwads = computed<Iwad[]>(() => {
@@ -173,9 +174,9 @@ async function browseLibrary() {
 
 async function openIwadsDirectory() {
   try {
-    const iwadsDir = await join(settings.value.libraryPath, "iwads");
-    await mkdir(iwadsDir, { recursive: true });
-    await openShell(iwadsDir);
+    const dir = iwadsDir();
+    await mkdir(dir, { recursive: true });
+    await openShell(dir);
   } catch (e) {
     errorMsg.value = e instanceof Error ? e.message : String(e);
   }

@@ -3398,7 +3398,6 @@ name = "rusted-doom-launcher"
 version = "0.1.6"
 dependencies = [
  "log",
- "regex",
  "serde",
  "serde_json",
  "tauri",

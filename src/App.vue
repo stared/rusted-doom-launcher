@@ -12,7 +12,6 @@ import { useWads } from "./composables/useWads";
 import { useGZDoom } from "./composables/useGZDoom";
 import { useDownload } from "./composables/useDownload";
 import { useSettings } from "./composables/useSettings";
-import { useSaves } from "./composables/useSaves";
 import { useLevelNames } from "./composables/useLevelNames";
 import { useStats } from "./composables/useStats";
 import type { WadEntry } from "./lib/schema";
@@ -25,11 +24,10 @@ type View = "main" | "explore" | "runs" | "logs" | "settings" | "about";
 
 const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
-const { loadState: loadDownloadState, isDownloaded, isDownloading, downloadProgress, downloadWithDeps, deleteWad } = useDownload();
+const { loadState: loadDownloadState, downloadWithDeps, deleteWad } = useDownload();
 const { settings, isFirstRun, migratedIwads, initSettings } = useSettings();
-const { loadAllSaveInfo, getCachedSaveInfo, refreshSaveInfo } = useSaves();
 const { loadAllLevelNames } = useLevelNames();
-const { captureStats } = useStats();
+const { captureStats, loadAllPlaySummaries, refreshPlaySummary } = useStats();
 
 const activeView = ref<View>("main");
 const errorMsg = ref("");
@@ -59,8 +57,8 @@ onMounted(async () => {
     // (the watch fires before initSettings completes, so we retry here)
     if (wads.value.length > 0) {
       const slugs = wads.value.map(w => w.slug);
-      await loadAllSaveInfo(slugs);
       await loadAllLevelNames(slugs);
+      await loadAllPlaySummaries(slugs);
     }
 
     // On first run, open Settings so user can verify configuration
@@ -77,15 +75,15 @@ onMounted(async () => {
 watch(wads, async (newWads) => {
   if (newWads.length > 0 && settings.value.libraryPath) {
     const slugs = newWads.map(w => w.slug);
-    await loadAllSaveInfo(slugs);
     await loadAllLevelNames(slugs);
+    await loadAllPlaySummaries(slugs);
   }
 });
 
 // Refresh save info and capture stats when game closes
 watch(isRunning, async (running, wasRunning) => {
   if (wasRunning && !running && lastPlayedSlug.value) {
-    await refreshSaveInfo(lastPlayedSlug.value);
+    await refreshPlaySummary(lastPlayedSlug.value);
     await captureStats(lastPlayedSlug.value);
   }
 });
@@ -146,10 +144,6 @@ async function handleDelete(wad: WadEntry) {
         :wads="wads"
         :loading="loading"
         :error="error"
-        :is-downloaded="isDownloaded"
-        :is-downloading="isDownloading"
-        :download-progress="downloadProgress"
-        :get-save-info="getCachedSaveInfo"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
@@ -157,10 +151,6 @@ async function handleDelete(wad: WadEntry) {
       <ExploreView
         v-else-if="activeView === 'explore'"
         :wads="wads"
-        :is-downloaded="isDownloaded"
-        :is-downloading="isDownloading"
-        :download-progress="downloadProgress"
-        :get-save-info="getCachedSaveInfo"
         :initial-query="exploreInitialQuery"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"

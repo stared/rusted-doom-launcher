@@ -1,31 +1,24 @@
 import { ref } from "vue";
 import { readFile, readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-fs";
-import { invoke } from "@tauri-apps/api/core";
 import { unzipSync, strFromU8 } from "fflate";
-import { extractLevelNames, extractLevelNamesFromData } from "../lib/wadParser";
-import { useSettings } from "./useSettings";
-import type { LauncherDownloads } from "../lib/schema";
+import { extractLevelNames, extractLevelNamesFromData, parseLevelNamesFromContent } from "../lib/wadParser";
+import { invoke } from "@tauri-apps/api/core";
 import { isNotFoundError } from "../lib/errors";
+import { useLibrary } from "./useLibrary";
+import type { LauncherDownloads } from "../lib/schema";
 
 // Singleton cache: slug -> (mapId -> levelName)
 const levelNamesCache = ref<Map<string, Map<string, string>>>(new Map());
 
 export function useLevelNames() {
-  const { settings } = useSettings();
-
-  /**
-   * Get the path to the level names JSON file for a slug.
-   */
-  function getLevelNamesPath(slug: string): string {
-    return `${settings.value.libraryPath}/level-names/${slug}.json`;
-  }
+  const { base, levelNamesPath, levelNamesDir, wadFile } = useLibrary();
 
   /**
    * Load level names from persistent storage.
    */
   async function loadFromStorage(slug: string): Promise<Map<string, string> | null> {
     try {
-      const path = getLevelNamesPath(slug);
+      const path = levelNamesPath(slug);
       if (await exists(path)) {
         const content = await readTextFile(path);
         const data = JSON.parse(content) as Record<string, string>;
@@ -44,10 +37,10 @@ export function useLevelNames() {
    */
   async function saveToStorage(slug: string, levels: Map<string, string>): Promise<void> {
     try {
-      const dir = `${settings.value.libraryPath}/level-names`;
+      const dir = levelNamesDir();
       await mkdir(dir, { recursive: true });
 
-      const path = getLevelNamesPath(slug);
+      const path = levelNamesPath(slug);
       const data = Object.fromEntries(levels);
       await writeTextFile(path, JSON.stringify(data, null, 2));
       console.log(`[LevelNames] Saved ${levels.size} level names for ${slug}`);
@@ -57,16 +50,17 @@ export function useLevelNames() {
   }
 
   /**
-   * Get download info for a slug from launcher-downloads.json
+   * Get download info for a slug.
+   * Reads launcher-downloads.json via IPC rather than importing useDownload
+   * to avoid circular dependency (useDownload → useLevelNames → useDownload).
    */
   async function getDownloadInfo(slug: string): Promise<{ filename: string } | null> {
     try {
-      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: settings.value.libraryPath });
-      if (state.downloads[slug]) return state.downloads[slug];
-    } catch (e) {
-      console.error(`Error reading launcher-downloads.json for ${slug}:`, e);
+      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
+      return state.downloads[slug] ?? null;
+    } catch {
+      return null;
     }
-    return null;
   }
 
   /**
@@ -95,7 +89,7 @@ export function useLevelNames() {
         return null;
       }
 
-      const filePath = `${settings.value.libraryPath}/${downloadInfo.filename}`;
+      const filePath = wadFile(downloadInfo.filename);
       const filename = downloadInfo.filename.toLowerCase();
 
       let allLevels = new Map<string, string>();
@@ -131,7 +125,7 @@ export function useLevelNames() {
             if (mapinfoLumps.includes(baseName)) {
               try {
                 const content = strFromU8(entryData);
-                const levels = parseMapinfoContent(baseName, content);
+                const levels = parseLevelNamesFromContent(baseName, content);
                 for (const [mapId, levelName] of levels) {
                   if (!allLevels.has(mapId)) {
                     allLevels.set(mapId, levelName);
@@ -182,6 +176,31 @@ export function useLevelNames() {
   }
 
   /**
+   * Merge externally discovered level names (e.g. from save file Comments)
+   * into the cache and persistent storage.
+   * Existing names (from WAD MAPINFO) take priority.
+   */
+  async function mergeLevelNames(slug: string, discovered: Map<string, string>): Promise<void> {
+    let existing = levelNamesCache.value.get(slug);
+    if (!existing) {
+      existing = await loadFromStorage(slug) ?? new Map();
+    }
+
+    let changed = false;
+    for (const [id, name] of discovered) {
+      if (!existing.has(id)) {
+        existing.set(id, name);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      levelNamesCache.value.set(slug, existing);
+      await saveToStorage(slug, existing);
+    }
+  }
+
+  /**
    * Clear the cache for a specific slug or all slugs.
    */
   function clearCache(slug?: string): void {
@@ -189,31 +208,6 @@ export function useLevelNames() {
       levelNamesCache.value.delete(slug);
     } else {
       levelNamesCache.value.clear();
-    }
-  }
-
-  /**
-   * Rescan all downloaded WADs and extract level names.
-   * Use this to populate level names for already-installed WADs.
-   */
-  async function rescanAllWads(): Promise<number> {
-    try {
-      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: settings.value.libraryPath });
-      let count = 0;
-      for (const slug of Object.keys(state.downloads)) {
-        // Clear cache to force re-parse
-        levelNamesCache.value.delete(slug);
-        const levels = await loadLevelNames(slug);
-        if (levels && levels.size > 0) {
-          count++;
-        }
-      }
-
-      console.log(`[LevelNames] Rescanned ${count} WADs`);
-      return count;
-    } catch (e) {
-      console.error("Failed to rescan WADs:", e);
-      return 0;
     }
   }
 
@@ -229,60 +223,7 @@ export function useLevelNames() {
     loadAllLevelNames,
     getCachedLevelNames,
     getLevelDisplayName,
+    mergeLevelNames,
     clearCache,
-    rescanAllWads,
   };
-}
-
-// Helper function to parse MAPINFO content (same logic as wadParser)
-function parseMapinfoContent(lumpName: string, content: string): Map<string, string> {
-  const levels = new Map<string, string>();
-
-  if (lumpName === "EMAPINFO") {
-    // EMAPINFO format: [MAP01] levelname = ...
-    let currentMap: string | null = null;
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      const sectionMatch = trimmed.match(/^\[(\w+)\]$/);
-      if (sectionMatch) {
-        currentMap = sectionMatch[1].toUpperCase();
-        continue;
-      }
-      if (currentMap) {
-        const nameMatch = trimmed.match(/^levelname\s*=\s*(.+)/i);
-        if (nameMatch) {
-          let levelName = nameMatch[1].trim();
-          const prefixPattern = new RegExp(`^${currentMap}:\\s*`, "i");
-          levelName = levelName.replace(prefixPattern, "");
-          levels.set(currentMap, levelName);
-        }
-      }
-    }
-  } else if (lumpName === "UMAPINFO") {
-    // UMAPINFO format: MAP MAP01 { levelname = "..." }
-    let currentMap: string | null = null;
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      const mapMatch = trimmed.match(/^MAP\s+(\w+)/i);
-      if (mapMatch) {
-        currentMap = mapMatch[1].toUpperCase();
-        continue;
-      }
-      if (currentMap) {
-        const nameMatch = trimmed.match(/^levelname\s*=\s*"?([^"]+)"?/i);
-        if (nameMatch) {
-          levels.set(currentMap, nameMatch[1].trim());
-        }
-      }
-    }
-  } else {
-    // MAPINFO/ZMAPINFO format: map MAP01 "Level Name" { ... }
-    const pattern = /map\s+(\w+)\s+"([^"]+)"/gi;
-    let match;
-    while ((match = pattern.exec(content)) !== null) {
-      levels.set(match[1].toUpperCase(), match[2]);
-    }
-  }
-
-  return levels;
 }

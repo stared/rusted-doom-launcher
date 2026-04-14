@@ -2,26 +2,17 @@
 import { ref, computed } from "vue";
 import { Gamepad2 } from "lucide-vue-next";
 import FilterBar from "./FilterBar.vue";
-import WadList from "./WadList.vue";
+import WadCard from "./WadCard.vue";
 import type { WadEntry } from "../lib/schema";
-import type { WadSaveInfo } from "../composables/useSaves";
-import type { DownloadProgress } from "../composables/useDownload";
+import { useDownload } from "../composables/useDownload";
+import { useStats } from "../composables/useStats";
 import { useWadSummaries } from "../composables/useWadSummaries";
 
 const props = defineProps<{
   wads: WadEntry[];
   loading: boolean;
   error: string | null;
-  isDownloaded: (slug: string) => boolean;
-  isDownloading: (slug: string) => boolean;
-  downloadProgress: Record<string, DownloadProgress>;
-  getSaveInfo: (slug: string) => WadSaveInfo | null;
 }>();
-
-// Helper to get progress for a specific slug
-function getDownloadProgress(slug: string): DownloadProgress | undefined {
-  return props.downloadProgress[slug];
-}
 
 const emit = defineEmits<{
   play: [wad: WadEntry, extraArgs?: string[]];
@@ -29,6 +20,8 @@ const emit = defineEmits<{
   navigate: [view: "explore", query?: string];
 }>();
 
+const { isDownloaded } = useDownload();
+const { getCachedPlaySummary } = useStats();
 const { getVibe } = useWadSummaries();
 
 // Filter/sort state
@@ -46,9 +39,9 @@ const sortOptions = [
 // WADs that are downloaded OR have saves (ready to play)
 const playableWads = computed(() =>
   props.wads.filter(w => {
-    const info = props.getSaveInfo(w.slug);
-    const hasSaves = info && info.saveCount > 0;
-    return props.isDownloaded(w.slug) || hasSaves;
+    const info = getCachedPlaySummary(w.slug);
+    const hasSaves = info && info.sessionCount > 0;
+    return isDownloaded(w.slug) || hasSaves;
   })
 );
 
@@ -67,8 +60,8 @@ const filteredWads = computed(() => {
 
   // Sort
   result.sort((a, b) => {
-    const infoA = props.getSaveInfo(a.slug);
-    const infoB = props.getSaveInfo(b.slug);
+    const infoA = getCachedPlaySummary(a.slug);
+    const infoB = getCachedPlaySummary(b.slug);
 
     switch (sortBy.value) {
       case "last-played": {
@@ -77,8 +70,8 @@ const filteredWads = computed(() => {
         return dateB - dateA;
       }
       case "most-saves": {
-        const savesA = infoA?.saveCount ?? 0;
-        const savesB = infoB?.saveCount ?? 0;
+        const savesA = infoA?.sessionCount ?? 0;
+        const savesB = infoB?.sessionCount ?? 0;
         return savesB - savesA;
       }
       case "most-maps": {
@@ -98,17 +91,14 @@ const filteredWads = computed(() => {
 
 // When search has no results in collection, count matches in Explore
 const exploreMatchCount = computed(() => {
-  // Only count if there's a search query and no results in collection
   if (!searchQuery.value || filteredWads.value.length > 0) return 0;
 
   const q = searchQuery.value.toLowerCase();
   return props.wads.filter(w => {
-    // Exclude already playable WADs
-    const info = props.getSaveInfo(w.slug);
-    const hasSaves = info && info.saveCount > 0;
-    if (props.isDownloaded(w.slug) || hasSaves) return false;
+    const info = getCachedPlaySummary(w.slug);
+    const hasSaves = info && info.sessionCount > 0;
+    if (isDownloaded(w.slug) || hasSaves) return false;
 
-    // Search title, authors, and vibe
     const vibe = getVibe(w.slug) ?? "";
     return (
       w.title.toLowerCase().includes(q) ||
@@ -159,13 +149,11 @@ const exploreMatchCount = computed(() => {
       </div>
 
       <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <WadList
-          :wads="filteredWads"
-          :is-downloaded="isDownloaded"
-          :is-downloading="isDownloading"
-          :get-download-progress="getDownloadProgress"
-          :get-save-info="getSaveInfo"
-          @play="(wad: WadEntry, args?: string[]) => emit('play', wad, args)"
+        <WadCard
+          v-for="wad in filteredWads"
+          :key="wad.slug"
+          :wad="wad"
+          @play="(w: WadEntry, args?: string[]) => emit('play', w, args)"
           @delete="emit('delete', $event)"
         />
       </div>

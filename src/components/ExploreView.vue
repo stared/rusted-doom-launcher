@@ -4,23 +4,13 @@ import { Compass } from "lucide-vue-next";
 import FilterBar from "./FilterBar.vue";
 import ExploreCard from "./ExploreCard.vue";
 import type { WadEntry } from "../lib/schema";
-import type { WadSaveInfo } from "../composables/useSaves";
-import type { DownloadProgress } from "../composables/useDownload";
 import { useWadSummaries } from "../composables/useWadSummaries";
+import { TYPE_LABELS, IWAD_LABELS } from "../lib/constants";
 
 const props = defineProps<{
   wads: WadEntry[];
-  isDownloaded: (slug: string) => boolean;
-  isDownloading: (slug: string) => boolean;
-  downloadProgress: Record<string, DownloadProgress>;
-  getSaveInfo: (slug: string) => WadSaveInfo | null;
   initialQuery?: string;
 }>();
-
-// Helper to get progress for a specific slug
-function getDownloadProgress(slug: string): DownloadProgress | undefined {
-  return props.downloadProgress[slug];
-}
 
 const emit = defineEmits<{
   play: [wad: WadEntry];
@@ -79,30 +69,11 @@ const filterDefs = computed(() => {
 });
 
 function formatIwad(iwad: string): string {
-  const names: Record<string, string> = {
-    doom: "Doom",
-    doom2: "Doom II",
-    plutonia: "Plutonia",
-    tnt: "TNT",
-    heretic: "Heretic",
-    hexen: "Hexen",
-    freedoom1: "Freedoom 1",
-    freedoom2: "Freedoom 2",
-  };
-  return names[iwad] ?? iwad;
+  return IWAD_LABELS[iwad] ?? iwad;
 }
 
 function formatType(type: string): string {
-  const names: Record<string, string> = {
-    "single-level": "Single Level",
-    episode: "Episode",
-    megawad: "Megawad",
-    "gameplay-mod": "Mod",
-    "total-conversion": "TC",
-    "resource-pack": "Resource",
-    deathmatch: "Deathmatch",
-  };
-  return names[type] ?? type;
+  return TYPE_LABELS[type as keyof typeof TYPE_LABELS] ?? type;
 }
 
 // Filtered and sorted WADs
@@ -202,9 +173,6 @@ const filteredWads = computed(() => {
         v-for="wad in filteredWads"
         :key="wad.slug"
         :wad="wad"
-        :is-downloaded="isDownloaded(wad.slug)"
-        :is-downloading="isDownloading(wad.slug)"
-        :download-progress="getDownloadProgress(wad.slug)"
         @play="emit('play', $event)"
       />
     </div>

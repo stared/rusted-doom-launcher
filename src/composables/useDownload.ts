@@ -4,9 +4,9 @@ import { download as tauriDownload } from "@tauri-apps/plugin-upload";
 import { invoke } from "@tauri-apps/api/core";
 import type { WadEntry } from "../lib/schema";
 import { type LauncherDownloads } from "../lib/schema";
-import { useSettings } from "./useSettings";
 import { useLevelNames } from "./useLevelNames";
 import { findGameFilesInZip, selectPrimaryGameFile } from "../lib/zipExtract";
+import { useLibrary } from "./useLibrary";
 
 // Progress info for a download
 export interface DownloadProgress {
@@ -47,44 +47,40 @@ async function validateDownload(path: string, filename: string): Promise<void> {
   }
 }
 
-/**
- * Extract game files (.wad/.pk3) from a ZIP archive and write them to disk.
- * Returns the primary wadFilename and any additional file paths.
- */
-async function extractAndWriteGameFiles(
-  zipPath: string,
-  libraryDir: string
-): Promise<{ wadFilename: string; additionalFiles: string[] }> {
-  const zipData = await readFile(zipPath);
-  const gameFiles = findGameFilesInZip(new Uint8Array(zipData));
-  const { primary, additional } = selectPrimaryGameFile(gameFiles);
+export function useDownload() {
+  const { loadLevelNames } = useLevelNames();
+  const { base, wadFile } = useLibrary();
 
-  // Write primary file
-  await writeFile(`${libraryDir}/${primary.name}`, primary.data);
-  console.log(`[extract] Extracted primary: ${primary.name} (${primary.data.length} bytes)`);
+  /**
+   * Extract game files (.wad/.pk3) from a ZIP archive and write them to disk.
+   * Returns the primary wadFilename and any additional file paths.
+   */
+  async function extractAndWriteGameFiles(
+    zipPath: string
+  ): Promise<{ wadFilename: string; additionalFiles: string[] }> {
+    const zipData = await readFile(zipPath);
+    const gameFiles = findGameFilesInZip(new Uint8Array(zipData));
+    const { primary, additional } = selectPrimaryGameFile(gameFiles);
 
-  // Write additional files
-  const additionalFiles: string[] = [];
-  for (const file of additional) {
-    await writeFile(`${libraryDir}/${file.name}`, file.data);
-    additionalFiles.push(file.name);
-    console.log(`[extract] Extracted additional: ${file.name} (${file.data.length} bytes)`);
+    await writeFile(wadFile(primary.name), primary.data);
+    console.log(`[extract] Extracted primary: ${primary.name} (${primary.data.length} bytes)`);
+
+    const additionalFiles: string[] = [];
+    for (const file of additional) {
+      await writeFile(wadFile(file.name), file.data);
+      additionalFiles.push(file.name);
+      console.log(`[extract] Extracted additional: ${file.name} (${file.data.length} bytes)`);
+    }
+
+    return { wadFilename: primary.name, additionalFiles };
   }
 
-  return { wadFilename: primary.name, additionalFiles };
-}
-
-export function useDownload() {
-  const { settings } = useSettings();
-  const { loadLevelNames } = useLevelNames();
-
   async function loadState() {
-    const dir = settings.value.libraryPath;
-    downloads.value = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: dir });
+    downloads.value = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
   }
 
   async function saveState() {
-    await invoke("write_launcher_downloads", { libraryPath: settings.value.libraryPath, state: downloads.value });
+    await invoke("write_launcher_downloads", { libraryPath: base(), state: downloads.value });
   }
 
   function isDownloaded(slug: string): boolean {
@@ -99,9 +95,11 @@ export function useDownload() {
     return downloadProgress.value[slug];
   }
 
-  async function downloadWad(wad: WadEntry): Promise<string> {
-    const dir = settings.value.libraryPath;
+  function getDownloadInfo(slug: string): { filename: string; wadFilename?: string } | null {
+    return downloads.value.downloads[slug] ?? null;
+  }
 
+  async function downloadWad(wad: WadEntry): Promise<string> {
     if (!wad.downloads || wad.downloads.length === 0) {
       throw new Error(`No download URL configured for "${wad.title}"`);
     }
@@ -113,34 +111,34 @@ export function useDownload() {
       throw new Error(`Download not available for "${wad.title}" - URL not configured`);
     }
 
-    const path = `${dir}/${filename}`;
+    const path = wadFile(filename);
     const partPath = `${path}.part`;  // Atomic download: write to .part file first
 
     // Check if already downloaded
     const info = downloads.value.downloads[wad.slug];
     if (info) {
-      const wadFile = info.wadFilename ?? info.filename;
-      const wadPath = `${dir}/${wadFile}`;
+      const wadFileName = info.wadFilename ?? info.filename;
+      const wadPath = wadFile(wadFileName);
 
       if (await exists(wadPath)) {
         // L1: extracted file exists → return directly
         return wadPath;
       }
 
-      if (info.wadFilename && info.filename.endsWith('.zip') && await exists(`${dir}/${info.filename}`)) {
+      if (info.wadFilename && info.filename.endsWith('.zip') && await exists(wadFile(info.filename))) {
         // L3: extracted file missing but ZIP exists → re-extract
-        const { wadFilename } = await extractAndWriteGameFiles(`${dir}/${info.filename}`, dir);
+        const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
-        return `${dir}/${wadFilename}`;
+        return wadFile(wadFilename);
       }
 
-      if (info.filename.endsWith('.zip') && !info.wadFilename && await exists(`${dir}/${info.filename}`)) {
+      if (info.filename.endsWith('.zip') && !info.wadFilename && await exists(wadFile(info.filename))) {
         // L2: legacy download → extract and update state
-        const { wadFilename } = await extractAndWriteGameFiles(`${dir}/${info.filename}`, dir);
+        const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
-        return `${dir}/${wadFilename}`;
+        return wadFile(wadFilename);
       }
 
       // L4: nothing on disk → clear stale state, fall through to re-download
@@ -151,20 +149,17 @@ export function useDownload() {
     downloading.value.add(wad.slug);
     downloadProgress.value = { ...downloadProgress.value, [wad.slug]: { progress: 0, total: 0 } };
     try {
-      await mkdir(dir, { recursive: true });
+      await mkdir(base(), { recursive: true });
 
       // Use tauri-plugin-upload for streaming download with progress
-      // ProgressPayload: { progress, progressTotal, total, transferSpeed }
       let lastUpdate = 0;
       await tauriDownload(
         url,
         partPath,
         (payload) => {
-          // Throttle updates to every 100ms to avoid excessive re-renders
           const now = Date.now();
           if (now - lastUpdate > 100 || payload.progressTotal === payload.total) {
             lastUpdate = now;
-            // progressTotal = cumulative bytes downloaded, progress = just current chunk
             downloadProgress.value = { ...downloadProgress.value, [wad.slug]: { progress: payload.progressTotal, total: payload.total } };
           }
         }
@@ -174,7 +169,6 @@ export function useDownload() {
       try {
         await validateDownload(partPath, filename);
       } catch (validationError) {
-        // Delete corrupt file and re-throw
         await remove(partPath);
         throw validationError;
       }
@@ -186,27 +180,19 @@ export function useDownload() {
       const isZip = filename.toLowerCase().endsWith('.zip');
 
       if (isZip) {
-        // Extract game files from ZIP
-        const { wadFilename } = await extractAndWriteGameFiles(path, dir);
+        const { wadFilename } = await extractAndWriteGameFiles(path);
         downloads.value.downloads[wad.slug] = {
           filename, wadFilename, downloadedAt: new Date().toISOString(), size: fileStat.size,
         };
         await saveState();
-
-        // Extract and persist level names from the extracted WAD
         await loadLevelNames(wad.slug);
-
-        return `${dir}/${wadFilename}`;
+        return wadFile(wadFilename);
       } else {
-        // Direct .pk3 or .wad download — wadFilename = filename
         downloads.value.downloads[wad.slug] = {
           filename, wadFilename: filename, downloadedAt: new Date().toISOString(), size: fileStat.size,
         };
         await saveState();
-
-        // Extract and persist level names from the WAD
         await loadLevelNames(wad.slug);
-
         return path;
       }
     } finally {
@@ -228,17 +214,16 @@ export function useDownload() {
   async function deleteWad(slug: string) {
     const info = downloads.value.downloads[slug];
     if (!info) return;
-    const dir = settings.value.libraryPath;
     // Delete original download file
     try {
-      await remove(`${dir}/${info.filename}`);
+      await remove(wadFile(info.filename));
     } catch (e) {
       console.error(`Failed to delete ${info.filename}:`, e);
     }
     // Also delete extracted file if different from original
     if (info.wadFilename && info.wadFilename !== info.filename) {
       try {
-        await remove(`${dir}/${info.wadFilename}`);
+        await remove(wadFile(info.wadFilename));
       } catch (e) {
         console.error(`Failed to delete ${info.wadFilename}:`, e);
       }
@@ -247,5 +232,5 @@ export function useDownload() {
     await saveState();
   }
 
-  return { loadState, isDownloaded, isDownloading, getDownloadProgress, downloadProgress, downloadWad, downloadWithDeps, deleteWad };
+  return { loadState, isDownloaded, isDownloading, getDownloadProgress, getDownloadInfo, downloadProgress, downloadWad, downloadWithDeps, deleteWad };
 }

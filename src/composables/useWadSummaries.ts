@@ -18,10 +18,6 @@ for (const summary of summariesData as WadSummary[]) {
 }
 
 export function useWadSummaries() {
-  function getSummary(slug: string): WadSummary | null {
-    return summariesMap.get(slug) ?? null;
-  }
-
   function getDifficulty(slug: string): number | null {
     return summariesMap.get(slug)?.difficulty_rating ?? null;
   }
@@ -30,9 +26,5 @@ export function useWadSummaries() {
     return summariesMap.get(slug)?.vibe ?? null;
   }
 
-  function getPraise(slug: string): string | null {
-    return summariesMap.get(slug)?.praise ?? null;
-  }
-
-  return { getSummary, getDifficulty, getVibe, getPraise };
+  return { getDifficulty, getVibe };
 }
