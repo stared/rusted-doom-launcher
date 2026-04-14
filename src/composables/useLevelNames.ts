@@ -2,7 +2,7 @@ import { ref } from "vue";
 import { readFile, readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
 import { unzipSync, strFromU8 } from "fflate";
-import { extractLevelNames, extractLevelNamesFromData } from "../lib/wadParser";
+import { extractLevelNames, extractLevelNamesFromData, parseLevelNamesFromContent } from "../lib/wadParser";
 import { useSettings } from "./useSettings";
 import type { LauncherDownloads } from "../lib/schema";
 import { isNotFoundError } from "../lib/errors";
@@ -131,7 +131,7 @@ export function useLevelNames() {
             if (mapinfoLumps.includes(baseName)) {
               try {
                 const content = strFromU8(entryData);
-                const levels = parseMapinfoContent(baseName, content);
+                const levels = parseLevelNamesFromContent(baseName, content);
                 for (const [mapId, levelName] of levels) {
                   if (!allLevels.has(mapId)) {
                     allLevels.set(mapId, levelName);
@@ -232,57 +232,4 @@ export function useLevelNames() {
     clearCache,
     rescanAllWads,
   };
-}
-
-// Helper function to parse MAPINFO content (same logic as wadParser)
-function parseMapinfoContent(lumpName: string, content: string): Map<string, string> {
-  const levels = new Map<string, string>();
-
-  if (lumpName === "EMAPINFO") {
-    // EMAPINFO format: [MAP01] levelname = ...
-    let currentMap: string | null = null;
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      const sectionMatch = trimmed.match(/^\[(\w+)\]$/);
-      if (sectionMatch) {
-        currentMap = sectionMatch[1].toUpperCase();
-        continue;
-      }
-      if (currentMap) {
-        const nameMatch = trimmed.match(/^levelname\s*=\s*(.+)/i);
-        if (nameMatch) {
-          let levelName = nameMatch[1].trim();
-          const prefixPattern = new RegExp(`^${currentMap}:\\s*`, "i");
-          levelName = levelName.replace(prefixPattern, "");
-          levels.set(currentMap, levelName);
-        }
-      }
-    }
-  } else if (lumpName === "UMAPINFO") {
-    // UMAPINFO format: MAP MAP01 { levelname = "..." }
-    let currentMap: string | null = null;
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      const mapMatch = trimmed.match(/^MAP\s+(\w+)/i);
-      if (mapMatch) {
-        currentMap = mapMatch[1].toUpperCase();
-        continue;
-      }
-      if (currentMap) {
-        const nameMatch = trimmed.match(/^levelname\s*=\s*"?([^"]+)"?/i);
-        if (nameMatch) {
-          levels.set(currentMap, nameMatch[1].trim());
-        }
-      }
-    }
-  } else {
-    // MAPINFO/ZMAPINFO format: map MAP01 "Level Name" { ... }
-    const pattern = /map\s+(\w+)\s+"([^"]+)"/gi;
-    let match;
-    while ((match = pattern.exec(content)) !== null) {
-      levels.set(match[1].toUpperCase(), match[2]);
-    }
-  }
-
-  return levels;
 }

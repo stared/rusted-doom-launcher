@@ -148,6 +148,17 @@ function parseUmapinfo(content: string): Map<string, string> {
 }
 
 /**
+ * Parse level names from raw MAPINFO/ZMAPINFO/EMAPINFO/UMAPINFO content.
+ * Use this when you have the lump content already (e.g. from a ZIP/PK3).
+ */
+export function parseLevelNamesFromContent(lumpName: string, content: string): Map<string, string> {
+  const upper = lumpName.toUpperCase();
+  if (upper === "EMAPINFO") return parseEmapinfo(content);
+  if (upper === "UMAPINFO") return parseUmapinfo(content);
+  return parseMapinfo(content);
+}
+
+/**
  * Extract level names from in-memory WAD data.
  * Returns a Map of map ID (e.g., "MAP01") to level name.
  */
@@ -162,10 +173,7 @@ export function extractLevelNamesFromData(data: Uint8Array): Map<string, string>
         const lumpData = data.slice(entry.offset, entry.offset + entry.size);
         const content = new TextDecoder("utf-8").decode(lumpData);
 
-        const parsed =
-          entry.name.toUpperCase() === "EMAPINFO" ? parseEmapinfo(content) :
-          entry.name.toUpperCase() === "UMAPINFO" ? parseUmapinfo(content) :
-          parseMapinfo(content);
+        const parsed = parseLevelNamesFromContent(entry.name, content);
 
         for (const [mapId, levelName] of parsed) {
           if (!levels.has(mapId)) {
