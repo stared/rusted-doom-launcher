@@ -1,4 +1,5 @@
 use std::io::{BufRead, BufReader};
+use std::os::windows::process::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
@@ -8,7 +9,9 @@ use tauri::Manager;
 pub mod launcher_downloads;
 
 #[tauri::command]
-async fn read_launcher_downloads(library_path: String) -> Result<launcher_downloads::LauncherDownloads, String> {
+async fn read_launcher_downloads(
+    library_path: String,
+) -> Result<launcher_downloads::LauncherDownloads, String> {
     let path = launcher_downloads::launcher_downloads_path(library_path);
     launcher_downloads::read_launcher_downloads_or_empty(path)
 }
@@ -111,13 +114,17 @@ fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
 
 #[cfg(target_os = "windows")]
 fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
     // Read executable metadata instead of launching the engine.
     let ps_cmd = format!(
         "(Get-Item -LiteralPath '{}').VersionInfo.ProductVersion",
         engine_path.replace('\'', "''")
     );
+
     let output = Command::new("powershell")
         .args(["-NoProfile", "-Command", &ps_cmd])
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|e| format!("Failed to query file version: {}", e))?;
 
@@ -145,9 +152,13 @@ fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
 
 #[cfg(target_os = "windows")]
 fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
     let filter = format!("IMAGENAME eq {}", process_name);
+
     let output = Command::new("tasklist")
         .args(["/FI", &filter])
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|e| format!("Failed to run tasklist: {}", e))?;
 
@@ -162,10 +173,7 @@ fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
 /// Launch GZDoom/UZDoom with the specified executable path and arguments.
 /// Captures stdout/stderr for later retrieval via get_gzdoom_log.
 #[tauri::command]
-async fn launch_gzdoom(
-    gzdoom_path: String,
-    args: Vec<String>,
-) -> Result<(), String> {
+async fn launch_gzdoom(gzdoom_path: String, args: Vec<String>) -> Result<(), String> {
     // Security: Validate the path looks like a doom engine
     let path_lower = gzdoom_path.to_lowercase();
     if !path_lower.contains("gzdoom") && !path_lower.contains("uzdoom") {
