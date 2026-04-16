@@ -111,13 +111,18 @@ fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
 
 #[cfg(target_os = "windows")]
 fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
     // Read executable metadata instead of launching the engine.
     let ps_cmd = format!(
         "(Get-Item -LiteralPath '{}').VersionInfo.ProductVersion",
         engine_path.replace('\'', "''")
     );
+
     let output = Command::new("powershell")
         .args(["-NoProfile", "-Command", &ps_cmd])
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|e| format!("Failed to query file version: {}", e))?;
 
@@ -145,9 +150,14 @@ fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
 
 #[cfg(target_os = "windows")]
 fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
     let filter = format!("IMAGENAME eq {}", process_name);
+
     let output = Command::new("tasklist")
         .args(["/FI", &filter])
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|e| format!("Failed to run tasklist: {}", e))?;
 
