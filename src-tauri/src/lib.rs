@@ -8,7 +8,9 @@ use tauri::Manager;
 pub mod launcher_downloads;
 
 #[tauri::command]
-async fn read_launcher_downloads(library_path: String) -> Result<launcher_downloads::LauncherDownloads, String> {
+async fn read_launcher_downloads(
+    library_path: String,
+) -> Result<launcher_downloads::LauncherDownloads, String> {
     let path = launcher_downloads::launcher_downloads_path(library_path);
     launcher_downloads::read_launcher_downloads_or_empty(path)
 }
@@ -111,31 +113,106 @@ fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
 
 #[cfg(target_os = "windows")]
 fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
-    use std::os::windows::process::CommandExt;
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    use std::ffi::c_void;
+    use windows::{
+        Win32::Storage::FileSystem::{
+            GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW,
+        },
+        core::PCWSTR,
+    };
 
-    // Read executable metadata instead of launching the engine.
-    let ps_cmd = format!(
-        "(Get-Item -LiteralPath '{}').VersionInfo.ProductVersion",
-        engine_path.replace('\'', "''")
-    );
+    fn to_wide_null(s: &str) -> Vec<u16> {
+        s.encode_utf16().chain(std::iter::once(0)).collect()
+    }
 
-    let output = Command::new("powershell")
-        .args(["-NoProfile", "-Command", &ps_cmd])
-        .creation_flags(CREATE_NO_WINDOW)
-        .output()
+    let path_w = to_wide_null(engine_path);
+
+    unsafe {
+        let mut handle = 0u32;
+        let size = GetFileVersionInfoSizeW(PCWSTR(path_w.as_ptr()), Some(&mut handle));
+
+        if size == 0 {
+            return Err("Could not read executable version metadata".to_string());
+        }
+
+        let mut buffer = vec![0u8; size as usize];
+
+        GetFileVersionInfoW(
+            PCWSTR(path_w.as_ptr()),
+            Some(0),
+            size,
+            buffer.as_mut_ptr() as *mut _,
+        )
         .map_err(|e| format!("Failed to query file version: {}", e))?;
 
-    if !output.status.success() {
-        return Err("Could not read executable version metadata".to_string());
-    }
+        let translation_block = to_wide_null(r"\VarFileInfo\Translation");
+        let mut translation_ptr: *mut c_void = std::ptr::null_mut();
+        let mut translation_len: u32 = 0;
 
-    let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if version.is_empty() {
-        return Err("Executable version metadata is empty".to_string());
-    }
+        if !VerQueryValueW(
+            buffer.as_ptr() as *const _,
+            PCWSTR(translation_block.as_ptr()),
+            &mut translation_ptr,
+            &mut translation_len,
+        )
+        .as_bool()
+        {
+            return Err("Failed to query translation info".to_string());
+        }
 
-    Ok(version)
+        if translation_ptr.is_null() || translation_len < 4 {
+            return Err("Executable version translation info is missing".to_string());
+        }
+
+        let translation = std::slice::from_raw_parts(
+            translation_ptr as *const u16,
+            (translation_len / 2) as usize,
+        );
+
+        if translation.len() < 2 {
+            return Err("Executable version translation info is invalid".to_string());
+        }
+
+        let lang = translation[0];
+        let codepage = translation[1];
+
+        let sub_block = format!(
+            r"\StringFileInfo\{:04x}{:04x}\ProductVersion",
+            lang, codepage
+        );
+        let sub_block_w = to_wide_null(&sub_block);
+
+        let mut value_ptr: *mut c_void = std::ptr::null_mut();
+        let mut value_len: u32 = 0;
+
+        if !VerQueryValueW(
+            buffer.as_ptr() as *const _,
+            PCWSTR(sub_block_w.as_ptr()),
+            &mut value_ptr,
+            &mut value_len,
+        )
+        .as_bool()
+        {
+            return Err("Failed to query ProductVersion".to_string());
+        }
+
+        if value_ptr.is_null() || value_len == 0 {
+            return Err("Executable version metadata is empty".to_string());
+        }
+
+        let utf16_slice = std::slice::from_raw_parts(value_ptr as *const u16, value_len as usize);
+
+        let version = String::from_utf16_lossy(utf16_slice)
+            .trim_end_matches('\0')
+            .trim()
+            .to_string();
+
+        if version.is_empty() {
+            return Err("Executable version metadata is empty".to_string());
+        }
+
+        Ok(version)
+    }
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -150,32 +227,56 @@ fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
 
 #[cfg(target_os = "windows")]
 fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
-    use std::os::windows::process::CommandExt;
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
+        TH32CS_SNAPPROCESS,
+    };
 
-    let filter = format!("IMAGENAME eq {}", process_name);
+    let target = process_name.to_lowercase();
 
-    let output = Command::new("tasklist")
-        .args(["/FI", &filter])
-        .creation_flags(CREATE_NO_WINDOW)
-        .output()
-        .map_err(|e| format!("Failed to run tasklist: {}", e))?;
+    unsafe {
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
+            .map_err(|e| format!("Failed to create process snapshot: {}", e))?;
 
-    if !output.status.success() {
-        return Err("tasklist failed".to_string());
+        let mut entry = PROCESSENTRY32W::default();
+        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+
+        let mut found = false;
+
+        if Process32FirstW(snapshot, &mut entry).is_ok() {
+            loop {
+                let exe_name = String::from_utf16_lossy(
+                    &entry
+                        .szExeFile
+                        .iter()
+                        .take_while(|&&c| c != 0)
+                        .copied()
+                        .collect::<Vec<u16>>(),
+                )
+                .to_lowercase();
+
+                if exe_name == target {
+                    found = true;
+                    break;
+                }
+
+                if Process32NextW(snapshot, &mut entry).is_err() {
+                    break;
+                }
+            }
+        }
+
+        let _ = CloseHandle(snapshot);
+
+        Ok(found)
     }
-
-    let stdout = String::from_utf8_lossy(&output.stdout).to_lowercase();
-    Ok(stdout.contains(&process_name.to_lowercase()))
 }
 
 /// Launch GZDoom/UZDoom with the specified executable path and arguments.
 /// Captures stdout/stderr for later retrieval via get_gzdoom_log.
 #[tauri::command]
-async fn launch_gzdoom(
-    gzdoom_path: String,
-    args: Vec<String>,
-) -> Result<(), String> {
+async fn launch_gzdoom(gzdoom_path: String, args: Vec<String>) -> Result<(), String> {
     // Security: Validate the path looks like a doom engine
     let path_lower = gzdoom_path.to_lowercase();
     if !path_lower.contains("gzdoom") && !path_lower.contains("uzdoom") {
