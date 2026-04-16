@@ -31,15 +31,13 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["dmg"],
     "icon": [
       "icons/icon.ico",
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png"
     ],
-    "resources": {
-      "../content/wads": "content/wads"
-    }
+    "resources": {}
   }
 }

@@ -9,7 +9,15 @@ jobs:
   release:
     permissions:
       contents: write
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+          - platform: windows-latest
+            args: --target x86_64-pc-windows-msvc --no-bundle
+    runs-on: ${{ matrix.platform }}
 
     steps:
       - uses: actions/checkout@v4
@@ -45,20 +53,30 @@ jobs:
           releaseBody: |
             A modern launcher for classic Doom. Browse community-made maps and episodes, then install and launch them with a single click.
 
-            ## Install via Homebrew (recommended)
+            ## Windows
+
+            1. Download `Rusted.Doom.Launcher.exe` below
+            2. Run it — if SmartScreen shows a warning, click **"More info"** → **"Run anyway"** (the app is not signed yet)
+
+            ## macOS
+
+            **Homebrew (recommended):**
             ```
             brew install --cask stared/doom/rusted-doom-launcher
             ```
 
-            ## Manual Install
+            **Manual install:**
             1. Download the `.dmg` file below (Apple Silicon)
             2. Drag to Applications
             3. Run: `xattr -cr /Applications/Rusted\ Doom\ Launcher.app`
             4. Open the app
 
             ## Requirements
-            - [UZDoom](https://github.com/UZDoom/UZDoom) or [GZDoom](https://github.com/ZDoom/gzdoom) - `brew install --cask stared/doom/uzdoom`
+            - [UZDoom](https://github.com/UZDoom/UZDoom) or [GZDoom](https://github.com/ZDoom/gzdoom)
+              - macOS: `brew install --cask stared/doom/uzdoom`
+              - Windows: download from the links above
             - doom.wad or doom2.wad from [GOG](https://www.gog.com/en/game/doom_doom_ii) or Steam
           releaseDraft: true
           prerelease: false
-          args: --target aarch64-apple-darwin
+          args: ${{ matrix.args }}
+          uploadPlainBinary: ${{ matrix.platform == 'windows-latest' }}
