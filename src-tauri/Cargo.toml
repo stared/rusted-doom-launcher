@@ -26,8 +26,10 @@ serde_json = "1"
 log = "0.4"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.62.2", features = [
-	"Win32_Foundation",
-	"Win32_Storage_FileSystem",
-	"Win32_System_Diagnostics_ToolHelp",
+# Pinned to 0.61.3 to match the version Tauri itself depends on, avoiding two
+# copies of the windows crate in the lockfile and a larger Windows build.
+windows = { version = "0.61.3", features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Diagnostics_ToolHelp",
 ] }

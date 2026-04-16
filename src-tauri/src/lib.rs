@@ -8,9 +8,7 @@ use tauri::Manager;
 pub mod launcher_downloads;
 
 #[tauri::command]
-async fn read_launcher_downloads(
-    library_path: String,
-) -> Result<launcher_downloads::LauncherDownloads, String> {
+async fn read_launcher_downloads(library_path: String) -> Result<launcher_downloads::LauncherDownloads, String> {
     let path = launcher_downloads::launcher_downloads_path(library_path);
     launcher_downloads::read_launcher_downloads_or_empty(path)
 }
@@ -267,7 +265,8 @@ fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
             }
         }
 
-        let _ = CloseHandle(snapshot);
+        CloseHandle(snapshot)
+            .map_err(|e| format!("Failed to close process snapshot handle: {}", e))?;
 
         Ok(found)
     }
@@ -276,7 +275,10 @@ fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
 /// Launch GZDoom/UZDoom with the specified executable path and arguments.
 /// Captures stdout/stderr for later retrieval via get_gzdoom_log.
 #[tauri::command]
-async fn launch_gzdoom(gzdoom_path: String, args: Vec<String>) -> Result<(), String> {
+async fn launch_gzdoom(
+    gzdoom_path: String,
+    args: Vec<String>,
+) -> Result<(), String> {
     // Security: Validate the path looks like a doom engine
     let path_lower = gzdoom_path.to_lowercase();
     if !path_lower.contains("gzdoom") && !path_lower.contains("uzdoom") {
