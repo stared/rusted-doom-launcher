@@ -3408,6 +3408,7 @@ dependencies = [
  "tauri-plugin-mcp-bridge",
  "tauri-plugin-shell",
  "tauri-plugin-upload",
+ "windows",
 ]
 
 [[package]]
