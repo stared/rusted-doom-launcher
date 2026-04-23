@@ -104,7 +104,8 @@ export function useDownload() {
       throw new Error(`No download URL configured for "${wad.title}"`);
     }
 
-    const { url, filename } = wad.downloads[0];
+    const entry = wad.downloads[0];
+    let { url, filename } = entry;
 
     // Check for placeholder/invalid URLs
     if (url.includes("example.com") || url.includes("placeholder")) {
@@ -150,6 +151,16 @@ export function useDownload() {
     downloadProgress.value = { ...downloadProgress.value, [wad.slug]: { progress: 0, total: 0 } };
     try {
       await mkdir(base(), { recursive: true });
+
+      // ModDB: resolve page URL to a time-signed CDN URL via Rust handshake.
+      // The signed URL expires in ~1 hour, so resolve immediately before download.
+      if (entry.type === "moddb") {
+        const resolved = await invoke<{ url: string; md5: string | null; filename: string | null }>(
+          "resolve_moddb_url",
+          { pageUrl: url }
+        );
+        url = resolved.url;
+      }
 
       // Use tauri-plugin-upload for streaming download with progress
       let lastUpdate = 0;

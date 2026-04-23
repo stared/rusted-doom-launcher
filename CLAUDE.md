@@ -23,6 +23,14 @@ Tauri 2 + Vue 3 + TypeScript app for launching Doom source ports (UZDoom/GZDoom)
 - WebView DevTools: Cmd+Option+I
 - Rust errors appear in terminal, JS errors in DevTools console
 
+### Build dependencies
+- `cmake` is required (pulled in by `rquest` → `boring-sys2` for BoringSSL, which powers the ModDB download handshake). Install via `brew install cmake` on macOS. First build of `boring-sys2` takes ~3–8 minutes; cached afterwards by `swatinem/rust-cache` in CI.
+
+### ModDB downloads
+- WAD entries can use `downloads[].type: "moddb"` with the public ModDB file page URL (e.g. `https://www.moddb.com/mods/FOO/downloads/BAR`).
+- The Rust command `resolve_moddb_url` (`src-tauri/src/moddb.rs`) does a 3-step handshake to get a time-signed CDN URL; the regular `tauri-plugin-upload` path then streams the file. Signed URLs expire ~1 hour, so resolution happens immediately before each download.
+- Cloudflare fronts `www.moddb.com` but not the CDN host (`*.dl.dbolical.com`), so only the handshake needs BoringSSL. If the ModDB markup changes, update the regexes in `summary_field`, `parse_file_id`, `parse_mirror_path`.
+
 ### MCP Debugging (AI-assisted)
 
 Uses [hypothesi/mcp-server-tauri](https://github.com/hypothesi/mcp-server-tauri) for AI debugging via Claude Code.

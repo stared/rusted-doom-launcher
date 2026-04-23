@@ -1,0 +1,40 @@
+{
+  "slug": "ordeal-in-blood-katabasis",
+  "title": "Ordeal in Blood: Katabasis",
+  "authors": [
+    {
+      "name": "David Quattrocchi"
+    }
+  ],
+  "year": 2026,
+  "description": "Two episodes for classic Doom: new episode 3 \"Katabasis\" and an updated episode 2 \"At the Gates of Hades\" (originally 2022). 18 levels total (E2M1–E2M9, E3M1–E3M9) designed for a classic DOOM feel with higher detail and challenge. Tested with Crispy Doom and GZDoom.",
+  "iwad": "doom",
+  "type": "episode",
+  "sourcePort": "limit_removing",
+  "requires": [],
+  "downloads": [
+    {
+      "type": "moddb",
+      "url": "https://www.moddb.com/mods/ordeal-in-blood/downloads/ordeal-in-blood-katabasis",
+      "filename": "oib_ep2_ep3.zip"
+    }
+  ],
+  "thumbnail": "",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "episode",
+    "classic",
+    "limit-removing",
+    "moddb"
+  ],
+  "difficulty": "hard",
+  "notes": "[ModDB](https://www.moddb.com/mods/ordeal-in-blood) • Uploaded 22/04/2026 (ep2 originally 03/03/2022). Downloads via ModDB three-step handshake in the Rust backend.",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://www.moddb.com/mods/ordeal-in-blood/downloads/ordeal-in-blood-katabasis",
+    "https://www.moddb.com/mods/ordeal-in-blood"
+  ]
+}

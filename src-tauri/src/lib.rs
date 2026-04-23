@@ -6,6 +6,7 @@ use std::thread;
 use tauri::Manager;
 
 pub mod launcher_downloads;
+pub mod moddb;
 
 #[tauri::command]
 async fn read_launcher_downloads(library_path: String) -> Result<launcher_downloads::LauncherDownloads, String> {
@@ -374,7 +375,8 @@ pub fn run() {
             get_engine_version,
             is_process_running,
             read_launcher_downloads,
-            write_launcher_downloads
+            write_launcher_downloads,
+            moddb::resolve_moddb_url
         ]);
 
     // MCP bridge for Claude Code debugging (dev mode only)
