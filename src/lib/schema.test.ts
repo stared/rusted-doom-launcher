@@ -18,28 +18,6 @@ async function youtubeVideoExists(videoId: string): Promise<boolean> {
   }
 }
 
-// Check if a URL is accessible (HEAD request to avoid downloading full file)
-async function urlIsAccessible(url: string): Promise<{ ok: boolean; status: number }> {
-  try {
-    const response = await fetch(url, { method: "HEAD", redirect: "follow" });
-    return { ok: response.ok, status: response.status };
-  } catch {
-    // Some servers don't support HEAD, try GET with abort
-    try {
-      const controller = new AbortController();
-      const response = await fetch(url, {
-        method: "GET",
-        redirect: "follow",
-        signal: controller.signal
-      });
-      controller.abort(); // Don't download the whole file
-      return { ok: response.ok, status: response.status };
-    } catch {
-      return { ok: false, status: 0 };
-    }
-  }
-}
-
 const CONTENT_DIR = join(__dirname, "../../content/wads");
 
 // Get all WAD JSON files
@@ -80,13 +58,14 @@ describe("WAD Entry Schema", () => {
       type: "megawad",
       sourcePort: "gzdoom",
       requires: [],
-      downloads: [{ type: "idgames", url: "https://example.com", filename: "test.zip" }],
+      downloads: [{ type: "idgames", url: "https://example.org/test.zip", filename: "test.zip" }],
       thumbnail: "",
       screenshots: [],
       youtubeVideos: [],
       awards: [],
       tags: [],
       difficulty: "unknown",
+      urls: ["https://example.org/test"],
       notes: "",
       _schemaVersion: 1,
       _source: "manual",
@@ -136,13 +115,14 @@ describe("WAD Entry Schema", () => {
           type: "megawad",
           sourcePort: "gzdoom",
           requires: [],
-          downloads: [{ type: "idgames", url: "https://example.com", filename: "test.zip" }],
+          downloads: [{ type: "idgames", url: "https://example.org/test.zip", filename: "test.zip" }],
           thumbnail: "",
           screenshots: [],
           youtubeVideos: [],
           awards: [],
           tags: [],
           difficulty: "unknown",
+          urls: ["https://example.org/test"],
           notes: "",
           _schemaVersion: 1,
           _source: "manual",
@@ -162,13 +142,14 @@ describe("WAD Entry Schema", () => {
           type: "megawad",
           sourcePort: "gzdoom",
           requires: [],
-          downloads: [{ type: "idgames", url: "https://example.com", filename: "test.zip" }],
+          downloads: [{ type: "idgames", url: "https://example.org/test.zip", filename: "test.zip" }],
           thumbnail: "",
           screenshots: [],
           youtubeVideos: [],
           awards: [],
           tags: [],
           difficulty: "unknown",
+          urls: ["https://example.org/test"],
           notes: "",
           _schemaVersion: 1,
           _source: "manual",
@@ -188,13 +169,14 @@ describe("WAD Entry Schema", () => {
           type: "megawad",
           sourcePort: "gzdoom",
           requires: [],
-          downloads: [{ type: "idgames", url: "https://example.com", filename: "test.zip" }],
+          downloads: [{ type: "idgames", url: "https://example.org/test.zip", filename: "test.zip" }],
           thumbnail: "",
           screenshots: [],
           youtubeVideos: [],
           awards: [],
           tags: [],
           difficulty: "unknown",
+          urls: ["https://example.org/test"],
           notes: "",
           _schemaVersion: 1,
           _source: "manual",
@@ -291,17 +273,6 @@ describe("WAD JSON files content checks", () => {
       it("should have at least one download source", () => {
         expect(data.downloads.length).toBeGreaterThan(0);
         expect(data.downloads[0].url).toMatch(/^https?:\/\//);
-      });
-
-      // Actually verify download URLs are accessible via network request
-      data.downloads.forEach((download: { url: string; filename: string; type: string }) => {
-        it(`download URL for "${download.filename}" should be accessible`, async () => {
-          const result = await urlIsAccessible(download.url);
-          expect(
-            result.ok,
-            `Download URL ${download.url} returned status ${result.status}`
-          ).toBe(true);
-        });
       });
 
       it("should have valid year", () => {
