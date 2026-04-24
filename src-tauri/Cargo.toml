@@ -16,14 +16,12 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"
-tauri-plugin-http = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-upload = "2"
 # MCP bridge for Claude Code debugging (hypothesi/tauri-mcp-server)
 tauri-plugin-mcp-bridge = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-log = "0.4"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # Pinned to 0.61.3 to match the version Tauri itself depends on, avoiding two

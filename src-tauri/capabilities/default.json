@@ -13,18 +13,11 @@
         "fs:default",
         "fs:allow-app-write-recursive",
         "fs:allow-app-meta-recursive",
-        "http:default",
         "upload:default",
         {
           "identifier": "upload:allow-download",
           "allow": [
             { "path": "$APPDATA/com.doomwads.launcher/**" }
-          ]
-        },
-        {
-          "identifier": "http:allow-fetch",
-          "allow": [
-            { "url": "https://*" }
           ]
         }
       ]
