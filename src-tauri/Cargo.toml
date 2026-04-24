@@ -7,7 +7,7 @@ edition = "2024"
 
 [lib]
 name = "doom_launcher_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -33,3 +33,6 @@ windows = { version = "0.61.3", features = [
     "Win32_Storage_FileSystem",
     "Win32_System_Diagnostics_ToolHelp",
 ] }
+
+[profile.dev]
+debug = "line-tables-only"
