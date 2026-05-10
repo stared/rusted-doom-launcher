@@ -32,7 +32,7 @@ function synthIwadEntry(iwad: Iwad): WadEntry {
     sourcePort: "vanilla",
     requires: [],
     downloads: [],
-    thumbnail: "",
+    thumbnail: meta.thumbnail,
     screenshots: [],
     youtubeVideos: [],
     awards: [],
