@@ -15,6 +15,8 @@ jobs:
         include:
           - platform: macos-latest
             args: --target aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
           - platform: windows-latest
             args: --target x86_64-pc-windows-msvc --no-bundle
     runs-on: ${{ matrix.platform }}
@@ -34,6 +36,10 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Add x86_64 Rust target
+        if: matrix.args == '--target x86_64-apple-darwin'
+        run: rustup target add x86_64-apple-darwin
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -66,7 +72,9 @@ jobs:
             ```
 
             **Manual install:**
-            1. Download the `.dmg` file below (Apple Silicon)
+            1. Download the matching `.dmg` below:
+               - `*_aarch64.dmg` — Apple Silicon
+               - `*_x64.dmg` — Intel Macs
             2. Drag to Applications
             3. Run: `xattr -cr /Applications/Rusted\ Doom\ Launcher.app`
             4. Open the app
