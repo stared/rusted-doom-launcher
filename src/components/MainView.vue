@@ -36,9 +36,12 @@ const sortOptions = [
   { value: "alpha", label: "A-Z" },
 ];
 
-// WADs that are downloaded OR have saves (ready to play)
+// WADs that are downloaded OR have saves (ready to play). IWADs are always
+// playable when the IWAD file is on disk (the parent only synthesises an
+// entry once detection succeeds).
 const playableWads = computed(() =>
   props.wads.filter(w => {
+    if (w.type === "iwad") return true;
     const info = getCachedPlaySummary(w.slug);
     const hasSaves = info && info.sessionCount > 0;
     return isDownloaded(w.slug) || hasSaves;

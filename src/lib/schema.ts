@@ -22,7 +22,7 @@ export const WadEntrySchema = z.object({
   year: z.number().int().min(1993).max(MAX_YEAR),
   description: z.string().min(1),
   iwad: IwadEnum,
-  type: z.enum(["single-level", "episode", "megawad", "gameplay-mod", "total-conversion", "resource-pack", "deathmatch"]),
+  type: z.enum(["iwad", "single-level", "episode", "megawad", "gameplay-mod", "total-conversion", "resource-pack", "deathmatch"]),
   sourcePort: z.enum(["vanilla", "limit_removing", "boom", "mbf21", "gzdoom"]),
   requires: z.array(z.object({
     slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
@@ -36,7 +36,7 @@ export const WadEntrySchema = z.object({
       { message: "Download URL cannot be a placeholder" }
     ),
     filename: z.string().min(1),
-  })).min(1),
+  })),
   thumbnail: z.string(),
   screenshots: z.array(z.object({ url: z.string().url(), caption: z.string() })),
   youtubeVideos: z.array(YouTubeVideoSchema),
@@ -46,7 +46,7 @@ export const WadEntrySchema = z.object({
   })),
   tags: z.array(z.string()),
   difficulty: z.enum(["easy", "medium", "hard", "slaughter", "unknown"]),
-  urls: z.array(z.string().url()).min(1),
+  urls: z.array(z.string().url()),
   notes: z.string(),
   _schemaVersion: z.literal(1),
   _source: z.enum(["manual", "idgames-scraper", "cacowards-scraper"]),

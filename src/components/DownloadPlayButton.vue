@@ -16,7 +16,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ play: [wad: WadEntry] }>();
 
-const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
+const isDownloaded = computed(() => props.wad.type === "iwad" || checkDownloaded(props.wad.slug));
 const isDownloading = computed(() => checkDownloading(props.wad.slug));
 const downloadProgress = computed(() => getDownloadProgress(props.wad.slug));
 

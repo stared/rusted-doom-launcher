@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar.vue";
 import MainView from "./components/MainView.vue";
@@ -14,9 +14,36 @@ import { useDownload } from "./composables/useDownload";
 import { useSettings } from "./composables/useSettings";
 import { useLevelNames } from "./composables/useLevelNames";
 import { useStats } from "./composables/useStats";
-import type { WadEntry } from "./lib/schema";
+import type { Iwad, WadEntry } from "./lib/schema";
+import { IWAD_LABELS, IWAD_METADATA } from "./lib/constants";
 import { getErrorMessage } from "./lib/errors";
 import { shortenPath } from "./lib/platform";
+
+function synthIwadEntry(iwad: Iwad): WadEntry {
+  const meta = IWAD_METADATA[iwad];
+  return {
+    slug: `iwad-${iwad}`,
+    title: IWAD_LABELS[iwad],
+    authors: meta.authors.map(name => ({ name })),
+    year: meta.year,
+    description: meta.description,
+    iwad,
+    type: "iwad",
+    sourcePort: "vanilla",
+    requires: [],
+    downloads: [],
+    thumbnail: "",
+    screenshots: [],
+    youtubeVideos: [],
+    awards: [],
+    tags: [],
+    difficulty: "unknown",
+    urls: [],
+    notes: "",
+    _schemaVersion: 1,
+    _source: "manual",
+  };
+}
 
 declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unknown };
 
@@ -24,6 +51,9 @@ type View = "main" | "explore" | "runs" | "logs" | "settings" | "about";
 
 const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
+
+const iwadEntries = computed<WadEntry[]>(() => availableIwads.value.map(synthIwadEntry));
+const playableEntries = computed<WadEntry[]>(() => [...iwadEntries.value, ...wads.value]);
 const { loadState: loadDownloadState, downloadWithDeps, deleteWad } = useDownload();
 const { settings, isFirstRun, migratedIwads, initSettings } = useSettings();
 const { loadAllLevelNames } = useLevelNames();
@@ -101,8 +131,12 @@ async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
     return;
   }
   try {
-    const { wadPath, depPaths } = await downloadWithDeps(wad, wads.value);
     lastPlayedSlug.value = wad.slug;
+    if (wad.type === "iwad") {
+      await launch("", wad.iwad, [], wad.slug, "HMP", extraArgs ?? []);
+      return;
+    }
+    const { wadPath, depPaths } = await downloadWithDeps(wad, wads.value);
     await launch(wadPath, wad.iwad, depPaths, wad.slug, "HMP", extraArgs ?? []);
   } catch (e) {
     console.error(`[Play] Error launching ${wad.slug}:`, e);
@@ -141,7 +175,7 @@ async function handleDelete(wad: WadEntry) {
       <!-- Views -->
       <MainView
         v-if="activeView === 'main'"
-        :wads="wads"
+        :wads="playableEntries"
         :loading="loading"
         :error="error"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
