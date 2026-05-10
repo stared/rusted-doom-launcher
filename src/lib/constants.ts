@@ -1,19 +1,6 @@
 /** Shared display-label constants. */
 
 import type { Iwad, WadEntry } from "./schema";
-
-// IWAD thumbnails — sourced from doomwiki.org title screens (doom, doom2,
-// plutonia, tnt, heretic, hexen) and freedoom.github.io official screenshots
-// (freedoom1, freedoom2). Downscaled to 800px JPEG; freedoom shots pre-cropped
-// to 16:9 to drop the HUD strip. See AUTHORS / per-file URLs:
-//   doom       https://doomwiki.org/w/images/4/4b/Doom-1-.gif
-//   doom2      https://doomwiki.org/w/images/5/51/Doom2_title.png
-//   plutonia   https://doomwiki.org/w/images/0/0c/Plutonia_title.gif
-//   tnt        https://doomwiki.org/w/images/e/ed/TNT_title.gif
-//   heretic    https://doomwiki.org/w/images/b/b3/Heretictitle.png
-//   hexen      https://doomwiki.org/w/images/5/5f/Hexen.png
-//   freedoom1  https://freedoom.github.io/img/screenshots/p1_1.png
-//   freedoom2  https://freedoom.github.io/img/screenshots/p2_1.png
 import doomCover from "../assets/iwads/doom.jpg";
 import doom2Cover from "../assets/iwads/doom2.jpg";
 import plutoniaCover from "../assets/iwads/plutonia.jpg";
