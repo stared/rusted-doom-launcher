@@ -10,6 +10,7 @@ const OLD_APP_NAME = "gzdoom";
 interface Settings {
   gzdoomPath: string | null;  // null = not found
   libraryPath: string;        // Never null after init
+  activeMods: string[];       // slugs of gameplay mods layered into every launch
 }
 
 async function getEngineLocations(): Promise<string[]> {
@@ -62,7 +63,7 @@ interface MigratedIwad {
   from: string;  // source directory path
 }
 
-const settings = ref<Settings>({ gzdoomPath: null, libraryPath: "" });
+const settings = ref<Settings>({ gzdoomPath: null, libraryPath: "", activeMods: [] });
 const migratedIwads = ref<MigratedIwad[]>([]);
 const initialized = ref(false);
 const isFirstRun = ref(false);
@@ -286,6 +287,7 @@ export function useSettings() {
         const parsed = JSON.parse(content);
         if (parsed.gzdoomPath) settings.value.gzdoomPath = parsed.gzdoomPath;
         if (parsed.libraryPath) settings.value.libraryPath = parsed.libraryPath;
+        if (Array.isArray(parsed.activeMods)) settings.value.activeMods = parsed.activeMods;
       }
     } catch (e) {
       if (!isNotFoundError(e)) console.error("Failed to read new settings:", e);
@@ -300,6 +302,7 @@ export function useSettings() {
           const parsed = JSON.parse(content);
           if (parsed.gzdoomPath) settings.value.gzdoomPath = parsed.gzdoomPath;
           if (parsed.libraryPath) settings.value.libraryPath = parsed.libraryPath;
+          if (Array.isArray(parsed.activeMods)) settings.value.activeMods = parsed.activeMods;
           needsMigration = true;
         }
       } catch (e) {
@@ -362,6 +365,19 @@ export function useSettings() {
     await saveSettings();
   }
 
+  async function toggleActiveMod(slug: string): Promise<void> {
+    const idx = settings.value.activeMods.indexOf(slug);
+    if (idx === -1) settings.value.activeMods.push(slug);
+    else settings.value.activeMods.splice(idx, 1);
+    await saveSettings();
+  }
+
+  async function pruneActiveMods(isDownloaded: (slug: string) => boolean): Promise<void> {
+    const before = settings.value.activeMods.length;
+    settings.value.activeMods = settings.value.activeMods.filter(isDownloaded);
+    if (settings.value.activeMods.length !== before) await saveSettings();
+  }
+
   async function importFromGOG(installerPath: string): Promise<GOGExtractResult> {
     const innoCmd = await findInnoextract();
     if (!innoCmd) {
@@ -383,6 +399,8 @@ export function useSettings() {
     initSettings,
     setGZDoomPath,
     setLibraryPath,
+    toggleActiveMod,
+    pruneActiveMods,
     checkInnoextract,
     importFromGOG,
     innoextractInstallHint,
