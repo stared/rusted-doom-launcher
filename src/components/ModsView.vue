@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { computed, ref } from "vue";
 import { Layers } from "lucide-vue-next";
+import FilterBar from "./FilterBar.vue";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useSettings } from "../composables/useSettings";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 
-defineProps<{
+const props = defineProps<{
   wads: WadEntry[];
   loading: boolean;
   error: string | null;
@@ -34,6 +36,47 @@ function authorsLine(wad: WadEntry): string {
 function isActive(slug: string): boolean {
   return settings.value.activeMods.includes(slug);
 }
+
+// Filter/sort state — mirrors MainView (Play) so the two views feel identical.
+const searchQuery = ref("");
+const sortBy = ref("active");
+
+const sortOptions = [
+  { value: "active", label: "Active First" },
+  { value: "alpha", label: "A-Z" },
+  { value: "year-desc", label: "Newest" },
+];
+
+const filteredWads = computed(() => {
+  let result = [...props.wads];
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase();
+    result = result.filter(w =>
+      w.title.toLowerCase().includes(q) ||
+      w.authors.some(a => a.name.toLowerCase().includes(q))
+    );
+  }
+
+  result.sort((a, b) => {
+    switch (sortBy.value) {
+      case "active": {
+        const aActive = checkDownloaded(a.slug) && isActive(a.slug) ? 1 : 0;
+        const bActive = checkDownloaded(b.slug) && isActive(b.slug) ? 1 : 0;
+        if (aActive !== bActive) return bActive - aActive;
+        return a.title.localeCompare(b.title);
+      }
+      case "alpha":
+        return a.title.localeCompare(b.title);
+      case "year-desc":
+        return b.year - a.year;
+      default:
+        return 0;
+    }
+  });
+
+  return result;
+});
 </script>
 
 <template>
@@ -52,65 +95,82 @@ function isActive(slug: string): boolean {
       <p class="text-zinc-600 text-sm mt-2">Browse Explore for downloadable mods. Enabled mods layer into every Play launch.</p>
     </div>
 
-    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <div
-        v-for="wad in wads"
-        :key="wad.slug"
-        class="overflow-hidden rounded-lg bg-zinc-800 shadow-lg transition-all"
-        :class="checkDownloaded(wad.slug) && isActive(wad.slug) ? 'ring-2 ring-rose-600' : ''"
-      >
-        <!-- 16:9 thumbnail -->
-        <div class="relative aspect-video overflow-hidden bg-zinc-900">
-          <img
-            v-if="thumbnailFor(wad)"
-            :src="thumbnailFor(wad) ?? ''"
-            :alt="wad.title"
-            class="absolute inset-0 w-full h-full object-cover"
-          />
-          <div
-            v-else
-            class="absolute inset-0 flex items-center justify-center bg-red-900"
-          >
-            <span class="text-2xl text-red-300 font-bold">DOOM</span>
-          </div>
-        </div>
+    <template v-else>
+      <FilterBar
+        :sort-options="sortOptions"
+        default-sort="active"
+        :item-count="wads.length"
+        :filtered-count="filteredWads.length"
+        @update:search="searchQuery = $event"
+        @update:sort="sortBy = $event"
+        @update:filters="() => {}"
+      />
 
-        <div class="p-3">
-          <h3 class="truncate font-semibold text-zinc-100">{{ wad.title }}</h3>
-          <p class="truncate text-sm text-zinc-400">{{ authorsLine(wad) }}</p>
+      <div v-if="filteredWads.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+        <Layers :size="48" :stroke-width="1.5" class="text-zinc-600 mb-4" />
+        <p class="text-zinc-500">No mods match your search</p>
+      </div>
 
-          <div class="mt-3 flex gap-2">
-            <template v-if="checkDownloaded(wad.slug)">
-              <button
-                class="flex-1 rounded px-3 py-1.5 text-sm font-medium transition-colors"
-                :class="isActive(wad.slug)
-                  ? 'bg-rose-600 text-white hover:bg-rose-500'
-                  : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'"
-                @click="emit('toggleActive', wad.slug)"
-              >
-                {{ isActive(wad.slug) ? '✓ Active' : '○ Off' }}
-              </button>
-              <button
-                class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-red-900 hover:text-red-400"
-                @click="emit('delete', wad)"
-                title="Delete mod"
-              >
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M6 6l12 12M6 18L18 6"/>
-                </svg>
-              </button>
-            </template>
-            <DownloadPlayButton
-              v-else
-              class="flex-1"
-              :wad="wad"
-              play-label="Open in Mods"
-              download-label="▼ Download"
-              @play="(w: WadEntry) => emit('play', w)"
+      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div
+          v-for="wad in filteredWads"
+          :key="wad.slug"
+          class="overflow-hidden rounded-lg bg-zinc-800 shadow-lg transition-all"
+          :class="checkDownloaded(wad.slug) && isActive(wad.slug) ? 'ring-2 ring-rose-600' : ''"
+        >
+          <!-- 16:9 thumbnail -->
+          <div class="relative aspect-video overflow-hidden bg-zinc-900">
+            <img
+              v-if="thumbnailFor(wad)"
+              :src="thumbnailFor(wad) ?? ''"
+              :alt="wad.title"
+              class="absolute inset-0 w-full h-full object-cover"
             />
+            <div
+              v-else
+              class="absolute inset-0 flex items-center justify-center bg-red-900"
+            >
+              <span class="text-2xl text-red-300 font-bold">DOOM</span>
+            </div>
+          </div>
+
+          <div class="p-3">
+            <h3 class="truncate font-semibold text-zinc-100">{{ wad.title }}</h3>
+            <p class="truncate text-sm text-zinc-400">{{ authorsLine(wad) }}</p>
+
+            <div class="mt-3 flex gap-2">
+              <template v-if="checkDownloaded(wad.slug)">
+                <button
+                  class="flex-1 rounded px-3 py-1.5 text-sm font-medium transition-colors"
+                  :class="isActive(wad.slug)
+                    ? 'bg-rose-600 text-white hover:bg-rose-500'
+                    : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'"
+                  @click="emit('toggleActive', wad.slug)"
+                >
+                  {{ isActive(wad.slug) ? '✓ Active' : '○ Off' }}
+                </button>
+                <button
+                  class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-red-900 hover:text-red-400"
+                  @click="emit('delete', wad)"
+                  title="Delete mod"
+                >
+                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M6 6l12 12M6 18L18 6"/>
+                  </svg>
+                </button>
+              </template>
+              <DownloadPlayButton
+                v-else
+                class="flex-1"
+                :wad="wad"
+                play-label="Open in Mods"
+                download-label="▼ Download"
+                @play="(w: WadEntry) => emit('play', w)"
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
