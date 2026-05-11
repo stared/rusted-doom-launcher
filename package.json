@@ -1,10 +1,11 @@
 {
   "name": "rusted-doom-launcher",
   "private": true,
-  "version": "0.1.6",
+  "version": "0.3.1",
   "type": "module",
   "scripts": {
     "gen:version": "node scripts/generate-version.js",
+    "bump-version": "node scripts/bump-version.js",
     "dev": "vite",
     "build": "pnpm gen:version && vue-tsc -b && vite build",
     "preview": "vite preview",
