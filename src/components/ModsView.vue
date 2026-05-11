@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { Layers } from "lucide-vue-next";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useSettings } from "../composables/useSettings";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 
-const props = defineProps<{
+defineProps<{
   wads: WadEntry[];
   loading: boolean;
   error: string | null;
@@ -35,23 +34,10 @@ function authorsLine(wad: WadEntry): string {
 function isActive(slug: string): boolean {
   return settings.value.activeMods.includes(slug);
 }
-
-const activeCount = computed(() =>
-  props.wads.filter(w => checkDownloaded(w.slug) && isActive(w.slug)).length
-);
 </script>
 
 <template>
   <div>
-    <div class="mb-6 flex items-baseline justify-between">
-      <h1 class="text-2xl font-semibold text-zinc-100">Gameplay Mods</h1>
-      <span class="text-sm text-zinc-400">{{ activeCount }} active</span>
-    </div>
-
-    <p class="mb-4 text-sm text-zinc-500">
-      Enabled mods layer into every launch from the Play view.
-    </p>
-
     <div v-if="loading" class="flex items-center justify-center py-20">
       <p class="text-zinc-400">Loading…</p>
     </div>
@@ -63,7 +49,7 @@ const activeCount = computed(() =>
     <div v-else-if="wads.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
       <Layers :size="48" :stroke-width="1.5" class="text-zinc-600 mb-4" />
       <p class="text-zinc-500">No gameplay mods in the catalog yet</p>
-      <p class="text-zinc-600 text-sm mt-2">Browse Explore for downloadable mods</p>
+      <p class="text-zinc-600 text-sm mt-2">Browse Explore for downloadable mods. Enabled mods layer into every Play launch.</p>
     </div>
 
     <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
