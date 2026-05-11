@@ -22,6 +22,14 @@ export const WadEntrySchema = z.object({
   year: z.number().int().min(1993).max(MAX_YEAR),
   description: z.string().min(1),
   iwad: IwadEnum,
+  // Curator rule:
+  //   "resource-pack" = pure dependency (OTEX, CC4-tex, gothictx). Meaningful
+  //   only when a megawad references it via `requires`; the launcher hides
+  //   it from Play / Explore and auto-loads it via downloadWithDeps.
+  //   For user-toggleable enhancement layers (Voxel Doom, SC-55 music pack,
+  //   sprite smoothers, neural upscales, …) use "gameplay-mod" instead —
+  //   they live in the Mods tab and stack into every launch regardless of
+  //   whether the layer is aesthetic, audio, or gameplay.
   type: z.enum(["iwad", "single-level", "episode", "megawad", "gameplay-mod", "total-conversion", "resource-pack", "deathmatch"]),
   sourcePort: z.enum(["vanilla", "limit_removing", "boom", "mbf21", "gzdoom"]),
   requires: z.array(z.object({

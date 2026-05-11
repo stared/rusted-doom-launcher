@@ -57,9 +57,10 @@ const lib = useLibrary();
 
 const iwadEntries = computed<WadEntry[]>(() => availableIwads.value.map(synthIwadEntry));
 const playableEntries = computed<WadEntry[]>(() =>
-  [...iwadEntries.value, ...wads.value.filter(w => w.type !== "gameplay-mod")]
+  [...iwadEntries.value, ...wads.value.filter(w => w.type !== "gameplay-mod" && w.type !== "resource-pack")]
 );
 const modEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type === "gameplay-mod"));
+const exploreEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type !== "resource-pack"));
 const { loadState: loadDownloadState, downloadWithDeps, downloadWad, deleteWad, isDownloaded, getDownloadInfo } = useDownload();
 const { settings, isFirstRun, migratedIwads, initSettings, toggleActiveMod, pruneActiveMods } = useSettings();
 const { loadAllLevelNames } = useLevelNames();
@@ -137,6 +138,12 @@ function activeModPaths(launchedSlug: string): string[] {
 
 async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
   errorMsg.value = "";
+  // Resource packs are pure dependencies (managed via requires + downloadWithDeps).
+  // They're filtered out of every user-facing grid, so this is a defensive no-op.
+  if (wad.type === "resource-pack") {
+    console.warn(`[Play] Unexpected resource-pack launch: ${wad.slug}`);
+    return;
+  }
   // Gameplay mods are managed in the Mods tab, not played standalone.
   // Ensure the mod is downloaded (so the toggle becomes available) then route.
   if (wad.type === "gameplay-mod") {
@@ -229,7 +236,7 @@ async function handleDelete(wad: WadEntry) {
       />
       <ExploreView
         v-else-if="activeView === 'explore'"
-        :wads="wads"
+        :wads="exploreEntries"
         :initial-query="exploreInitialQuery"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
