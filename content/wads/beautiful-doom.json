@@ -1,0 +1,40 @@
+{
+  "slug": "beautiful-doom",
+  "title": "Beautiful Doom",
+  "authors": [
+    {
+      "name": "jekyll grim payne"
+    }
+  ],
+  "year": 2014,
+  "description": "A polish-focused enhancement mod for GZDoom. Adds smoother sprite animations (incorporating Smooth Doom monster frames), richer particle effects, improved lighting, and small quality-of-life fixes — without meaningfully changing gameplay. Drop-in compatible with most megawads.",
+  "iwad": "doom2",
+  "type": "gameplay-mod",
+  "sourcePort": "gzdoom",
+  "requires": [],
+  "downloads": [
+    {
+      "type": "direct",
+      "url": "https://github.com/jekyllgrim/Beautiful-Doom/releases/download/7.1.6/Beautiful_Doom_716.pk3",
+      "filename": "Beautiful_Doom_716.pk3"
+    }
+  ],
+  "thumbnail": "https://doomwiki.org/w/images/6/69/Beautiful_Doom_title.png",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "gameplay-mod",
+    "polish",
+    "visual",
+    "qol"
+  ],
+  "difficulty": "unknown",
+  "notes": "[GitHub](https://github.com/jekyllgrim/Beautiful-Doom) • [ModDB](https://www.moddb.com/mods/beautiful-doom-6100) • GZDoom only.",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://github.com/jekyllgrim/Beautiful-Doom",
+    "https://doomwiki.org/wiki/Beautiful_Doom"
+  ]
+}
