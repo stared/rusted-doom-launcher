@@ -116,7 +116,7 @@ const filteredWads = computed(() => {
           v-for="wad in filteredWads"
           :key="wad.slug"
           class="overflow-hidden rounded-lg bg-zinc-800 shadow-lg transition-all"
-          :class="checkDownloaded(wad.slug) && isActive(wad.slug) ? 'ring-2 ring-rose-600' : ''"
+          :class="checkDownloaded(wad.slug) && isActive(wad.slug) ? 'ring-2 ring-red-600' : ''"
         >
           <!-- 16:9 thumbnail -->
           <div class="relative aspect-video overflow-hidden bg-zinc-900">
@@ -143,8 +143,8 @@ const filteredWads = computed(() => {
                 <button
                   class="flex-1 rounded px-3 py-1.5 text-sm font-medium transition-colors"
                   :class="isActive(wad.slug)
-                    ? 'bg-rose-600 text-white hover:bg-rose-500'
-                    : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'"
+                    ? 'bg-red-600 text-white hover:bg-red-500'
+                    : 'bg-green-600 text-white hover:bg-green-500'"
                   @click="emit('toggleActive', wad.slug)"
                 >
                   {{ isActive(wad.slug) ? '✓ Active' : '○ Off' }}
@@ -165,6 +165,7 @@ const filteredWads = computed(() => {
                 :wad="wad"
                 play-label="Open in Mods"
                 download-label="▼ Download"
+                download-variant="secondary"
                 @play="(w: WadEntry) => emit('play', w)"
               />
             </div>
