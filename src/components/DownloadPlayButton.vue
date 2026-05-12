@@ -12,11 +12,13 @@ const props = defineProps<{
   playLabel?: string;
   /** Label when not downloaded. Defaults to "Download & Play" */
   downloadLabel?: string;
+  /** "primary" = red CTA (Play view); "secondary" = gray (Mods view, where downloading is optional). */
+  downloadVariant?: "primary" | "secondary";
 }>();
 
 const emit = defineEmits<{ play: [wad: WadEntry] }>();
 
-const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
+const isDownloaded = computed(() => props.wad.type === "iwad" || checkDownloaded(props.wad.slug));
 const isDownloading = computed(() => checkDownloading(props.wad.slug));
 const downloadProgress = computed(() => getDownloadProgress(props.wad.slug));
 
@@ -37,7 +39,7 @@ const progressText = computed(() => {
 <template>
   <button
     class="w-full rounded px-3 py-1.5 text-sm font-medium text-white transition-colors relative overflow-hidden"
-    :class="isDownloading ? 'bg-zinc-700 cursor-wait' : isDownloaded ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'"
+    :class="isDownloading ? 'bg-zinc-700 cursor-wait' : isDownloaded ? 'bg-green-600 hover:bg-green-500' : (downloadVariant === 'secondary' ? 'bg-zinc-600 hover:bg-zinc-500' : 'bg-red-600 hover:bg-red-500')"
     :disabled="isDownloading"
     @click="emit('play', wad)"
   >

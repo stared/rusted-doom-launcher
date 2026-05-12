@@ -1,0 +1,40 @@
+{
+  "slug": "smooth-doom",
+  "title": "Smooth Doom",
+  "authors": [
+    {
+      "name": "Gifty"
+    }
+  ],
+  "year": 2014,
+  "description": "Adds newly drawn intermediate animation frames to every monster, weapon, and projectile in Doom. The end result is buttery-smooth sprite motion — the most-installed gameplay-adjacent Doom mod by a wide margin. Pairs with anything.",
+  "iwad": "doom2",
+  "type": "gameplay-mod",
+  "sourcePort": "gzdoom",
+  "requires": [],
+  "downloads": [
+    {
+      "type": "direct",
+      "url": "https://archive.org/download/1x-1_20231011/Wads/Doom%202/SmoothDoom.pk3",
+      "filename": "SmoothDoom.pk3"
+    }
+  ],
+  "thumbnail": "https://doomwiki.org/w/images/3/3d/Smooth_Doom_Logo.png",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "gameplay-mod",
+    "polish",
+    "visual",
+    "popular"
+  ],
+  "difficulty": "unknown",
+  "notes": "[Doomworld thread](https://www.doomworld.com/forum/topic/69451-smooth-doom-update-41420/) • [Doom Wiki](https://doomwiki.org/wiki/Smooth_Doom) • GZDoom only. Mirror hosted via the 1x-1 community archive on archive.org.",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://www.doomworld.com/forum/topic/69451-smooth-doom-update-41420/",
+    "https://doomwiki.org/wiki/Smooth_Doom"
+  ]
+}

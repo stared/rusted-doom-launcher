@@ -13,6 +13,7 @@ const { getCachedPlaySummary } = useStats();
 const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
 
 const TYPE_LABELS: Record<WadEntry["type"], string> = {
+  iwad: "Base game",
   "single-level": "Level", episode: "Episode", megawad: "Megawad",
   "gameplay-mod": "Mod", "total-conversion": "TC", "resource-pack": "Resources",
   deathmatch: "Deathmatch",

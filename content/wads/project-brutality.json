@@ -1,0 +1,43 @@
+{
+  "slug": "project-brutality",
+  "title": "Project Brutality",
+  "authors": [
+    {
+      "name": "pa1nki113r"
+    },
+    {
+      "name": "Project Brutality community"
+    }
+  ],
+  "year": 2015,
+  "description": "A community-driven branch of Brutal Doom that expands the weapon roster, adds more enemy variants, and offers a wider set of customization options. Often preferred over vanilla Brutal Doom for its modular feel and ongoing development.",
+  "iwad": "doom2",
+  "type": "gameplay-mod",
+  "sourcePort": "gzdoom",
+  "requires": [],
+  "downloads": [
+    {
+      "type": "direct",
+      "url": "https://archive.org/download/project-brutality-pb-staging/Project_Brutality-PB_Staging.zip",
+      "filename": "Project_Brutality-PB_Staging.zip"
+    }
+  ],
+  "thumbnail": "https://doomwiki.org/w/images/f/ff/Project_Brutality_v3.0_title.png",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "gameplay-mod",
+    "gore",
+    "weapons",
+    "action"
+  ],
+  "difficulty": "medium",
+  "notes": "[GitHub](https://github.com/pa1nki113r/Project_Brutality) • [ModDB](https://www.moddb.com/mods/project-brutality) • Staging build mirrored on archive.org. GZDoom only.",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://github.com/pa1nki113r/Project_Brutality",
+    "https://www.moddb.com/mods/project-brutality"
+  ]
+}

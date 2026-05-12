@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar.vue";
 import MainView from "./components/MainView.vue";
+import ModsView from "./components/ModsView.vue";
 import ExploreView from "./components/ExploreView.vue";
 import RunsView from "./components/RunsView.vue";
 import GameplayLogView from "./components/GameplayLogView.vue";
@@ -11,21 +12,57 @@ import AboutView from "./components/AboutView.vue";
 import { useWads } from "./composables/useWads";
 import { useGZDoom } from "./composables/useGZDoom";
 import { useDownload } from "./composables/useDownload";
+import { useLibrary } from "./composables/useLibrary";
 import { useSettings } from "./composables/useSettings";
 import { useLevelNames } from "./composables/useLevelNames";
 import { useStats } from "./composables/useStats";
-import type { WadEntry } from "./lib/schema";
+import type { Iwad, WadEntry } from "./lib/schema";
+import { IWAD_LABELS, IWAD_METADATA } from "./lib/constants";
 import { getErrorMessage } from "./lib/errors";
 import { shortenPath } from "./lib/platform";
 
+function synthIwadEntry(iwad: Iwad): WadEntry {
+  const meta = IWAD_METADATA[iwad];
+  return {
+    slug: `iwad-${iwad}`,
+    title: IWAD_LABELS[iwad],
+    authors: meta.authors.map(name => ({ name })),
+    year: meta.year,
+    description: meta.description,
+    iwad,
+    type: "iwad",
+    sourcePort: "vanilla",
+    requires: [],
+    downloads: [],
+    thumbnail: meta.thumbnail,
+    screenshots: [],
+    youtubeVideos: [],
+    awards: [],
+    tags: [],
+    difficulty: "unknown",
+    urls: [],
+    notes: "",
+    _schemaVersion: 1,
+    _source: "manual",
+  };
+}
+
 declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unknown };
 
-type View = "main" | "explore" | "runs" | "logs" | "settings" | "about";
+type View = "main" | "mods" | "explore" | "runs" | "logs" | "settings" | "about";
 
 const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
-const { loadState: loadDownloadState, downloadWithDeps, deleteWad } = useDownload();
-const { settings, isFirstRun, migratedIwads, initSettings } = useSettings();
+const lib = useLibrary();
+
+const iwadEntries = computed<WadEntry[]>(() => availableIwads.value.map(synthIwadEntry));
+const playableEntries = computed<WadEntry[]>(() =>
+  [...iwadEntries.value, ...wads.value.filter(w => w.type !== "gameplay-mod" && w.type !== "resource-pack")]
+);
+const modEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type === "gameplay-mod"));
+const exploreEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type !== "resource-pack"));
+const { loadState: loadDownloadState, downloadWithDeps, downloadWad, deleteWad, isDownloaded, getDownloadInfo } = useDownload();
+const { settings, isFirstRun, migratedIwads, initSettings, toggleActiveMod, pruneActiveMods } = useSettings();
 const { loadAllLevelNames } = useLevelNames();
 const { captureStats, loadAllPlaySummaries, refreshPlaySummary } = useStats();
 
@@ -44,6 +81,7 @@ onMounted(async () => {
   try {
     await initSettings();
     await loadDownloadState();
+    await pruneActiveMods(isDownloaded);
     await detectIwads();
 
     // If IWADs were migrated but not detected, retry after short delay
@@ -88,8 +126,37 @@ watch(isRunning, async (running, wasRunning) => {
   }
 });
 
+function activeModPaths(launchedSlug: string): string[] {
+  return settings.value.activeMods
+    .filter(s => s !== launchedSlug && isDownloaded(s))
+    .map(s => {
+      const info = getDownloadInfo(s);
+      return info ? lib.wadFile(info.wadFilename ?? info.filename) : null;
+    })
+    .filter((p): p is string => !!p);
+}
+
 async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
   errorMsg.value = "";
+  // Resource packs are pure dependencies (managed via requires + downloadWithDeps).
+  // They're filtered out of every user-facing grid, so this is a defensive no-op.
+  if (wad.type === "resource-pack") {
+    console.warn(`[Play] Unexpected resource-pack launch: ${wad.slug}`);
+    return;
+  }
+  // Gameplay mods are managed in the Mods tab, not played standalone.
+  // Ensure the mod is downloaded (so the toggle becomes available) then route.
+  if (wad.type === "gameplay-mod") {
+    try {
+      if (!isDownloaded(wad.slug)) await downloadWad(wad);
+    } catch (e) {
+      console.error(`[Mods] Download failed for ${wad.slug}:`, e);
+      errorMsg.value = getErrorMessage(e);
+      return;
+    }
+    activeView.value = "mods";
+    return;
+  }
   if (!settings.value.gzdoomPath) {
     errorMsg.value = "Doom engine not found. Configure path in Settings.";
     activeView.value = "settings";
@@ -101,13 +168,22 @@ async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
     return;
   }
   try {
-    const { wadPath, depPaths } = await downloadWithDeps(wad, wads.value);
     lastPlayedSlug.value = wad.slug;
-    await launch(wadPath, wad.iwad, depPaths, wad.slug, "HMP", extraArgs ?? []);
+    const modPaths = activeModPaths(wad.slug);
+    if (wad.type === "iwad") {
+      await launch("", wad.iwad, modPaths, wad.slug, "HMP", extraArgs ?? []);
+      return;
+    }
+    const { wadPath, depPaths } = await downloadWithDeps(wad, wads.value);
+    await launch(wadPath, wad.iwad, [...depPaths, ...modPaths], wad.slug, "HMP", extraArgs ?? []);
   } catch (e) {
     console.error(`[Play] Error launching ${wad.slug}:`, e);
     errorMsg.value = getErrorMessage(e);
   }
+}
+
+async function handleToggleActive(slug: string) {
+  await toggleActiveMod(slug);
 }
 
 async function handleDelete(wad: WadEntry) {
@@ -118,6 +194,7 @@ async function handleDelete(wad: WadEntry) {
     );
     if (!ok) return;
     await deleteWad(wad.slug);
+    await pruneActiveMods(isDownloaded);
   } catch (e) {
     errorMsg.value = getErrorMessage(e);
   }
@@ -141,16 +218,25 @@ async function handleDelete(wad: WadEntry) {
       <!-- Views -->
       <MainView
         v-if="activeView === 'main'"
-        :wads="wads"
+        :wads="playableEntries"
         :loading="loading"
         :error="error"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
       />
+      <ModsView
+        v-else-if="activeView === 'mods'"
+        :wads="modEntries"
+        :loading="loading"
+        :error="error"
+        @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
+        @delete="handleDelete"
+        @toggle-active="handleToggleActive"
+      />
       <ExploreView
         v-else-if="activeView === 'explore'"
-        :wads="wads"
+        :wads="exploreEntries"
         :initial-query="exploreInitialQuery"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"

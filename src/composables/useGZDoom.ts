@@ -81,7 +81,7 @@ export function useGZDoom() {
 
     const args = [
       "-iwad", iwadPath,
-      "-file", wadPath,
+      ...(wadPath ? ["-file", wadPath] : []),
       ...additionalFiles.flatMap(f => ["-file", f]),
       ...(saveDir ? ["-savedir", saveDir] : []),
       ...extraArgs,
