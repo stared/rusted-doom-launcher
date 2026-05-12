@@ -1,0 +1,57 @@
+{
+  "slug": "angmngthoo",
+  "title": "Angmngthoo",
+  "authors": [
+    {
+      "name": "fai1025"
+    }
+  ],
+  "year": 2023,
+  "description": "A single map for Doom II inspired by brutalist architecture — concrete masses, uncompromising geometry, dense detail. Released March 2023 on Doomworld.",
+  "iwad": "doom2",
+  "type": "single-level",
+  "sourcePort": "boom",
+  "requires": [
+    {
+      "slug": "otex",
+      "name": "OTEX Texture Pack",
+      "required": true
+    }
+  ],
+  "downloads": [
+    {
+      "type": "direct",
+      "url": "https://archive.org/download/doom2_wad_angmngthoo/Angmngthoo.wad",
+      "filename": "Angmngthoo.wad"
+    }
+  ],
+  "thumbnail": "https://i.imgur.com/33y0cE4.png",
+  "screenshots": [
+    {
+      "url": "https://img.youtube.com/vi/eb-UjhsQdIA/maxresdefault.jpg",
+      "caption": "Outdoor brutalist courtyard — concrete platforms, sparse trees, grid ceiling."
+    }
+  ],
+  "youtubeVideos": [
+    {
+      "id": "eb-UjhsQdIA",
+      "title": "Doom 2 | Angmngthoo by fai1025 + Supercharge",
+      "type": "playthrough"
+    }
+  ],
+  "awards": [],
+  "tags": [
+    "single-level",
+    "boom",
+    "brutalist",
+    "architectural"
+  ],
+  "difficulty": "unknown",
+  "notes": "[Doomworld thread](https://www.doomworld.com/forum/topic/134404-angmngthoo-brutalist-architectural-style-inspired-single-map-boom-compatible/) • [archive.org mirror](https://archive.org/details/doom2_wad_angmngthoo) • Author-uploaded archive.org mirror; catalog points at the stable .wad URL.",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://www.doomworld.com/forum/topic/134404-angmngthoo-brutalist-architectural-style-inspired-single-map-boom-compatible/",
+    "https://archive.org/details/doom2_wad_angmngthoo"
+  ]
+}
