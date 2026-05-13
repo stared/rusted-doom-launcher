@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { Gamepad2 } from "lucide-vue-next";
 import FilterBar from "./FilterBar.vue";
 import WadCard from "./WadCard.vue";
+import AddCustomTile from "./AddCustomTile.vue";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useStats } from "../composables/useStats";
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   play: [wad: WadEntry, extraArgs?: string[]];
   delete: [wad: WadEntry];
   navigate: [view: "explore", query?: string];
+  addCustom: [defaultType: WadEntry["type"]];
 }>();
 
 const { isDownloaded } = useDownload();
@@ -125,7 +127,11 @@ const exploreMatchCount = computed(() => {
     <div v-else-if="playableWads.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
       <Gamepad2 :size="48" :stroke-width="1.5" class="text-zinc-600 mb-4" />
       <p class="text-zinc-500">No WADs downloaded yet</p>
-      <p class="text-zinc-600 text-sm mt-2">Pick a WAD from Explore to download and play</p>
+      <p class="text-zinc-600 text-sm mt-2">Pick a WAD from Explore, or import one you already have:</p>
+      <button
+        class="mt-4 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
+        @click="emit('addCustom', 'megawad')"
+      >+ Add custom WAD</button>
     </div>
 
     <template v-else>
@@ -158,6 +164,11 @@ const exploreMatchCount = computed(() => {
           :wad="wad"
           @play="(w: WadEntry, args?: string[]) => emit('play', w, args)"
           @delete="emit('delete', $event)"
+        />
+        <AddCustomTile
+          v-if="!searchQuery"
+          label="Add custom WAD"
+          @click="emit('addCustom', 'megawad')"
         />
       </div>
     </template>

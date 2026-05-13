@@ -22,6 +22,44 @@ async fn write_launcher_downloads(
     launcher_downloads::write_launcher_downloads(path, &state)
 }
 
+/// Copy a user-picked file into the library. Bypasses fs:scope so the source
+/// path can be anywhere on disk; the target is constrained to a path the
+/// frontend computes from the library root.
+#[tauri::command]
+async fn import_custom_wad(source_path: String, target_path: String) -> Result<u64, String> {
+    std::fs::copy(&source_path, &target_path)
+        .map_err(|e| format!("Failed to copy {} -> {}: {}", source_path, target_path, e))
+}
+
+/// Read {library}/custom-wads.json as opaque JSON. Returns an empty
+/// {version:1, entries:[]} skeleton when the file is missing. The schema is
+/// owned by the TypeScript side (Zod WadEntrySchema), not Rust.
+#[tauri::command]
+async fn read_custom_wads(library_path: String) -> Result<serde_json::Value, String> {
+    let path = std::path::PathBuf::from(library_path).join("custom-wads.json");
+    match std::fs::read_to_string(&path) {
+        Ok(s) => serde_json::from_str(&s)
+            .map_err(|e| format!("Failed to parse {}: {}", path.display(), e)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            Ok(serde_json::json!({ "version": 1, "entries": [] }))
+        }
+        Err(e) => Err(format!("Failed to read {}: {}", path.display(), e)),
+    }
+}
+
+#[tauri::command]
+async fn write_custom_wads(library_path: String, state: serde_json::Value) -> Result<(), String> {
+    let path = std::path::PathBuf::from(library_path).join("custom-wads.json");
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create {}: {}", parent.display(), e))?;
+    }
+    let json = serde_json::to_string_pretty(&state)
+        .map_err(|e| format!("Failed to serialize custom-wads.json: {}", e))?;
+    std::fs::write(&path, json)
+        .map_err(|e| format!("Failed to write {}: {}", path.display(), e))
+}
+
 // Global state to hold the running GZDoom process output collector.
 // Using Mutex<Option<...>> instead of OnceLock so we can reset between launches.
 static GZDOOM_LOG: std::sync::LazyLock<Mutex<Option<Arc<Mutex<GZDoomSession>>>>> =
@@ -374,7 +412,10 @@ pub fn run() {
             get_engine_version,
             is_process_running,
             read_launcher_downloads,
-            write_launcher_downloads
+            write_launcher_downloads,
+            import_custom_wad,
+            read_custom_wads,
+            write_custom_wads
         ]);
 
     // MCP bridge for Claude Code debugging (dev mode only)

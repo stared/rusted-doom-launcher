@@ -232,5 +232,36 @@ export function useDownload() {
     await saveState();
   }
 
-  return { loadState, isDownloaded, isDownloading, getDownloadProgress, getDownloadInfo, downloadProgress, downloadWad, downloadWithDeps, deleteWad };
+  /**
+   * Write a synthetic LauncherDownloads record for a slug whose file is
+   * already on disk (e.g. user-imported custom WAD). Mirrors what downloadWad
+   * writes after a successful network download, so isDownloaded/getDownloadInfo
+   * light up immediately and the rest of the launch path is unchanged.
+   */
+  async function registerSyntheticDownload(
+    slug: string,
+    info: { filename: string; wadFilename: string; size: number }
+  ) {
+    downloads.value.downloads[slug] = {
+      filename: info.filename,
+      wadFilename: info.wadFilename,
+      downloadedAt: new Date().toISOString(),
+      size: info.size,
+    };
+    await saveState();
+    await loadLevelNames(slug);
+  }
+
+  return {
+    loadState,
+    isDownloaded,
+    isDownloading,
+    getDownloadProgress,
+    getDownloadInfo,
+    downloadProgress,
+    downloadWad,
+    downloadWithDeps,
+    deleteWad,
+    registerSyntheticDownload,
+  };
 }

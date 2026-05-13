@@ -95,7 +95,14 @@ watch(showStatsModal, async (isOpen) => {
     </div>
 
     <div class="p-3">
-      <h3 class="truncate font-semibold text-zinc-100">{{ wad.title }}</h3>
+      <h3 class="truncate font-semibold text-zinc-100 flex items-center gap-2">
+        <span class="truncate">{{ wad.title }}</span>
+        <span
+          v-if="wad._source === 'custom'"
+          class="shrink-0 rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-300"
+          title="Imported from your disk"
+        >Custom</span>
+      </h3>
       <p class="truncate text-sm text-zinc-400">{{ wad.authors.map(a => a.name).join(", ") }} • {{ wad.year }} • {{ TYPE_LABELS[wad.type] }}<template v-if="wad.difficulty !== 'unknown'"> • {{ DIFFICULTY_CONFIG[wad.difficulty].label }}</template></p>
 
       <!-- Save/Progress info (clickable to show details) -->

@@ -6,6 +6,7 @@ import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useSettings } from "../composables/useSettings";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
+import AddCustomTile from "./AddCustomTile.vue";
 
 const props = defineProps<{
   wads: WadEntry[];
@@ -17,6 +18,7 @@ const emit = defineEmits<{
   play: [wad: WadEntry, extraArgs?: string[]];
   delete: [wad: WadEntry];
   toggleActive: [slug: string];
+  addCustom: [defaultType: WadEntry["type"]];
 }>();
 
 const { isDownloaded: checkDownloaded } = useDownload();
@@ -92,7 +94,11 @@ const filteredWads = computed(() => {
     <div v-else-if="wads.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
       <Layers :size="48" :stroke-width="1.5" class="text-zinc-600 mb-4" />
       <p class="text-zinc-500">No gameplay mods in the catalog yet</p>
-      <p class="text-zinc-600 text-sm mt-2">Browse Explore for downloadable mods. Enabled mods layer into every Play launch.</p>
+      <p class="text-zinc-600 text-sm mt-2">Browse Explore for downloadable mods, or import one you already have:</p>
+      <button
+        class="mt-4 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
+        @click="emit('addCustom', 'gameplay-mod')"
+      >+ Add custom mod</button>
     </div>
 
     <template v-else>
@@ -135,7 +141,14 @@ const filteredWads = computed(() => {
           </div>
 
           <div class="p-3">
-            <h3 class="truncate font-semibold text-zinc-100">{{ wad.title }}</h3>
+            <h3 class="truncate font-semibold text-zinc-100 flex items-center gap-2">
+              <span class="truncate">{{ wad.title }}</span>
+              <span
+                v-if="wad._source === 'custom'"
+                class="shrink-0 rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-300"
+                title="Imported from your disk"
+              >Custom</span>
+            </h3>
             <p class="truncate text-sm text-zinc-400">{{ authorsLine(wad) }}</p>
 
             <div class="mt-3 flex gap-2">
@@ -171,6 +184,11 @@ const filteredWads = computed(() => {
             </div>
           </div>
         </div>
+        <AddCustomTile
+          v-if="!searchQuery"
+          label="Add custom mod"
+          @click="emit('addCustom', 'gameplay-mod')"
+        />
       </div>
     </template>
   </div>

@@ -9,9 +9,11 @@ import RunsView from "./components/RunsView.vue";
 import GameplayLogView from "./components/GameplayLogView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import AboutView from "./components/AboutView.vue";
+import CustomModView from "./components/CustomModView.vue";
 import { useWads } from "./composables/useWads";
 import { useGZDoom } from "./composables/useGZDoom";
 import { useDownload } from "./composables/useDownload";
+import { useCustomWads } from "./composables/useCustomWads";
 import { useLibrary } from "./composables/useLibrary";
 import { useSettings } from "./composables/useSettings";
 import { useLevelNames } from "./composables/useLevelNames";
@@ -42,14 +44,17 @@ function synthIwadEntry(iwad: Iwad): WadEntry {
     difficulty: "unknown",
     urls: [],
     notes: "",
+    extraArgs: [],
     _schemaVersion: 1,
     _source: "manual",
   };
 }
 
+type ModType = WadEntry["type"];
+
 declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unknown };
 
-type View = "main" | "mods" | "explore" | "runs" | "logs" | "settings" | "about";
+type View = "main" | "mods" | "explore" | "runs" | "logs" | "settings" | "about" | "addCustom";
 
 const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
@@ -62,6 +67,7 @@ const playableEntries = computed<WadEntry[]>(() =>
 const modEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type === "gameplay-mod"));
 const exploreEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type !== "resource-pack"));
 const { loadState: loadDownloadState, downloadWithDeps, downloadWad, deleteWad, isDownloaded, getDownloadInfo } = useDownload();
+const { hasSlug: isCustomSlug, removeCustomWad } = useCustomWads();
 const { settings, isFirstRun, migratedIwads, initSettings, toggleActiveMod, pruneActiveMods } = useSettings();
 const { loadAllLevelNames } = useLevelNames();
 const { captureStats, loadAllPlaySummaries, refreshPlaySummary } = useStats();
@@ -69,6 +75,19 @@ const { captureStats, loadAllPlaySummaries, refreshPlaySummary } = useStats();
 const activeView = ref<View>("main");
 const errorMsg = ref("");
 const exploreInitialQuery = ref("");
+
+// Custom-mod importer: full-screen view, not a modal. We remember which view
+// the user came from so Cancel / submit returns there.
+const customDefaultType = ref<ModType>("megawad");
+const customReturnView = ref<View>("main");
+function openCustomImporter(defaultType: ModType) {
+  customDefaultType.value = defaultType;
+  customReturnView.value = defaultType === "gameplay-mod" ? "mods" : "main";
+  activeView.value = "addCustom";
+}
+function closeCustomImporter() {
+  activeView.value = customReturnView.value;
+}
 
 // Track last played WAD to refresh its save info when game closes
 const lastPlayedSlug = ref<string | null>(null);
@@ -170,12 +189,18 @@ async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
   try {
     lastPlayedSlug.value = wad.slug;
     const modPaths = activeModPaths(wad.slug);
+    // The launched wad's own extraArgs come first; caller-supplied args
+    // (e.g. "+map MAP05" from WadCard's level picker) come after so they
+    // take precedence on console-style commands.
+    const wadExtra = wad.extraArgs ?? [];
+    const callExtra = extraArgs ?? [];
+    const combinedExtra = [...wadExtra, ...callExtra];
     if (wad.type === "iwad") {
-      await launch("", wad.iwad, modPaths, wad.slug, "HMP", extraArgs ?? []);
+      await launch("", wad.iwad, modPaths, wad.slug, "HMP", combinedExtra);
       return;
     }
     const { wadPath, depPaths } = await downloadWithDeps(wad, wads.value);
-    await launch(wadPath, wad.iwad, [...depPaths, ...modPaths], wad.slug, "HMP", extraArgs ?? []);
+    await launch(wadPath, wad.iwad, [...depPaths, ...modPaths], wad.slug, "HMP", combinedExtra);
   } catch (e) {
     console.error(`[Play] Error launching ${wad.slug}:`, e);
     errorMsg.value = getErrorMessage(e);
@@ -188,12 +213,16 @@ async function handleToggleActive(slug: string) {
 
 async function handleDelete(wad: WadEntry) {
   try {
+    const isCustom = isCustomSlug(wad.slug);
     const ok = await confirm(
-      `Delete downloaded files for "${wad.title}"?`,
-      { title: "Delete WAD", kind: "warning" }
+      isCustom
+        ? `Remove "${wad.title}" from your library? The imported file will be deleted.`
+        : `Delete downloaded files for "${wad.title}"?`,
+      { title: isCustom ? "Remove custom mod" : "Delete WAD", kind: "warning" }
     );
     if (!ok) return;
     await deleteWad(wad.slug);
+    if (isCustom) await removeCustomWad(wad.slug);
     await pruneActiveMods(isDownloaded);
   } catch (e) {
     errorMsg.value = getErrorMessage(e);
@@ -224,6 +253,7 @@ async function handleDelete(wad: WadEntry) {
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
+        @add-custom="openCustomImporter"
       />
       <ModsView
         v-else-if="activeView === 'mods'"
@@ -233,6 +263,13 @@ async function handleDelete(wad: WadEntry) {
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @toggle-active="handleToggleActive"
+        @add-custom="openCustomImporter"
+      />
+      <CustomModView
+        v-else-if="activeView === 'addCustom'"
+        :default-type="customDefaultType"
+        @cancel="closeCustomImporter"
+        @added="closeCustomImporter"
       />
       <ExploreView
         v-else-if="activeView === 'explore'"
@@ -261,5 +298,6 @@ async function handleDelete(wad: WadEntry) {
       <span class="h-2 w-2 rounded-full bg-white animate-pulse" />
       Game running...
     </div>
+
   </div>
 </template>

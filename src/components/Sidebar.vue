@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Gamepad2, Layers, Compass, History, ScrollText, Settings2, Info } from "lucide-vue-next";
 
-type View = "main" | "mods" | "explore" | "runs" | "logs" | "settings" | "about";
+type View = "main" | "mods" | "explore" | "runs" | "logs" | "settings" | "about" | "addCustom";
 
 defineProps<{
   activeView: View;
