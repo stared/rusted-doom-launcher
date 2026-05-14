@@ -475,7 +475,7 @@ async function onSubmit() {
       <div class="space-y-1.5">
         <label class="text-sm font-medium text-zinc-300">Extra args</label>
 
-        <div v-if="rows.length > 0" class="space-y-2">
+        <div class="space-y-2">
           <div
             v-for="(row, idx) in rows"
             :key="idx"
@@ -580,42 +580,43 @@ async function onSubmit() {
               @click="removeRow(idx)"
             >&minus;</button>
           </div>
-        </div>
 
-        <!-- Add-arg button + picker popover -->
-        <div ref="pickerRef" class="relative mt-2 inline-block">
-          <button
-            type="button"
-            class="rounded bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-700"
-            @click="pickerOpen = !pickerOpen"
-          >+ Add arg</button>
-
-          <div
-            v-if="pickerOpen"
-            class="absolute bottom-full left-0 z-20 mb-1 max-h-96 w-[28rem] max-w-[90vw] overflow-y-auto rounded border border-zinc-700 bg-zinc-900 shadow-xl"
-            role="menu"
-          >
-            <button
-              v-for="f in KNOWN_FLAGS"
-              :key="f.flag"
-              type="button"
-              class="flex w-full items-baseline gap-3 px-3 py-2 text-left text-sm hover:bg-zinc-800"
-              role="menuitem"
-              @click="addKnownRow(f.flag)"
-            >
-              <span class="w-28 shrink-0 font-mono font-medium text-zinc-100">{{ f.flag }}</span>
-              <span class="text-zinc-400">{{ f.description }}</span>
-            </button>
-            <div class="border-t border-zinc-800"></div>
+          <!-- Add-arg button + picker popover. Lives inside the rows container so
+               it sits as the line directly below the last row. -->
+          <div ref="pickerRef" class="relative">
             <button
               type="button"
-              class="flex w-full items-baseline gap-3 px-3 py-2 text-left text-sm hover:bg-zinc-800"
-              role="menuitem"
-              @click="addCustomRow"
+              class="flex w-full items-center justify-center rounded border border-dashed border-zinc-700 bg-zinc-900/40 px-3 py-2 text-sm font-medium text-zinc-400 hover:border-zinc-500 hover:bg-zinc-800/60 hover:text-zinc-100"
+              @click="pickerOpen = !pickerOpen"
+            >+ Add arg</button>
+
+            <div
+              v-if="pickerOpen"
+              class="absolute bottom-full left-0 z-20 mb-1 max-h-96 w-[28rem] max-w-[90vw] overflow-y-auto rounded border border-zinc-700 bg-zinc-900 shadow-xl"
+              role="menu"
             >
-              <span class="w-28 shrink-0 font-mono font-medium text-zinc-100">Custom…</span>
-              <span class="text-zinc-400">type any flag or args manually</span>
-            </button>
+              <button
+                v-for="f in KNOWN_FLAGS"
+                :key="f.flag"
+                type="button"
+                class="flex w-full items-baseline gap-3 px-3 py-2 text-left text-sm hover:bg-zinc-800"
+                role="menuitem"
+                @click="addKnownRow(f.flag)"
+              >
+                <span class="w-28 shrink-0 font-mono font-medium text-zinc-100">{{ f.flag }}</span>
+                <span class="text-zinc-400">{{ f.description }}</span>
+              </button>
+              <div class="border-t border-zinc-800"></div>
+              <button
+                type="button"
+                class="flex w-full items-baseline gap-3 px-3 py-2 text-left text-sm hover:bg-zinc-800"
+                role="menuitem"
+                @click="addCustomRow"
+              >
+                <span class="w-28 shrink-0 font-mono font-medium text-zinc-100">Custom…</span>
+                <span class="text-zinc-400">type any flag or args manually</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
