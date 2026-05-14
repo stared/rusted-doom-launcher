@@ -11,6 +11,7 @@ import { useSettings } from "../composables/useSettings";
 
 const props = defineProps<{
   defaultType: WadEntry["type"];
+  editWad?: WadEntry | null;
 }>();
 
 const emit = defineEmits<{
@@ -90,9 +91,35 @@ type ArgRow =
   | { kind: "custom"; raw: string };
 
 const { base, wadFile } = useLibrary();
-const { registerSyntheticDownload } = useDownload();
-const { customWads, addCustomWad } = useCustomWads();
+const { registerSyntheticDownload, getDownloadInfo } = useDownload();
+const { customWads, addCustomWad, updateCustomWad } = useCustomWads();
 const { settings } = useSettings();
+
+const editing = computed(() => props.editWad != null);
+
+function rowsFromTokens(tokens: string[]): ArgRow[] {
+  const out: ArgRow[] = [];
+  let i = 0;
+  while (i < tokens.length) {
+    const tok = tokens[i];
+    const def = flagDefFor(tok);
+    if (def) {
+      const need = def.valueKind === "none" ? 0 : def.valueKind === "cvar" ? 2 : 1;
+      const values: string[] = [];
+      for (let j = 0; j < need && i + 1 + j < tokens.length; j++) values.push(tokens[i + 1 + j]);
+      if (def.valueKind === "cvar") while (values.length < 2) values.push("");
+      else if (need === 1 && values.length === 0) values.push("");
+      out.push({ kind: "known", flag: tok, values });
+      i += 1 + values.length;
+    } else {
+      const start = i;
+      i++;
+      while (i < tokens.length && !flagDefFor(tokens[i])) i++;
+      out.push({ kind: "custom", raw: tokens.slice(start, i).join(" ") });
+    }
+  }
+  return out;
+}
 
 const sourcePath = ref<string>("");
 const title = ref<string>("");
@@ -117,11 +144,21 @@ function handleKeyDown(e: KeyboardEvent) {
 }
 
 onMounted(() => {
-  sourcePath.value = "";
-  title.value = "";
-  entryType.value = props.defaultType;
-  iwad.value = "doom2";
-  rows.value = [];
+  if (props.editWad) {
+    const w = props.editWad;
+    const info = getDownloadInfo(w.slug);
+    sourcePath.value = info?.filename ?? "";
+    title.value = w.title;
+    entryType.value = w.type;
+    iwad.value = w.iwad;
+    rows.value = rowsFromTokens(w.extraArgs);
+  } else {
+    sourcePath.value = "";
+    title.value = "";
+    entryType.value = props.defaultType;
+    iwad.value = "doom2";
+    rows.value = [];
+  }
   errorMsg.value = "";
   submitting.value = false;
   pickerOpen.value = false;
@@ -170,7 +207,7 @@ const engineName = computed(() => {
   return stem.toLowerCase().includes("uzdoom") ? "uzdoom" : "gzdoom";
 });
 
-const heading = "Add custom WAD or mod";
+const heading = computed(() => editing.value ? "Edit custom WAD or mod" : "Add custom WAD or mod");
 
 const cleanedArgs = computed<string[]>(() => {
   const out: string[] = [];
@@ -266,6 +303,25 @@ async function onSubmit() {
   if (!canSubmit.value) return;
   submitting.value = true;
   try {
+    if (editing.value && props.editWad) {
+      // Edit path: keep slug + file + _source; refresh user-editable fields.
+      const updated: WadEntry = {
+        ...props.editWad,
+        title: title.value.trim(),
+        iwad: iwad.value,
+        type: entryType.value,
+        extraArgs: cleanedArgs.value,
+      };
+      const parsed = WadEntrySchema.safeParse(updated);
+      if (!parsed.success) {
+        console.error("[CustomModView] Edited entry failed schema:", parsed.error.format());
+        throw new Error("Internal error: edited entry doesn't match schema. See console.");
+      }
+      await updateCustomWad(parsed.data);
+      emit("added", parsed.data);
+      return;
+    }
+
     const libraryRoot = base();
     if (!libraryRoot) {
       throw new Error("Library path is not set. Configure it in Settings first.");
@@ -355,11 +411,13 @@ async function onSubmit() {
             placeholder="Click Browse to pick a .wad or .pk3 file"
           />
           <button
+            v-if="!editing"
             type="button"
             class="rounded bg-zinc-700 px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-600"
             @click="pickFile"
           >Browse…</button>
         </div>
+        <p v-if="editing" class="text-xs text-zinc-500">File can't be changed. Delete and re-add to swap files.</p>
       </div>
 
       <!-- Title -->
@@ -585,7 +643,7 @@ async function onSubmit() {
         :disabled="!canSubmit"
         @click="onSubmit"
       >
-        {{ submitting ? "Adding…" : "Add to library" }}
+        {{ submitting ? (editing ? "Saving…" : "Adding…") : (editing ? "Save changes" : "Add to library") }}
       </button>
     </div>
   </div>

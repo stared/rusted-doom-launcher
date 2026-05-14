@@ -41,6 +41,11 @@ export function useCustomWads() {
     await saveState();
   }
 
+  async function updateCustomWad(entry: WadEntry) {
+    customWads.value = customWads.value.map(w => w.slug === entry.slug ? entry : w);
+    await saveState();
+  }
+
   async function removeCustomWad(slug: string) {
     customWads.value = customWads.value.filter(w => w.slug !== slug);
     await saveState();
@@ -50,5 +55,5 @@ export function useCustomWads() {
     return customWads.value.some(w => w.slug === slug);
   }
 
-  return { customWads, loaded, loadState, addCustomWad, removeCustomWad, hasSlug };
+  return { customWads, loaded, loadState, addCustomWad, updateCustomWad, removeCustomWad, hasSlug };
 }

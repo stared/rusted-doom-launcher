@@ -45,7 +45,7 @@ const completionPercent = computed(() => {
   return Math.min(100, Math.round((saveInfo.value.mapsPlayed / totalLevels.value) * 100));
 });
 
-const emit = defineEmits<{ play: [wad: WadEntry, extraArgs?: string[]]; delete: [wad: WadEntry] }>();
+const emit = defineEmits<{ play: [wad: WadEntry, extraArgs?: string[]]; delete: [wad: WadEntry]; edit: [wad: WadEntry] }>();
 
 function playLevel(levelname: string) {
   showStatsModal.value = false;
@@ -88,9 +88,9 @@ watch(showStatsModal, async (isOpen) => {
       <!-- Fallback for WADs without thumbnail or screenshots -->
       <div
         v-else
-        class="absolute inset-0 flex items-center justify-center bg-red-900"
+        class="absolute inset-0 flex items-center justify-center bg-red-900 px-4 text-center"
       >
-        <span class="text-2xl text-red-300 font-bold">DOOM</span>
+        <span class="text-xl text-red-200 font-bold leading-tight line-clamp-3">{{ wad.title }}</span>
       </div>
     </div>
 
@@ -139,6 +139,17 @@ watch(showStatsModal, async (isOpen) => {
           download-label="▶ Download & Play"
           @play="emit('play', wad)"
         />
+        <button
+          v-if="wad._source === 'custom'"
+          class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-zinc-600 hover:text-zinc-100"
+          @click="emit('edit', wad)"
+          title="Edit custom entry"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+          </svg>
+        </button>
         <button
           v-if="isDownloaded"
           class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-red-900 hover:text-red-400"

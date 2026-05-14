@@ -20,6 +20,7 @@ const emit = defineEmits<{
   delete: [wad: WadEntry];
   navigate: [view: "explore", query?: string];
   addCustom: [defaultType: WadEntry["type"]];
+  edit: [wad: WadEntry];
 }>();
 
 const { isDownloaded } = useDownload();
@@ -164,6 +165,7 @@ const exploreMatchCount = computed(() => {
           :wad="wad"
           @play="(w: WadEntry, args?: string[]) => emit('play', w, args)"
           @delete="emit('delete', $event)"
+          @edit="emit('edit', $event)"
         />
         <AddCustomTile
           v-if="!searchQuery"

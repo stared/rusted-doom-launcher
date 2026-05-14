@@ -80,13 +80,22 @@ const exploreInitialQuery = ref("");
 // the user came from so Cancel / submit returns there.
 const customDefaultType = ref<ModType>("megawad");
 const customReturnView = ref<View>("main");
+const editingCustomWad = ref<WadEntry | null>(null);
 function openCustomImporter(defaultType: ModType) {
+  editingCustomWad.value = null;
   customDefaultType.value = defaultType;
   customReturnView.value = defaultType === "gameplay-mod" ? "mods" : "main";
   activeView.value = "addCustom";
 }
+function openCustomEditor(wad: WadEntry) {
+  editingCustomWad.value = wad;
+  customDefaultType.value = wad.type;
+  customReturnView.value = wad.type === "gameplay-mod" ? "mods" : "main";
+  activeView.value = "addCustom";
+}
 function closeCustomImporter() {
   activeView.value = customReturnView.value;
+  editingCustomWad.value = null;
 }
 
 // Track last played WAD to refresh its save info when game closes
@@ -254,6 +263,7 @@ async function handleDelete(wad: WadEntry) {
         @delete="handleDelete"
         @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
         @add-custom="openCustomImporter"
+        @edit="openCustomEditor"
       />
       <ModsView
         v-else-if="activeView === 'mods'"
@@ -264,10 +274,12 @@ async function handleDelete(wad: WadEntry) {
         @delete="handleDelete"
         @toggle-active="handleToggleActive"
         @add-custom="openCustomImporter"
+        @edit="openCustomEditor"
       />
       <CustomModView
         v-else-if="activeView === 'addCustom'"
         :default-type="customDefaultType"
+        :edit-wad="editingCustomWad"
         @cancel="closeCustomImporter"
         @added="closeCustomImporter"
       />
