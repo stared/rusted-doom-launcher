@@ -8,6 +8,7 @@ import { useLibrary } from "../composables/useLibrary";
 import { useDownload } from "../composables/useDownload";
 import { useCustomWads } from "../composables/useCustomWads";
 import { useSettings } from "../composables/useSettings";
+import { inspectFile, type FileInspection } from "../lib/wadInspect";
 
 const props = defineProps<{
   defaultType: WadEntry["type"];
@@ -128,6 +129,9 @@ const iwad = ref<Iwad>("doom2");
 const rows = ref<ArgRow[]>([]);
 const errorMsg = ref<string>("");
 const submitting = ref(false);
+const inspection = ref<FileInspection | null>(null);
+const parsedAuthor = ref<string>("");
+const inspecting = ref(false);
 
 const pickerOpen = ref(false);
 const pickerRef = ref<HTMLElement | null>(null);
@@ -246,10 +250,42 @@ async function pickFile() {
   });
   if (typeof picked !== "string") return;
   sourcePath.value = picked;
-  if (title.value.trim().length === 0) {
-    title.value = stripExtension(basenameOf(picked));
+  inspection.value = null;
+  parsedAuthor.value = "";
+  inspecting.value = true;
+  try {
+    const bytes = await invoke<number[]>("read_file_for_inspection", { sourcePath: picked });
+    const info = inspectFile(basenameOf(picked), new Uint8Array(bytes));
+    if (info.isIwad) {
+      throw new Error("This file is an IWAD (base game). Base games are managed in Settings, not added as custom mods.");
+    }
+    inspection.value = info;
+    parsedAuthor.value = info.author;
+    // Pre-fill fields. Only overwrite title if the user hasn't typed one yet.
+    if (title.value.trim().length === 0) {
+      title.value = info.firstMapTitle || stripExtension(basenameOf(picked));
+    }
+    entryType.value = info.suggestedType;
+    iwad.value = info.suggestedIwad;
+  } catch (e) {
+    console.error("[CustomModView] Inspection failed:", e);
+    errorMsg.value = e instanceof Error ? e.message : String(e);
+    sourcePath.value = "";
+  } finally {
+    inspecting.value = false;
   }
 }
+
+const inspectionSummary = computed<string>(() => {
+  const info = inspection.value;
+  if (!info) return "";
+  const parts: string[] = [];
+  parts.push(info.format.toUpperCase());
+  if (info.mapCount > 0) parts.push(`${info.mapCount} map${info.mapCount === 1 ? "" : "s"}`);
+  if (info.hasGameplayCode) parts.push("gameplay code");
+  if (info.author) parts.push(`author: ${info.author}`);
+  return parts.join(" · ");
+});
 
 function addKnownRow(flag: string) {
   const def = flagDefFor(flag);
@@ -353,7 +389,7 @@ async function onSubmit() {
     const entry: WadEntry = {
       slug,
       title: title.value.trim(),
-      authors: [{ name: "User import" }],
+      authors: [{ name: parsedAuthor.value.trim() || "User import" }],
       year: new Date().getFullYear(),
       description: "User-imported mod.",
       iwad: iwad.value,
@@ -418,6 +454,8 @@ async function onSubmit() {
           >Browse…</button>
         </div>
         <p v-if="editing" class="text-xs text-zinc-500">File can't be changed. Delete and re-add to swap files.</p>
+        <p v-else-if="inspecting" class="text-xs text-zinc-500">Inspecting file…</p>
+        <p v-else-if="inspectionSummary" class="text-xs text-zinc-400">Detected: {{ inspectionSummary }}</p>
       </div>
 
       <!-- Title -->

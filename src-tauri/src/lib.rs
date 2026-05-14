@@ -31,6 +31,15 @@ async fn import_custom_wad(source_path: String, target_path: String) -> Result<u
         .map_err(|e| format!("Failed to copy {} -> {}: {}", source_path, target_path, e))
 }
 
+/// Read a user-picked file into memory for inspection. Bypasses fs:scope.
+/// Used by the custom-WAD importer to peek at WAD header / PK3 zip directory
+/// before copying the file into the library.
+#[tauri::command]
+async fn read_file_for_inspection(source_path: String) -> Result<Vec<u8>, String> {
+    std::fs::read(&source_path)
+        .map_err(|e| format!("Failed to read {}: {}", source_path, e))
+}
+
 /// Read {library}/custom-wads.json as opaque JSON. Returns an empty
 /// {version:1, entries:[]} skeleton when the file is missing. The schema is
 /// owned by the TypeScript side (Zod WadEntrySchema), not Rust.
@@ -414,6 +423,7 @@ pub fn run() {
             read_launcher_downloads,
             write_launcher_downloads,
             import_custom_wad,
+            read_file_for_inspection,
             read_custom_wads,
             write_custom_wads
         ]);
