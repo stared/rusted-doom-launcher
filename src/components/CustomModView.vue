@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { stat, exists } from "@tauri-apps/plugin-fs";
@@ -30,13 +30,64 @@ const IWADS: { value: Iwad; label: string }[] = [
 ];
 
 const TYPES: { value: WadEntry["type"]; label: string }[] = [
-  { value: "megawad", label: "Megawad" },
-  { value: "episode", label: "Episode" },
-  { value: "single-level", label: "Single level" },
-  { value: "total-conversion", label: "Total conversion" },
-  { value: "gameplay-mod", label: "Gameplay mod" },
-  { value: "deathmatch", label: "Deathmatch" },
+  { value: "megawad",          label: "Megawad — full game replacement (15+ maps)" },
+  { value: "episode",          label: "Episode — themed set, ~9 maps" },
+  { value: "single-level",     label: "Single level — one map" },
+  { value: "total-conversion", label: "Total conversion — standalone game (own weapons/art)" },
+  { value: "gameplay-mod",     label: "Gameplay mod — weapons/monsters, stacks on a WAD" },
+  { value: "deathmatch",       label: "Deathmatch — multiplayer arena maps" },
 ];
+
+type ValueKind = "none" | "skill" | "map" | "file" | "int" | "cvar";
+
+interface FlagDef {
+  flag: string;
+  description: string;
+  valueKind: ValueKind;
+}
+
+const KNOWN_FLAGS: FlagDef[] = [
+  { flag: "-skill",      description: "set difficulty (1=ITYTD … 5=Nightmare!)", valueKind: "skill" },
+  { flag: "-warp",       description: "jump to a specific map",                  valueKind: "map" },
+  { flag: "-fast",       description: "fast monsters",                           valueKind: "none" },
+  { flag: "-respawn",    description: "monsters respawn",                        valueKind: "none" },
+  { flag: "-nomonsters", description: "empty maps",                              valueKind: "none" },
+  { flag: "-file",       description: "load extra WAD/PK3 (dependencies)",       valueKind: "file" },
+  { flag: "-loadgame",   description: "auto-load save slot (0–9)",               valueKind: "int" },
+  { flag: "-nomusic",    description: "disable music",                           valueKind: "none" },
+  { flag: "-nosound",    description: "disable all audio",                       valueKind: "none" },
+  { flag: "-deathmatch", description: "enable deathmatch",                       valueKind: "none" },
+  { flag: "-altdeath",   description: "alt deathmatch (items respawn)",          valueKind: "none" },
+  { flag: "-timer",      description: "round time limit (minutes)",              valueKind: "int" },
+  { flag: "+set",        description: "set any CVAR (advanced)",                 valueKind: "cvar" },
+];
+
+const SKILL_OPTIONS = [
+  { value: "1", label: "1 — I'm Too Young To Die" },
+  { value: "2", label: "2 — Hey, Not Too Rough" },
+  { value: "3", label: "3 — Hurt Me Plenty" },
+  { value: "4", label: "4 — Ultra-Violence" },
+  { value: "5", label: "5 — Nightmare!" },
+];
+
+function defaultValuesFor(kind: ValueKind): string[] {
+  switch (kind) {
+    case "none":  return [];
+    case "skill": return ["4"];
+    case "map":   return [""];
+    case "file":  return [""];
+    case "int":   return [""];
+    case "cvar":  return ["", ""];
+  }
+}
+
+function flagDefFor(flag: string): FlagDef | undefined {
+  return KNOWN_FLAGS.find(f => f.flag === flag);
+}
+
+type ArgRow =
+  | { kind: "known"; flag: string; values: string[] }
+  | { kind: "custom"; raw: string };
 
 const { base, wadFile } = useLibrary();
 const { registerSyntheticDownload } = useDownload();
@@ -47,18 +98,39 @@ const sourcePath = ref<string>("");
 const title = ref<string>("");
 const entryType = ref<WadEntry["type"]>(props.defaultType);
 const iwad = ref<Iwad>("doom2");
-const extraArgs = ref<string[]>([""]);
+const rows = ref<ArgRow[]>([]);
 const errorMsg = ref<string>("");
 const submitting = ref(false);
+
+const pickerOpen = ref(false);
+const pickerRef = ref<HTMLElement | null>(null);
+
+function handleDocClick(e: MouseEvent) {
+  if (!pickerOpen.value) return;
+  const t = e.target as Node | null;
+  if (pickerRef.value && t && !pickerRef.value.contains(t)) {
+    pickerOpen.value = false;
+  }
+}
+function handleKeyDown(e: KeyboardEvent) {
+  if (e.key === "Escape" && pickerOpen.value) pickerOpen.value = false;
+}
 
 onMounted(() => {
   sourcePath.value = "";
   title.value = "";
   entryType.value = props.defaultType;
   iwad.value = "doom2";
-  extraArgs.value = [""];
+  rows.value = [];
   errorMsg.value = "";
   submitting.value = false;
+  pickerOpen.value = false;
+  document.addEventListener("mousedown", handleDocClick);
+  document.addEventListener("keydown", handleKeyDown);
+});
+onUnmounted(() => {
+  document.removeEventListener("mousedown", handleDocClick);
+  document.removeEventListener("keydown", handleKeyDown);
 });
 
 function basenameOf(path: string): string {
@@ -89,8 +161,6 @@ function makeUniqueSlug(baseSlug: string): string {
   throw new Error(`Could not allocate slug for "${baseSlug}" — too many duplicates.`);
 }
 
-// Strip path + extension off the configured engine binary so the preview
-// shows "gzdoom" / "uzdoom" instead of "/Applications/.../gzdoom".
 const engineName = computed(() => {
   const raw = settings.value.gzdoomPath;
   if (!raw) return "gzdoom";
@@ -102,9 +172,22 @@ const engineName = computed(() => {
 
 const heading = "Add custom WAD or mod";
 
-const cleanedArgs = computed(() =>
-  extraArgs.value.map(a => a.trim()).filter(a => a.length > 0)
-);
+const cleanedArgs = computed<string[]>(() => {
+  const out: string[] = [];
+  for (const row of rows.value) {
+    if (row.kind === "known") {
+      out.push(row.flag);
+      for (const v of row.values.map(x => x.trim()).filter(x => x.length > 0)) {
+        out.push(v);
+      }
+    } else {
+      for (const tok of row.raw.split(/\s+/).filter(t => t.length > 0)) {
+        out.push(tok);
+      }
+    }
+  }
+  return out;
+});
 
 const commandPreview = computed(() => {
   const iwadFile = `${iwad.value}.wad`;
@@ -131,21 +214,51 @@ async function pickFile() {
   }
 }
 
-function addArgRow() {
-  extraArgs.value = [...extraArgs.value, ""];
+function addKnownRow(flag: string) {
+  const def = flagDefFor(flag);
+  if (!def) return;
+  rows.value = [...rows.value, { kind: "known", flag, values: defaultValuesFor(def.valueKind) }];
+  pickerOpen.value = false;
 }
 
-function removeArgRow(idx: number) {
-  const next = [...extraArgs.value];
+function addCustomRow() {
+  rows.value = [...rows.value, { kind: "custom", raw: "" }];
+  pickerOpen.value = false;
+}
+
+function removeRow(idx: number) {
+  const next = [...rows.value];
   next.splice(idx, 1);
-  // Always keep at least one empty row visible so the user has a place to type.
-  extraArgs.value = next.length === 0 ? [""] : next;
+  rows.value = next;
 }
 
-function updateArg(idx: number, value: string) {
-  const next = [...extraArgs.value];
-  next[idx] = value;
-  extraArgs.value = next;
+function setKnownValue(idx: number, n: number, value: string) {
+  const next = [...rows.value];
+  const row = next[idx];
+  if (row.kind !== "known") return;
+  const values = [...row.values];
+  while (values.length <= n) values.push("");
+  values[n] = value;
+  next[idx] = { ...row, values };
+  rows.value = next;
+}
+
+function setCustomValue(idx: number, value: string) {
+  const next = [...rows.value];
+  const row = next[idx];
+  if (row.kind !== "custom") return;
+  next[idx] = { ...row, raw: value };
+  rows.value = next;
+}
+
+async function pickArgFile(idx: number) {
+  const picked = await openDialog({
+    multiple: false,
+    directory: false,
+    filters: [{ name: "Doom files", extensions: ["wad", "pk3"] }],
+  });
+  if (typeof picked !== "string") return;
+  setKnownValue(idx, 0, picked);
 }
 
 async function onSubmit() {
@@ -303,34 +416,153 @@ async function onSubmit() {
       <!-- Extra args -->
       <div class="space-y-1.5">
         <label class="text-sm font-medium text-zinc-300">Extra args</label>
-        <div class="space-y-2">
+
+        <div v-if="rows.length === 0" class="text-sm text-zinc-500">
+          No extra args. Click <span class="font-mono">+ Add arg</span> below to add one.
+        </div>
+
+        <div v-else class="space-y-2">
           <div
-            v-for="(arg, idx) in extraArgs"
+            v-for="(row, idx) in rows"
             :key="idx"
-            class="flex gap-2"
+            class="flex items-center gap-2"
           >
-            <input
-              :value="arg"
-              type="text"
-              class="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
-              placeholder="e.g. -warp"
-              @input="updateArg(idx, ($event.target as HTMLInputElement).value)"
-            />
+            <template v-if="row.kind === 'known'">
+              <span class="inline-flex items-center rounded bg-zinc-800 px-2.5 py-1.5 font-mono text-sm font-medium text-zinc-100 whitespace-nowrap">
+                {{ row.flag }}
+              </span>
+
+              <template v-if="flagDefFor(row.flag)?.valueKind === 'none'">
+                <span class="flex-1 text-sm text-zinc-500">{{ flagDefFor(row.flag)?.description }}</span>
+              </template>
+
+              <template v-else-if="flagDefFor(row.flag)?.valueKind === 'skill'">
+                <div class="relative flex-1">
+                  <select
+                    :value="row.values[0] ?? ''"
+                    class="w-full appearance-none rounded border border-zinc-700 bg-zinc-900 pl-3 pr-9 py-2 text-sm text-zinc-100 focus:border-red-600 focus:outline-none"
+                    @change="setKnownValue(idx, 0, ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option v-for="s in SKILL_OPTIONS" :key="s.value" :value="s.value">{{ s.label }}</option>
+                  </select>
+                  <svg
+                    class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500"
+                    width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 4.5L6 7.5L9 4.5"/>
+                  </svg>
+                </div>
+              </template>
+
+              <template v-else-if="flagDefFor(row.flag)?.valueKind === 'map'">
+                <input
+                  :value="row.values[0] ?? ''"
+                  type="text"
+                  class="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+                  placeholder="MAP01"
+                  @input="setKnownValue(idx, 0, ($event.target as HTMLInputElement).value)"
+                />
+              </template>
+
+              <template v-else-if="flagDefFor(row.flag)?.valueKind === 'file'">
+                <input
+                  :value="row.values[0] ?? ''"
+                  type="text"
+                  class="flex-1 min-w-0 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+                  placeholder="path to .wad / .pk3"
+                  @input="setKnownValue(idx, 0, ($event.target as HTMLInputElement).value)"
+                />
+                <button
+                  type="button"
+                  class="rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-600"
+                  @click="pickArgFile(idx)"
+                >Browse…</button>
+              </template>
+
+              <template v-else-if="flagDefFor(row.flag)?.valueKind === 'int'">
+                <input
+                  :value="row.values[0] ?? ''"
+                  type="number"
+                  class="w-32 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+                  @input="setKnownValue(idx, 0, ($event.target as HTMLInputElement).value)"
+                />
+                <span class="flex-1 text-xs text-zinc-500">{{ flagDefFor(row.flag)?.description }}</span>
+              </template>
+
+              <template v-else-if="flagDefFor(row.flag)?.valueKind === 'cvar'">
+                <input
+                  :value="row.values[0] ?? ''"
+                  type="text"
+                  class="flex-1 min-w-0 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+                  placeholder="cvar name (e.g. sv_cheats)"
+                  @input="setKnownValue(idx, 0, ($event.target as HTMLInputElement).value)"
+                />
+                <input
+                  :value="row.values[1] ?? ''"
+                  type="text"
+                  class="w-28 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+                  placeholder="value"
+                  @input="setKnownValue(idx, 1, ($event.target as HTMLInputElement).value)"
+                />
+              </template>
+            </template>
+
+            <template v-else>
+              <input
+                :value="row.raw"
+                type="text"
+                class="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+                placeholder="e.g. +sv_friction 0.5"
+                @input="setCustomValue(idx, ($event.target as HTMLInputElement).value)"
+              />
+            </template>
+
             <button
               type="button"
-              class="flex h-9 w-9 items-center justify-center rounded bg-zinc-800 text-lg leading-none text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-zinc-800 text-lg leading-none text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100"
               :aria-label="`Remove row ${idx + 1}`"
               title="Remove arg"
-              @click="removeArgRow(idx)"
+              @click="removeRow(idx)"
             >&minus;</button>
           </div>
+        </div>
+
+        <!-- Add-arg button + picker popover -->
+        <div ref="pickerRef" class="relative mt-2 inline-block">
           <button
             type="button"
-            class="flex h-9 w-9 items-center justify-center rounded bg-zinc-800 text-lg leading-none text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100"
-            aria-label="Add arg"
-            title="Add arg"
-            @click="addArgRow"
-          >+</button>
+            class="rounded bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-700"
+            @click="pickerOpen = !pickerOpen"
+          >+ Add arg</button>
+
+          <div
+            v-if="pickerOpen"
+            class="absolute bottom-full left-0 z-20 mb-1 max-h-96 w-[28rem] max-w-[90vw] overflow-y-auto rounded border border-zinc-700 bg-zinc-900 shadow-xl"
+            role="menu"
+          >
+            <button
+              v-for="f in KNOWN_FLAGS"
+              :key="f.flag"
+              type="button"
+              class="flex w-full items-baseline gap-3 px-3 py-2 text-left text-sm hover:bg-zinc-800"
+              role="menuitem"
+              @click="addKnownRow(f.flag)"
+            >
+              <span class="w-28 shrink-0 font-mono font-medium text-zinc-100">{{ f.flag }}</span>
+              <span class="text-zinc-400">{{ f.description }}</span>
+            </button>
+            <div class="border-t border-zinc-800"></div>
+            <button
+              type="button"
+              class="flex w-full items-baseline gap-3 px-3 py-2 text-left text-sm hover:bg-zinc-800"
+              role="menuitem"
+              @click="addCustomRow"
+            >
+              <span class="w-28 shrink-0 font-mono font-medium text-zinc-100">Custom…</span>
+              <span class="text-zinc-400">type any flag or args manually</span>
+            </button>
+          </div>
         </div>
       </div>
 
