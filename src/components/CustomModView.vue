@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { stat, exists } from "@tauri-apps/plugin-fs";
+import { stat, exists, writeFile } from "@tauri-apps/plugin-fs";
 import { WadEntrySchema, type WadEntry, type Iwad } from "../lib/schema";
 import { useLibrary } from "../composables/useLibrary";
 import { useDownload } from "../composables/useDownload";
 import { useCustomWads } from "../composables/useCustomWads";
 import { useSettings } from "../composables/useSettings";
-import { inspectFile, type FileInspection } from "../lib/wadInspect";
+import { inspectFile, parseInfoText, type FileInspection } from "../lib/wadInspect";
+import { findGameFilesInZip, selectPrimaryGameFile } from "../lib/zipExtract";
+import { strFromU8 } from "fflate";
 
 const props = defineProps<{
   defaultType: WadEntry["type"];
@@ -133,6 +135,10 @@ const errorMsg = ref<string>("");
 const submitting = ref(false);
 const inspection = ref<FileInspection | null>(null);
 const inspecting = ref(false);
+// When user picks a .zip bundle, we hold the extracted inner .wad/.pk3 bytes
+// here so onSubmit can write them to the library (vs. file-to-file copy used
+// for bare .wad/.pk3). innerName is the basename we'll save as.
+const pickedZip = ref<{ innerName: string; innerBytes: Uint8Array } | null>(null);
 
 const pickerOpen = ref(false);
 const pickerRef = ref<HTMLElement | null>(null);
@@ -171,6 +177,7 @@ onMounted(() => {
   errorMsg.value = "";
   submitting.value = false;
   pickerOpen.value = false;
+  pickedZip.value = null;
   document.addEventListener("mousedown", handleDocClick);
   document.addEventListener("keydown", handleKeyDown);
 });
@@ -235,9 +242,14 @@ const cleanedArgs = computed<string[]>(() => {
   return out;
 });
 
+const effectiveFilename = computed<string>(() => {
+  if (pickedZip.value) return pickedZip.value.innerName;
+  return sourcePath.value ? basenameOf(sourcePath.value) : "";
+});
+
 const commandPreview = computed(() => {
   const iwadFile = `${iwad.value}.wad`;
-  const fileToken = sourcePath.value ? basenameOf(sourcePath.value) : "<file>";
+  const fileToken = effectiveFilename.value || "<file>";
   const parts = [engineName.value, "-iwad", iwadFile, "-file", fileToken, ...cleanedArgs.value];
   return parts.join(" ");
 });
@@ -251,28 +263,95 @@ async function pickFile() {
   const picked = await openDialog({
     multiple: false,
     directory: false,
-    filters: [{ name: "Doom files", extensions: ["wad", "pk3"] }],
+    // idgames bundles (.zip) carry the .txt sidecar + .wad together, so we
+    // can pre-fill title/author/year reliably. List zip first as the
+    // preferred input; .wad/.pk3 stays as the bare-file path.
+    filters: [
+      { name: "Doom zip bundle (recommended)", extensions: ["zip"] },
+      { name: "Doom WAD or PK3", extensions: ["wad", "pk3"] },
+    ],
   });
   if (typeof picked !== "string") return;
   sourcePath.value = picked;
   inspection.value = null;
+  pickedZip.value = null;
   inspecting.value = true;
   try {
-    const bytes = await invoke<number[]>("read_file_for_inspection", { sourcePath: picked });
-    const info = inspectFile(basenameOf(picked), new Uint8Array(bytes));
+    const sourceBytes = await invoke<number[]>("read_file_for_inspection", { sourcePath: picked });
+    const sourceBasename = basenameOf(picked);
+    const sourceExt = sourceBasename.toLowerCase().split(".").pop() ?? "";
+
+    // What we inspect (and ultimately copy into the library) depends on whether
+    // the picked file is a raw .wad/.pk3 or a .zip bundle that contains one.
+    let innerName = sourceBasename;
+    let innerBytes = new Uint8Array(sourceBytes);
+    let zipSidecarText = "";
+
+    if (sourceExt === "zip") {
+      const zipBytes = new Uint8Array(sourceBytes);
+      const gameFiles = findGameFilesInZip(zipBytes);  // throws if none
+      const { primary } = selectPrimaryGameFile(gameFiles);
+      innerName = primary.name;
+      innerBytes = primary.data;
+      // Read any .txt at the zip root (the idgames upload-template sidecar).
+      // We scan all entries since "Beautiful Doom" style PK3s nest the .txt
+      // inside a single folder.
+      const { unzipSync } = await import("fflate");
+      const entries = unzipSync(zipBytes);
+      for (const [path, data] of Object.entries(entries)) {
+        if (!path.toLowerCase().endsWith(".txt")) continue;
+        const text = strFromU8(data);
+        if (/^\s*Title\s*:/im.test(text) || /^\s*Authors?\s*:/im.test(text)) {
+          zipSidecarText = text;
+          break;
+        }
+      }
+      pickedZip.value = { innerName, innerBytes };
+    }
+
+    const info = await inspectFile(innerName, innerBytes);
     if (info.isIwad) {
       throw new Error("This file is an IWAD (base game). Base games are managed in Settings, not added as custom mods.");
     }
     inspection.value = info;
+
+    // Idgames-format metadata sources, in priority order:
+    //   1. .txt at the root of the picked .zip (richest, 100% on idgames bundles)
+    //   2. sibling .txt next to a bare .wad/.pk3 (when user kept the .txt after extracting)
+    //   3. .txt at root of a .pk3 (Beautiful Doom etc.)
+    //   The inspector already covers (3) inside info.author/info.year.
+    let sidecarTitle = "";
+    let sidecarAuthor = info.author;
+    let sidecarYear = info.year;
+
+    if (zipSidecarText) {
+      const parsed = parseInfoText(zipSidecarText);
+      if (parsed.author) sidecarAuthor = parsed.author;
+      if (parsed.year) sidecarYear = parsed.year;
+      if (parsed.title) sidecarTitle = parsed.title;
+    } else if (sourceExt !== "zip") {
+      try {
+        const sibling = await invoke<string>("read_sibling_text", { sourcePath: picked });
+        if (sibling) {
+          const parsed = parseInfoText(sibling);
+          if (!sidecarAuthor && parsed.author) sidecarAuthor = parsed.author;
+          if (!sidecarYear && parsed.year) sidecarYear = parsed.year;
+          if (parsed.title) sidecarTitle = parsed.title;
+        }
+      } catch (e) {
+        console.warn("[CustomModView] sibling .txt scan failed:", e);
+      }
+    }
+
     // Pre-fill fields. Only overwrite a field if the user hasn't typed one yet.
     if (title.value.trim().length === 0) {
-      title.value = info.firstMapTitle || stripExtension(basenameOf(picked));
+      title.value = sidecarTitle || info.firstMapTitle || stripExtension(innerName);
     }
-    if (author.value.trim().length === 0 && info.author) {
-      author.value = info.author;
+    if (author.value.trim().length === 0 && sidecarAuthor) {
+      author.value = sidecarAuthor;
     }
-    if (info.year > 0) {
-      year.value = info.year;
+    if (sidecarYear > 0) {
+      year.value = sidecarYear;
     }
     entryType.value = info.suggestedType;
     iwad.value = info.suggestedIwad;
@@ -280,6 +359,7 @@ async function pickFile() {
     console.error("[CustomModView] Inspection failed:", e);
     errorMsg.value = e instanceof Error ? e.message : String(e);
     sourcePath.value = "";
+    pickedZip.value = null;
   } finally {
     inspecting.value = false;
   }
@@ -292,7 +372,28 @@ const inspectionSummary = computed<string>(() => {
   parts.push(info.format.toUpperCase());
   if (info.mapCount > 0) parts.push(`${info.mapCount} map${info.mapCount === 1 ? "" : "s"}`);
   if (info.hasGameplayCode) parts.push("gameplay code");
+  if (info.titlepic) parts.push(`title screen ${info.titlepic.width}×${info.titlepic.height}`);
   return parts.join(" · ");
+});
+
+// Build a Blob-URL preview for the decoded titlepic so the form can show
+// what the card thumbnail will look like before submit. Revoked when the
+// inspection changes.
+const titlepicPreviewUrl = ref<string>("");
+watch(inspection, (info, prev) => {
+  if (titlepicPreviewUrl.value) {
+    URL.revokeObjectURL(titlepicPreviewUrl.value);
+    titlepicPreviewUrl.value = "";
+  }
+  if (info?.titlepic) {
+    const blob = new Blob([new Uint8Array(info.titlepic.png)], { type: "image/png" });
+    titlepicPreviewUrl.value = URL.createObjectURL(blob);
+  }
+  // prev unused, just here to keep the watcher signature happy.
+  void prev;
+});
+onUnmounted(() => {
+  if (titlepicPreviewUrl.value) URL.revokeObjectURL(titlepicPreviewUrl.value);
 });
 
 function addKnownRow(flag: string) {
@@ -373,16 +474,25 @@ async function onSubmit() {
       throw new Error("Library path is not set. Configure it in Settings first.");
     }
 
-    const sourceFilename = basenameOf(sourcePath.value);
+    // When the picked source is a .zip bundle, the file we save into the
+    // library is the inner .wad/.pk3 we already extracted in memory — not
+    // the .zip itself. The sourceFilename used everywhere downstream
+    // (synthetic download record, launch command) is therefore the inner name.
+    const sourceFilename = pickedZip.value ? pickedZip.value.innerName : basenameOf(sourcePath.value);
     const targetPath = wadFile(sourceFilename);
-    const sourceIsTarget = sourcePath.value === targetPath;
+    const sourceIsTarget = !pickedZip.value && sourcePath.value === targetPath;
 
     if (!sourceIsTarget && await exists(targetPath)) {
       throw new Error(`A file named "${sourceFilename}" already exists in the library. Rename it or remove it before importing.`);
     }
 
     let actualSize: number;
-    if (sourceIsTarget) {
+    if (pickedZip.value) {
+      // Inner bytes already in memory — write them directly. plugin-fs is
+      // happy with library-scope paths.
+      await writeFile(targetPath, pickedZip.value.innerBytes);
+      actualSize = pickedZip.value.innerBytes.length;
+    } else if (sourceIsTarget) {
       const st = await stat(targetPath);
       actualSize = st.size;
     } else {
@@ -396,6 +506,19 @@ async function onSubmit() {
     if (baseSlug.length === 0) throw new Error("Title must contain at least one letter or number.");
     const slug = makeUniqueSlug(baseSlug);
 
+    // If the inspector decoded a TITLEPIC, embed it as a data: URL on the
+    // entry's thumbnail. The card renders <img :src="wad.thumbnail"> which
+    // works out of the box for data URLs — no Tauri asset-protocol setup or
+    // CSP changes needed. Cost: a ~70 KB PNG becomes ~93 KB base64 inside
+    // custom-wads.json. Acceptable for the typical few-entries case.
+    let thumbnail = "";
+    if (inspection.value?.titlepic) {
+      const bytes = inspection.value.titlepic.png;
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      thumbnail = `data:image/png;base64,${btoa(bin)}`;
+    }
+
     const entry: WadEntry = {
       slug,
       title: title.value.trim(),
@@ -407,7 +530,7 @@ async function onSubmit() {
       sourcePort: "gzdoom",
       requires: [],
       downloads: [],
-      thumbnail: "",
+      thumbnail,
       screenshots: [],
       youtubeVideos: [],
       awards: [],
@@ -454,7 +577,7 @@ async function onSubmit() {
             :value="sourcePath || ''"
             class="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500"
             readonly
-            placeholder="Click Browse to pick a .wad or .pk3 file"
+            placeholder="Pick a .zip (preferred) or .wad / .pk3"
           />
           <button
             v-if="!editing"
@@ -465,7 +588,15 @@ async function onSubmit() {
         </div>
         <p v-if="editing" class="text-xs text-zinc-500">File can't be changed. Delete and re-add to swap files.</p>
         <p v-else-if="inspecting" class="text-xs text-zinc-500">Inspecting file…</p>
-        <p v-else-if="inspectionSummary" class="text-xs text-zinc-400">Detected: {{ inspectionSummary }}</p>
+        <template v-else-if="inspectionSummary">
+          <p class="text-xs text-zinc-400">Detected: {{ inspectionSummary }}</p>
+          <p v-if="pickedZip" class="text-xs text-zinc-500">Will import <span class="font-mono">{{ pickedZip.innerName }}</span> from the zip.</p>
+        </template>
+        <p v-else-if="!sourcePath" class="text-xs text-zinc-500">Tip: a <span class="font-mono">.zip</span> from idgames carries the title + author + year and is preferred.</p>
+        <div v-if="titlepicPreviewUrl" class="pt-2">
+          <p class="mb-1 text-xs text-zinc-500">Title screen (will be used as card thumbnail):</p>
+          <img :src="titlepicPreviewUrl" alt="Title screen preview" class="max-h-40 rounded border border-zinc-800" />
+        </div>
       </div>
 
       <!-- Title -->
@@ -580,13 +711,34 @@ async function onSubmit() {
               </template>
 
               <template v-else-if="flagDefFor(row.flag)?.valueKind === 'map'">
-                <input
-                  :value="row.values[0] ?? ''"
-                  type="text"
-                  class="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
-                  placeholder="MAP01"
-                  @input="setKnownValue(idx, 0, ($event.target as HTMLInputElement).value)"
-                />
+                <template v-if="inspection && inspection.mapNames.length > 0">
+                  <div class="relative flex-1">
+                    <select
+                      :value="row.values[0] ?? ''"
+                      class="w-full appearance-none rounded border border-zinc-700 bg-zinc-900 pl-3 pr-9 py-2 font-mono text-sm text-zinc-100 focus:border-red-600 focus:outline-none"
+                      @change="setKnownValue(idx, 0, ($event.target as HTMLSelectElement).value)"
+                    >
+                      <option value="">Pick a map…</option>
+                      <option v-for="m in inspection.mapNames" :key="m" :value="m">{{ m }}</option>
+                    </select>
+                    <svg
+                      class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500"
+                      width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 4.5L6 7.5L9 4.5"/>
+                    </svg>
+                  </div>
+                </template>
+                <template v-else>
+                  <input
+                    :value="row.values[0] ?? ''"
+                    type="text"
+                    class="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+                    placeholder="MAP01"
+                    @input="setKnownValue(idx, 0, ($event.target as HTMLInputElement).value)"
+                  />
+                </template>
               </template>
 
               <template v-else-if="flagDefFor(row.flag)?.valueKind === 'file'">
@@ -715,3 +867,18 @@ async function onSubmit() {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Drop the up/down spinner on number inputs. The arrows fight with the
+   monospace font alignment and aren't useful for year / save slot / timer
+   values the user mostly types directly. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+</style>

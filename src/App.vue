@@ -67,7 +67,7 @@ const playableEntries = computed<WadEntry[]>(() =>
 const modEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type === "gameplay-mod"));
 const exploreEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type !== "resource-pack"));
 const { loadState: loadDownloadState, downloadWithDeps, downloadWad, deleteWad, isDownloaded, getDownloadInfo } = useDownload();
-const { hasSlug: isCustomSlug, removeCustomWad } = useCustomWads();
+const { hasSlug: isCustomSlug, removeCustomWad, loadState: loadCustomWads } = useCustomWads();
 const { settings, isFirstRun, migratedIwads, initSettings, toggleActiveMod, pruneActiveMods } = useSettings();
 const { loadAllLevelNames } = useLevelNames();
 const { captureStats, loadAllPlaySummaries, refreshPlaySummary } = useStats();
@@ -109,6 +109,7 @@ onMounted(async () => {
   try {
     await initSettings();
     await loadDownloadState();
+    await loadCustomWads();
     await pruneActiveMods(isDownloaded);
     await detectIwads();
 

@@ -100,33 +100,19 @@ export function useDownload() {
   }
 
   async function downloadWad(wad: WadEntry): Promise<string> {
-    if (!wad.downloads || wad.downloads.length === 0) {
-      throw new Error(`No download URL configured for "${wad.title}"`);
-    }
-
-    const { url, filename } = wad.downloads[0];
-
-    // Check for placeholder/invalid URLs
-    if (url.includes("example.com") || url.includes("placeholder")) {
-      throw new Error(`Download not available for "${wad.title}" - URL not configured`);
-    }
-
-    const path = wadFile(filename);
-    const partPath = `${path}.part`;  // Atomic download: write to .part file first
-
-    // Check if already downloaded
+    // 1. Already on disk? Return the path. This must run BEFORE the URL check
+    // because custom-imported WADs (_source === "custom") have empty downloads[]
+    // but a valid synthetic download record + file on disk.
     const info = downloads.value.downloads[wad.slug];
     if (info) {
       const wadFileName = info.wadFilename ?? info.filename;
       const wadPath = wadFile(wadFileName);
 
       if (await exists(wadPath)) {
-        // L1: extracted file exists → return directly
         return wadPath;
       }
 
       if (info.wadFilename && info.filename.endsWith('.zip') && await exists(wadFile(info.filename))) {
-        // L3: extracted file missing but ZIP exists → re-extract
         const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
@@ -134,17 +120,32 @@ export function useDownload() {
       }
 
       if (info.filename.endsWith('.zip') && !info.wadFilename && await exists(wadFile(info.filename))) {
-        // L2: legacy download → extract and update state
         const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
         return wadFile(wadFilename);
       }
 
-      // L4: nothing on disk → clear stale state, fall through to re-download
+      // Stale state — file missing on disk. For non-custom entries we'll fall
+      // through to re-download; for custom entries that path will fail with a
+      // clearer error below.
       delete downloads.value.downloads[wad.slug];
       await saveState();
     }
+
+    // 2. Need to download — but we can only download if a URL is configured.
+    if (!wad.downloads || wad.downloads.length === 0) {
+      throw new Error(`No download URL configured for "${wad.title}"`);
+    }
+
+    const { url, filename } = wad.downloads[0];
+
+    if (url.includes("example.com") || url.includes("placeholder")) {
+      throw new Error(`Download not available for "${wad.title}" - URL not configured`);
+    }
+
+    const path = wadFile(filename);
+    const partPath = `${path}.part`;
 
     downloading.value.add(wad.slug);
     downloadProgress.value = { ...downloadProgress.value, [wad.slug]: { progress: 0, total: 0 } };

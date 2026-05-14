@@ -40,6 +40,58 @@ async fn read_file_for_inspection(source_path: String) -> Result<Vec<u8>, String
         .map_err(|e| format!("Failed to read {}: {}", source_path, e))
 }
 
+/// Look for an idgames-style metadata sidecar next to a user-picked file.
+/// Tries `<basename>.txt` (case-insensitive) first, then any single `*.txt`
+/// in the same directory. Returns "" when nothing matches. Bypasses fs:scope.
+#[tauri::command]
+async fn read_sibling_text(source_path: String) -> Result<String, String> {
+    let src = std::path::PathBuf::from(&source_path);
+    let dir = match src.parent() {
+        Some(d) => d,
+        None => return Ok(String::new()),
+    };
+    let stem = match src.file_stem() {
+        Some(s) => s.to_string_lossy().to_string(),
+        None => return Ok(String::new()),
+    };
+
+    // Pass 1: exact basename match, case-insensitive.
+    if let Ok(read_dir) = std::fs::read_dir(dir) {
+        for entry in read_dir.flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_name() else { continue };
+            let name = name.to_string_lossy();
+            let lower = name.to_lowercase();
+            if !lower.ends_with(".txt") { continue }
+            let entry_stem = lower.trim_end_matches(".txt");
+            if entry_stem == stem.to_lowercase() {
+                return std::fs::read_to_string(&path)
+                    .or_else(|_| std::fs::read(&path).map(|b| String::from_utf8_lossy(&b).into_owned()))
+                    .map_err(|e| format!("Failed to read {}: {}", path.display(), e));
+            }
+        }
+    }
+
+    // Pass 2: any single .txt in the directory. If there are multiple, pick none
+    // (ambiguous — don't guess).
+    let mut found: Option<std::path::PathBuf> = None;
+    if let Ok(read_dir) = std::fs::read_dir(dir) {
+        for entry in read_dir.flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_name() else { continue };
+            if !name.to_string_lossy().to_lowercase().ends_with(".txt") { continue }
+            if found.is_some() { return Ok(String::new()); }
+            found = Some(path);
+        }
+    }
+    if let Some(path) = found {
+        return std::fs::read_to_string(&path)
+            .or_else(|_| std::fs::read(&path).map(|b| String::from_utf8_lossy(&b).into_owned()))
+            .map_err(|e| format!("Failed to read {}: {}", path.display(), e));
+    }
+    Ok(String::new())
+}
+
 /// Read {library}/custom-wads.json as opaque JSON. Returns an empty
 /// {version:1, entries:[]} skeleton when the file is missing. The schema is
 /// owned by the TypeScript side (Zod WadEntrySchema), not Rust.
@@ -424,6 +476,7 @@ pub fn run() {
             write_launcher_downloads,
             import_custom_wad,
             read_file_for_inspection,
+            read_sibling_text,
             read_custom_wads,
             write_custom_wads
         ]);
