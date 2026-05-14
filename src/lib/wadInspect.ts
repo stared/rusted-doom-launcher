@@ -1,3 +1,35 @@
+// File inspector for the custom-WAD/PK3 importer. Pulls human-readable
+// metadata (title, author, year) out of user-picked files when we can.
+//
+// What this extracts is constrained by what real Doom files actually carry,
+// which is much less than the spec implies. Hit rates measured against an
+// in-the-wild library of 24 mixed WADs/PK3s (audit lives in
+// scripts/audit_info_sources.py — re-run on any path with `uv run`):
+//
+//   Title:
+//     - PK3 root .txt with `Title : ...` idgames-format       12%
+//     - MAPINFO `map FOO "Name"` (first map's display name)   17% PK3, 4% WAD
+//     - filename fallback                                     100%
+//   Author:
+//     - PK3 root .txt with `Authors : ...` idgames-format      8%
+//   Year:
+//     - PK3 root .txt with `Release date : ...` (4-digit year extracted)  12%
+//
+// What we DON'T look at, and why:
+//   - MAPINFO `Author = "..."` — 0/24 hit rate. The spec defines it; in
+//     practice authors don't populate it. Don't bring it back without a
+//     newer audit showing it's earning its place.
+//   - WAD `README` / `CREDITS` / `AUTHORS` lumps — these exist on a couple
+//     of files (OTEX has one) but they're free-form prose, not idgames
+//     fields. parseInfoText only matches structured `Field : value` lines,
+//     so a regex pass on these lumps yields nothing on real corpora. If
+//     someone wants to mine OTEX-style "X by Y\nReleased YYYY-MM-DD" text,
+//     that's a separate parser, not this one.
+//   - WAD `CREDIT` lump — it's a 320x200 graphic, not text.
+//   - File mtime / zip-internal timestamps — too noisy (download date,
+//     extraction date, etc.) to use as a year signal.
+//
+// Everything below is the minimum that earns its keep on the audit corpus.
 import { unzipSync, strFromU8 } from "fflate";
 import type { Iwad, WadEntry } from "./schema";
 
@@ -66,23 +98,14 @@ function inspectWad(data: Uint8Array): FileInspection {
     lumpNames.includes("DEHACKED");
 
   let firstMapTitle = "";
-  let author = "";
-  let year = 0;
 
   const mapInfoLump = lumps.find(l => l.name === "ZMAPINFO" || l.name === "MAPINFO");
   if (mapInfoLump) {
-    const text = decodeLump(data, mapInfoLump.offset, mapInfoLump.size);
+    const text = new TextDecoder("utf-8", { fatal: false }).decode(
+      data.subarray(mapInfoLump.offset, mapInfoLump.offset + mapInfoLump.size)
+    );
     const m = text.match(MAPINFO_MAP_NAME_RE);
     if (m) firstMapTitle = m[1];
-  }
-
-  // Free-form text lumps that authors use for credits/readme (OTEX-style).
-  for (const readmeLump of lumps.filter(l => l.name === "README" || l.name === "AUTHORS" || l.name === "AUTHOR" || l.name === "CREDITS")) {
-    const text = decodeLump(data, readmeLump.offset, readmeLump.size);
-    const parsed = parseInfoText(text);
-    if (!author && parsed.author) author = parsed.author;
-    if (!year && parsed.year) year = parsed.year;
-    if (!firstMapTitle && parsed.title) firstMapTitle = parsed.title;
   }
 
   return {
@@ -91,8 +114,8 @@ function inspectWad(data: Uint8Array): FileInspection {
     mapCount: mapNames.length,
     mapNames,
     firstMapTitle,
-    author,
-    year,
+    author: "",
+    year: 0,
     hasGameplayCode,
     suggestedType: suggestType(mapNames.length, hasGameplayCode),
     suggestedIwad: guessIwad(mapNames),
@@ -163,14 +186,10 @@ function inspectPk3(data: Uint8Array): FileInspection {
   };
 }
 
-function decodeLump(data: Uint8Array, offset: number, size: number): string {
-  return new TextDecoder("utf-8", { fatal: false }).decode(data.subarray(offset, offset + size));
-}
-
-// Pulls Title / Authors / Date from an idgames-style .txt or a free-form
-// README. Tolerant of variant spellings (Author vs Authors, Release date vs
-// Date). Year is the last 4-digit year mentioned in the date string (covers
-// "12.06.2020", "2020-07-03", "Jan 5, 2003", and "1994").
+// Pulls Title / Authors / Date from an idgames-format text file. Tolerant of
+// variant spellings (Author vs Authors, Release date vs Date). Year is the
+// last 4-digit year mentioned in the date string — covers "12.06.2020",
+// "2020-07-03", "Jan 5, 2003", and bare "1994".
 export function parseInfoText(text: string): { title: string; author: string; year: number } {
   const titleMatch = text.match(TXT_TITLE_RE);
   const authorMatch = text.match(TXT_AUTHOR_RE);
