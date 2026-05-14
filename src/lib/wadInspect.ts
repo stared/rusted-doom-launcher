@@ -8,12 +8,24 @@ export interface FileInspection {
   mapNames: string[];
   firstMapTitle: string;
   author: string;
+  year: number;             // 0 if not found
   hasGameplayCode: boolean;
   suggestedType: WadEntry["type"];
   suggestedIwad: Iwad;
 }
 
 const MAP_NAME_RE = /^(MAP\d{2}|E[1-9]M[1-9])$/;
+
+// idgames "Doom file template" fields. They look like:
+//   Title       : Beautiful Doom
+//   Authors     : Jekyll Grim Payne, Gifty
+//   Release date: 12.06.2020
+// Field name is left-aligned, whitespace before colon, value to end of line.
+const TXT_TITLE_RE = /^\s*Title\s*:\s*(.+?)\s*$/im;
+const TXT_AUTHOR_RE = /^\s*Authors?\s*:\s*(.+?)\s*$/im;
+const TXT_DATE_RE = /^\s*(?:Release\s*date|Date)\s*:\s*(.+?)\s*$/im;
+
+const MAPINFO_MAP_NAME_RE = /^\s*map\s+\S+\s+"([^"]+)"/im;
 
 export function inspectFile(filename: string, data: Uint8Array): FileInspection {
   const ext = filename.toLowerCase().split(".").pop() ?? "";
@@ -53,16 +65,24 @@ function inspectWad(data: Uint8Array): FileInspection {
     lumpNames.includes("ZSCRIPT") ||
     lumpNames.includes("DEHACKED");
 
-  const mapInfoLump = lumps.find(l => l.name === "ZMAPINFO" || l.name === "MAPINFO");
   let firstMapTitle = "";
   let author = "";
+  let year = 0;
+
+  const mapInfoLump = lumps.find(l => l.name === "ZMAPINFO" || l.name === "MAPINFO");
   if (mapInfoLump) {
-    const text = new TextDecoder("utf-8", { fatal: false }).decode(
-      data.subarray(mapInfoLump.offset, mapInfoLump.offset + mapInfoLump.size)
-    );
-    const parsed = parseMapInfo(text);
-    firstMapTitle = parsed.firstMapName;
-    author = parsed.author;
+    const text = decodeLump(data, mapInfoLump.offset, mapInfoLump.size);
+    const m = text.match(MAPINFO_MAP_NAME_RE);
+    if (m) firstMapTitle = m[1];
+  }
+
+  // Free-form text lumps that authors use for credits/readme (OTEX-style).
+  for (const readmeLump of lumps.filter(l => l.name === "README" || l.name === "AUTHORS" || l.name === "AUTHOR" || l.name === "CREDITS")) {
+    const text = decodeLump(data, readmeLump.offset, readmeLump.size);
+    const parsed = parseInfoText(text);
+    if (!author && parsed.author) author = parsed.author;
+    if (!year && parsed.year) year = parsed.year;
+    if (!firstMapTitle && parsed.title) firstMapTitle = parsed.title;
   }
 
   return {
@@ -72,6 +92,7 @@ function inspectWad(data: Uint8Array): FileInspection {
     mapNames,
     firstMapTitle,
     author,
+    year,
     hasGameplayCode,
     suggestedType: suggestType(mapNames.length, hasGameplayCode),
     suggestedIwad: guessIwad(mapNames),
@@ -97,6 +118,9 @@ function inspectPk3(data: Uint8Array): FileInspection {
 
   let firstMapTitle = "";
   let author = "";
+  let year = 0;
+
+  // MAPINFO/ZMAPINFO — used only for the human-readable map name.
   const mapInfoEntry = Object.entries(entries).find(([p]) => {
     const base = (p.toLowerCase().split("/").pop() ?? "");
     return base === "mapinfo" || base === "zmapinfo" ||
@@ -104,9 +128,25 @@ function inspectPk3(data: Uint8Array): FileInspection {
   });
   if (mapInfoEntry) {
     const text = strFromU8(mapInfoEntry[1]);
-    const parsed = parseMapInfo(text);
-    firstMapTitle = parsed.firstMapName;
-    author = parsed.author;
+    const m = text.match(MAPINFO_MAP_NAME_RE);
+    if (m) firstMapTitle = m[1];
+  }
+
+  // idgames-format text files shipped inside the PK3 root/+1 level deep.
+  // These reliably carry Title/Authors/Release-date when present (Beautiful
+  // Doom, game_support.pk3, etc.). Scan them in order and take first hit per
+  // field.
+  for (const [path, payload] of Object.entries(entries)) {
+    const depth = path.split("/").length - 1;
+    if (depth > 1) continue;
+    const base = path.toLowerCase().split("/").pop() ?? "";
+    if (!/\.(txt|md|nfo)$/i.test(base)) continue;
+    const text = strFromU8(payload);
+    const parsed = parseInfoText(text);
+    if (!author && parsed.author) author = parsed.author;
+    if (!year && parsed.year) year = parsed.year;
+    if (!firstMapTitle && parsed.title) firstMapTitle = parsed.title;
+    if (author && year && firstMapTitle) break;
   }
 
   return {
@@ -116,31 +156,39 @@ function inspectPk3(data: Uint8Array): FileInspection {
     mapNames,
     firstMapTitle,
     author,
+    year,
     hasGameplayCode,
     suggestedType: suggestType(mapNames.length, hasGameplayCode),
     suggestedIwad: guessIwad(mapNames),
   };
 }
 
-// Loose MAPINFO parser. Handles both old format (`map MAP01 "Name"`) and new
-// format (`map MAP01 "Name" { … Author = "…" … }`). Whitespace-tolerant, picks
-// the first map block's name and the first Author = "…" assignment it sees.
-function parseMapInfo(text: string): { firstMapName: string; author: string } {
-  let firstMapName = "";
-  let author = "";
+function decodeLump(data: Uint8Array, offset: number, size: number): string {
+  return new TextDecoder("utf-8", { fatal: false }).decode(data.subarray(offset, offset + size));
+}
 
-  const mapMatch = text.match(/^\s*map\s+\S+\s+"([^"]+)"/im);
-  if (mapMatch) firstMapName = mapMatch[1];
+// Pulls Title / Authors / Date from an idgames-style .txt or a free-form
+// README. Tolerant of variant spellings (Author vs Authors, Release date vs
+// Date). Year is the last 4-digit year mentioned in the date string (covers
+// "12.06.2020", "2020-07-03", "Jan 5, 2003", and "1994").
+export function parseInfoText(text: string): { title: string; author: string; year: number } {
+  const titleMatch = text.match(TXT_TITLE_RE);
+  const authorMatch = text.match(TXT_AUTHOR_RE);
+  const dateMatch = text.match(TXT_DATE_RE);
 
-  if (!firstMapName) {
-    const nameAssign = text.match(/^\s*name\s*=\s*"([^"]+)"/im);
-    if (nameAssign) firstMapName = nameAssign[1];
+  let year = 0;
+  if (dateMatch) {
+    const yearMatches = dateMatch[1].match(/(19[9]\d|20\d\d)/g);
+    if (yearMatches && yearMatches.length > 0) {
+      year = parseInt(yearMatches[yearMatches.length - 1], 10);
+    }
   }
 
-  const authorMatch = text.match(/^\s*Author\s*=\s*"([^"]+)"/im);
-  if (authorMatch) author = authorMatch[1];
-
-  return { firstMapName, author };
+  return {
+    title: titleMatch ? titleMatch[1].trim() : "",
+    author: authorMatch ? authorMatch[1].trim() : "",
+    year,
+  };
 }
 
 function suggestType(mapCount: number, hasGameplayCode: boolean): WadEntry["type"] {

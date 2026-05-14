@@ -271,6 +271,9 @@ async function pickFile() {
     if (author.value.trim().length === 0 && info.author) {
       author.value = info.author;
     }
+    if (info.year > 0) {
+      year.value = info.year;
+    }
     entryType.value = info.suggestedType;
     iwad.value = info.suggestedIwad;
   } catch (e) {
