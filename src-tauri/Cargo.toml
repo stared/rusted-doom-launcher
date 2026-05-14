@@ -1,6 +1,6 @@
 [package]
 name = "rusted-doom-launcher"
-version = "0.3.2"
+version = "0.3.3"
 description = "Rusted Doom Launcher - browse, preview, and launch Doom WADs"
 authors = ["Piotr Migdał"]
 edition = "2024"

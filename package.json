@@ -1,7 +1,7 @@
 {
   "name": "rusted-doom-launcher",
   "private": true,
-  "version": "0.3.2",
+  "version": "0.3.3",
   "type": "module",
   "scripts": {
     "gen:version": "node scripts/generate-version.js",
