@@ -95,38 +95,29 @@ export function useDownload() {
     return downloadProgress.value[slug];
   }
 
-  function getDownloadInfo(slug: string): { filename: string; wadFilename?: string } | null {
+  function getDownloadInfo(slug: string): { filename: string; wadFilename?: string; externalPath: string } | null {
     return downloads.value.downloads[slug] ?? null;
   }
 
   async function downloadWad(wad: WadEntry): Promise<string> {
-    if (!wad.downloads || wad.downloads.length === 0) {
-      throw new Error(`No download URL configured for "${wad.title}"`);
-    }
-
-    const { url, filename } = wad.downloads[0];
-
-    // Check for placeholder/invalid URLs
-    if (url.includes("example.com") || url.includes("placeholder")) {
-      throw new Error(`Download not available for "${wad.title}" - URL not configured`);
-    }
-
-    const path = wadFile(filename);
-    const partPath = `${path}.part`;  // Atomic download: write to .part file first
-
-    // Check if already downloaded
+    // 1. Already on disk? Return the path. This must run BEFORE the URL check
+    // because custom-imported WADs (_source === "custom") have empty downloads[]
+    // but a valid synthetic download record + file on disk.
     const info = downloads.value.downloads[wad.slug];
     if (info) {
+      // External reference (user opted out of "Copy to library") — launch
+      // straight from the picked path. No library-relative resolution.
+      if (info.externalPath && await exists(info.externalPath)) {
+        return info.externalPath;
+      }
       const wadFileName = info.wadFilename ?? info.filename;
       const wadPath = wadFile(wadFileName);
 
       if (await exists(wadPath)) {
-        // L1: extracted file exists → return directly
         return wadPath;
       }
 
       if (info.wadFilename && info.filename.endsWith('.zip') && await exists(wadFile(info.filename))) {
-        // L3: extracted file missing but ZIP exists → re-extract
         const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
@@ -134,17 +125,32 @@ export function useDownload() {
       }
 
       if (info.filename.endsWith('.zip') && !info.wadFilename && await exists(wadFile(info.filename))) {
-        // L2: legacy download → extract and update state
         const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
         return wadFile(wadFilename);
       }
 
-      // L4: nothing on disk → clear stale state, fall through to re-download
+      // Stale state — file missing on disk. For non-custom entries we'll fall
+      // through to re-download; for custom entries that path will fail with a
+      // clearer error below.
       delete downloads.value.downloads[wad.slug];
       await saveState();
     }
+
+    // 2. Need to download — but we can only download if a URL is configured.
+    if (!wad.downloads || wad.downloads.length === 0) {
+      throw new Error(`No download URL configured for "${wad.title}"`);
+    }
+
+    const { url, filename } = wad.downloads[0];
+
+    if (url.includes("example.com") || url.includes("placeholder")) {
+      throw new Error(`Download not available for "${wad.title}" - URL not configured`);
+    }
+
+    const path = wadFile(filename);
+    const partPath = `${path}.part`;
 
     downloading.value.add(wad.slug);
     downloadProgress.value = { ...downloadProgress.value, [wad.slug]: { progress: 0, total: 0 } };
@@ -182,14 +188,14 @@ export function useDownload() {
       if (isZip) {
         const { wadFilename } = await extractAndWriteGameFiles(path);
         downloads.value.downloads[wad.slug] = {
-          filename, wadFilename, downloadedAt: new Date().toISOString(), size: fileStat.size,
+          filename, wadFilename, downloadedAt: new Date().toISOString(), size: fileStat.size, externalPath: "",
         };
         await saveState();
         await loadLevelNames(wad.slug);
         return wadFile(wadFilename);
       } else {
         downloads.value.downloads[wad.slug] = {
-          filename, wadFilename: filename, downloadedAt: new Date().toISOString(), size: fileStat.size,
+          filename, wadFilename: filename, downloadedAt: new Date().toISOString(), size: fileStat.size, externalPath: "",
         };
         await saveState();
         await loadLevelNames(wad.slug);
@@ -214,6 +220,13 @@ export function useDownload() {
   async function deleteWad(slug: string) {
     const info = downloads.value.downloads[slug];
     if (!info) return;
+    // External-reference imports never had a library copy — only drop the
+    // bookkeeping record and leave the file the user picked alone.
+    if (info.externalPath) {
+      delete downloads.value.downloads[slug];
+      await saveState();
+      return;
+    }
     // Delete original download file
     try {
       await remove(wadFile(info.filename));
@@ -232,5 +245,37 @@ export function useDownload() {
     await saveState();
   }
 
-  return { loadState, isDownloaded, isDownloading, getDownloadProgress, getDownloadInfo, downloadProgress, downloadWad, downloadWithDeps, deleteWad };
+  /**
+   * Write a synthetic LauncherDownloads record for a slug whose file is
+   * already on disk (e.g. user-imported custom WAD). Mirrors what downloadWad
+   * writes after a successful network download, so isDownloaded/getDownloadInfo
+   * light up immediately and the rest of the launch path is unchanged.
+   */
+  async function registerSyntheticDownload(
+    slug: string,
+    info: { filename: string; wadFilename: string; size: number; externalPath?: string }
+  ) {
+    downloads.value.downloads[slug] = {
+      filename: info.filename,
+      wadFilename: info.wadFilename,
+      downloadedAt: new Date().toISOString(),
+      size: info.size,
+      externalPath: info.externalPath ?? "",
+    };
+    await saveState();
+    await loadLevelNames(slug);
+  }
+
+  return {
+    loadState,
+    isDownloaded,
+    isDownloading,
+    getDownloadProgress,
+    getDownloadInfo,
+    downloadProgress,
+    downloadWad,
+    downloadWithDeps,
+    deleteWad,
+    registerSyntheticDownload,
+  };
 }

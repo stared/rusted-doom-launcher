@@ -98,9 +98,9 @@ const authorDisplay = computed(() => {
       <!-- Fallback for no image -->
       <div
         v-else
-        class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-900 to-zinc-900"
+        class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-900 to-zinc-900 px-4 text-center"
       >
-        <span class="text-3xl text-red-500 font-bold opacity-50">DOOM</span>
+        <span class="text-2xl text-red-200 font-bold leading-tight line-clamp-3 opacity-80">{{ wad.title }}</span>
       </div>
 
       <!-- Gradient overlay for text readability -->

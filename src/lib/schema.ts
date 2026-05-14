@@ -56,8 +56,11 @@ export const WadEntrySchema = z.object({
   difficulty: z.enum(["easy", "medium", "hard", "slaughter", "unknown"]),
   urls: z.array(z.string().url()),
   notes: z.string(),
+  // Extra GZDoom args appended after the assembled -iwad/-file chain.
+  // List, not a string — one token per element matches argv exactly.
+  extraArgs: z.array(z.string()).default([]),
   _schemaVersion: z.literal(1),
-  _source: z.enum(["manual", "idgames-scraper", "cacowards-scraper"]),
+  _source: z.enum(["manual", "idgames-scraper", "cacowards-scraper", "custom"]),
 });
 
 export type WadEntry = z.infer<typeof WadEntrySchema>;
@@ -75,6 +78,10 @@ export const LauncherDownloadsSchema = z.object({
     wadFilename: z.string().optional(),
     downloadedAt: z.string().datetime(),
     size: z.number().int().nonnegative(),
+    // When set, the actual file lives outside the library and we should
+    // launch directly from this absolute path and never delete it. Used
+    // for custom imports where the user opted out of "Copy to library".
+    externalPath: z.string().default(""),
   })),
 });
 
