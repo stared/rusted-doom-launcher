@@ -475,11 +475,7 @@ async function onSubmit() {
       <div class="space-y-1.5">
         <label class="text-sm font-medium text-zinc-300">Extra args</label>
 
-        <div v-if="rows.length === 0" class="text-sm text-zinc-500">
-          No extra args. Click <span class="font-mono">+ Add arg</span> below to add one.
-        </div>
-
-        <div v-else class="space-y-2">
+        <div v-if="rows.length > 0" class="space-y-2">
           <div
             v-for="(row, idx) in rows"
             :key="idx"
