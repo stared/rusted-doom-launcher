@@ -95,7 +95,7 @@ export function useDownload() {
     return downloadProgress.value[slug];
   }
 
-  function getDownloadInfo(slug: string): { filename: string; wadFilename?: string } | null {
+  function getDownloadInfo(slug: string): { filename: string; wadFilename?: string; externalPath: string } | null {
     return downloads.value.downloads[slug] ?? null;
   }
 
@@ -105,6 +105,11 @@ export function useDownload() {
     // but a valid synthetic download record + file on disk.
     const info = downloads.value.downloads[wad.slug];
     if (info) {
+      // External reference (user opted out of "Copy to library") — launch
+      // straight from the picked path. No library-relative resolution.
+      if (info.externalPath && await exists(info.externalPath)) {
+        return info.externalPath;
+      }
       const wadFileName = info.wadFilename ?? info.filename;
       const wadPath = wadFile(wadFileName);
 
@@ -183,14 +188,14 @@ export function useDownload() {
       if (isZip) {
         const { wadFilename } = await extractAndWriteGameFiles(path);
         downloads.value.downloads[wad.slug] = {
-          filename, wadFilename, downloadedAt: new Date().toISOString(), size: fileStat.size,
+          filename, wadFilename, downloadedAt: new Date().toISOString(), size: fileStat.size, externalPath: "",
         };
         await saveState();
         await loadLevelNames(wad.slug);
         return wadFile(wadFilename);
       } else {
         downloads.value.downloads[wad.slug] = {
-          filename, wadFilename: filename, downloadedAt: new Date().toISOString(), size: fileStat.size,
+          filename, wadFilename: filename, downloadedAt: new Date().toISOString(), size: fileStat.size, externalPath: "",
         };
         await saveState();
         await loadLevelNames(wad.slug);
@@ -215,6 +220,13 @@ export function useDownload() {
   async function deleteWad(slug: string) {
     const info = downloads.value.downloads[slug];
     if (!info) return;
+    // External-reference imports never had a library copy — only drop the
+    // bookkeeping record and leave the file the user picked alone.
+    if (info.externalPath) {
+      delete downloads.value.downloads[slug];
+      await saveState();
+      return;
+    }
     // Delete original download file
     try {
       await remove(wadFile(info.filename));
@@ -241,13 +253,14 @@ export function useDownload() {
    */
   async function registerSyntheticDownload(
     slug: string,
-    info: { filename: string; wadFilename: string; size: number }
+    info: { filename: string; wadFilename: string; size: number; externalPath?: string }
   ) {
     downloads.value.downloads[slug] = {
       filename: info.filename,
       wadFilename: info.wadFilename,
       downloadedAt: new Date().toISOString(),
       size: info.size,
+      externalPath: info.externalPath ?? "",
     };
     await saveState();
     await loadLevelNames(slug);

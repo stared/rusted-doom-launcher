@@ -125,6 +125,10 @@ function rowsFromTokens(tokens: string[]): ArgRow[] {
 }
 
 const sourcePath = ref<string>("");
+// When false, the picked file is referenced in place — we skip the copy
+// into the library and record the absolute path on the synthetic download
+// record. Default true (the safer "you own a clean library" mode).
+const copyToLibrary = ref<boolean>(true);
 const title = ref<string>("");
 const author = ref<string>("");
 const year = ref<number>(new Date().getFullYear());
@@ -158,7 +162,16 @@ onMounted(() => {
   if (props.editWad) {
     const w = props.editWad;
     const info = getDownloadInfo(w.slug);
-    sourcePath.value = info?.filename ?? "";
+    // For external-reference imports, the absolute path lives on the
+    // download record. Show it so the command preview reflects reality
+    // instead of an inferred library-relative basename.
+    if (info?.externalPath) {
+      sourcePath.value = info.externalPath;
+      copyToLibrary.value = false;
+    } else {
+      sourcePath.value = info?.filename ?? "";
+      copyToLibrary.value = true;
+    }
     title.value = w.title;
     author.value = w.authors.map(a => a.name).join(", ");
     year.value = w.year;
@@ -173,6 +186,7 @@ onMounted(() => {
     entryType.value = props.defaultType;
     iwad.value = "doom2";
     rows.value = [];
+    copyToLibrary.value = true;
   }
   errorMsg.value = "";
   submitting.value = false;
@@ -243,6 +257,10 @@ const cleanedArgs = computed<string[]>(() => {
 });
 
 const effectiveFilename = computed<string>(() => {
+  // When the user opts out of copying, the launch will use the path they
+  // picked verbatim — show that in the command preview so it matches
+  // reality (including the .zip extension if they picked one).
+  if (!copyToLibrary.value && sourcePath.value) return sourcePath.value;
   if (pickedZip.value) return pickedZip.value.innerName;
   return sourcePath.value ? basenameOf(sourcePath.value) : "";
 });
@@ -474,28 +492,48 @@ async function onSubmit() {
       throw new Error("Library path is not set. Configure it in Settings first.");
     }
 
-    // When the picked source is a .zip bundle, the file we save into the
-    // library is the inner .wad/.pk3 we already extracted in memory — not
-    // the .zip itself. The sourceFilename used everywhere downstream
-    // (synthetic download record, launch command) is therefore the inner name.
+    // Three modes, branching on copyToLibrary + zip-pick:
+    //   A) copy=on,  bare .wad/.pk3 → fs::copy via import_custom_wad
+    //   B) copy=on,  .zip          → write inner bytes via plugin-fs writeFile
+    //   C) copy=off, bare or zip   → reference the picked path in place;
+    //                                 nothing lands in the library folder.
+    //
+    // When copy=off the launcher uses externalPath on the synthetic download
+    // record and never deletes the file on Remove. The picked .zip is fine
+    // to pass to GZDoom as -file (GZDoom can load archives directly).
     const sourceFilename = pickedZip.value ? pickedZip.value.innerName : basenameOf(sourcePath.value);
     const targetPath = wadFile(sourceFilename);
     const sourceIsTarget = !pickedZip.value && sourcePath.value === targetPath;
 
-    if (!sourceIsTarget && await exists(targetPath)) {
-      throw new Error(`A file named "${sourceFilename}" already exists in the library. Rename it or remove it before importing.`);
-    }
-
     let actualSize: number;
-    if (pickedZip.value) {
-      // Inner bytes already in memory — write them directly. plugin-fs is
-      // happy with library-scope paths.
+    let externalPath = "";
+    let externalFilename = "";
+
+    if (!copyToLibrary.value) {
+      // External reference: pick the path GZDoom will actually launch with.
+      // For a .zip pick we point at the zip itself (no inner extraction);
+      // for a bare .wad/.pk3 we point at it directly.
+      externalPath = sourcePath.value;
+      externalFilename = basenameOf(sourcePath.value);
+      try {
+        const st = await stat(sourcePath.value);
+        actualSize = st.size;
+      } catch {
+        actualSize = pickedZip.value?.innerBytes.length ?? 0;
+      }
+    } else if (pickedZip.value) {
+      if (!sourceIsTarget && await exists(targetPath)) {
+        throw new Error(`A file named "${sourceFilename}" already exists in the library. Rename it or remove it before importing.`);
+      }
       await writeFile(targetPath, pickedZip.value.innerBytes);
       actualSize = pickedZip.value.innerBytes.length;
     } else if (sourceIsTarget) {
       const st = await stat(targetPath);
       actualSize = st.size;
     } else {
+      if (await exists(targetPath)) {
+        throw new Error(`A file named "${sourceFilename}" already exists in the library. Rename it or remove it before importing.`);
+      }
       actualSize = await invoke<number>("import_custom_wad", {
         sourcePath: sourcePath.value,
         targetPath,
@@ -549,7 +587,13 @@ async function onSubmit() {
       throw new Error("Internal error: imported entry doesn't match schema. See console.");
     }
 
-    await registerSyntheticDownload(slug, { filename: sourceFilename, wadFilename: sourceFilename, size: actualSize });
+    const recordedFilename = externalFilename || sourceFilename;
+    await registerSyntheticDownload(slug, {
+      filename: recordedFilename,
+      wadFilename: recordedFilename,
+      size: actualSize,
+      externalPath,
+    });
     await addCustomWad(parsed.data);
 
     emit("added", parsed.data);
@@ -588,15 +632,18 @@ async function onSubmit() {
         </div>
         <p v-if="editing" class="text-xs text-zinc-500">File can't be changed. Delete and re-add to swap files.</p>
         <p v-else-if="inspecting" class="text-xs text-zinc-500">Inspecting file…</p>
-        <template v-else-if="inspectionSummary">
-          <p class="text-xs text-zinc-400">Detected: {{ inspectionSummary }}</p>
-          <p v-if="pickedZip" class="text-xs text-zinc-500">Will import <span class="font-mono">{{ pickedZip.innerName }}</span> from the zip.</p>
-        </template>
-        <p v-else-if="!sourcePath" class="text-xs text-zinc-500">Tip: a <span class="font-mono">.zip</span> from idgames carries the title + author + year and is preferred.</p>
-        <div v-if="titlepicPreviewUrl" class="pt-2">
-          <p class="mb-1 text-xs text-zinc-500">Title screen (will be used as card thumbnail):</p>
-          <img :src="titlepicPreviewUrl" alt="Title screen preview" class="max-h-40 rounded border border-zinc-800" />
-        </div>
+        <p v-else-if="inspectionSummary" class="text-xs text-zinc-400">Detected: {{ inspectionSummary }}</p>
+
+        <label v-if="!editing && sourcePath" class="flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            v-model="copyToLibrary"
+            class="h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-red-600 focus:ring-red-600"
+          />
+          <span class="text-sm text-zinc-300">Copy file to library</span>
+        </label>
+
+        <img v-if="titlepicPreviewUrl" :src="titlepicPreviewUrl" alt="Title screen" class="mt-2 max-h-40 rounded border border-zinc-800" />
       </div>
 
       <!-- Title -->

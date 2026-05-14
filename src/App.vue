@@ -224,12 +224,17 @@ async function handleToggleActive(slug: string) {
 async function handleDelete(wad: WadEntry) {
   try {
     const isCustom = isCustomSlug(wad.slug);
-    const ok = await confirm(
-      isCustom
-        ? `Remove "${wad.title}" from your library? The imported file will be deleted.`
-        : `Delete downloaded files for "${wad.title}"?`,
-      { title: isCustom ? "Remove custom mod" : "Delete WAD", kind: "warning" }
-    );
+    const info = getDownloadInfo(wad.slug);
+    const external = isCustom && !!info?.externalPath;
+    const message = !isCustom
+      ? `Delete downloaded files for "${wad.title}"?`
+      : external
+        ? `Remove "${wad.title}" from your library? The original file at ${info?.externalPath} stays untouched.`
+        : `Remove "${wad.title}" from your library? The imported copy in the library folder will be deleted.`;
+    const ok = await confirm(message, {
+      title: isCustom ? "Remove custom mod" : "Delete WAD",
+      kind: "warning",
+    });
     if (!ok) return;
     await deleteWad(wad.slug);
     if (isCustom) await removeCustomWad(wad.slug);

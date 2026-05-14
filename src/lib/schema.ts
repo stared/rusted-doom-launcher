@@ -78,6 +78,10 @@ export const LauncherDownloadsSchema = z.object({
     wadFilename: z.string().optional(),
     downloadedAt: z.string().datetime(),
     size: z.number().int().nonnegative(),
+    // When set, the actual file lives outside the library and we should
+    // launch directly from this absolute path and never delete it. Used
+    // for custom imports where the user opted out of "Copy to library".
+    externalPath: z.string().default(""),
   })),
 });
 
