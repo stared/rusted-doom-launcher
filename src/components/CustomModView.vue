@@ -124,13 +124,14 @@ function rowsFromTokens(tokens: string[]): ArgRow[] {
 
 const sourcePath = ref<string>("");
 const title = ref<string>("");
+const author = ref<string>("");
+const year = ref<number>(new Date().getFullYear());
 const entryType = ref<WadEntry["type"]>(props.defaultType);
 const iwad = ref<Iwad>("doom2");
 const rows = ref<ArgRow[]>([]);
 const errorMsg = ref<string>("");
 const submitting = ref(false);
 const inspection = ref<FileInspection | null>(null);
-const parsedAuthor = ref<string>("");
 const inspecting = ref(false);
 
 const pickerOpen = ref(false);
@@ -153,12 +154,16 @@ onMounted(() => {
     const info = getDownloadInfo(w.slug);
     sourcePath.value = info?.filename ?? "";
     title.value = w.title;
+    author.value = w.authors.map(a => a.name).join(", ");
+    year.value = w.year;
     entryType.value = w.type;
     iwad.value = w.iwad;
     rows.value = rowsFromTokens(w.extraArgs);
   } else {
     sourcePath.value = "";
     title.value = "";
+    author.value = "";
+    year.value = new Date().getFullYear();
     entryType.value = props.defaultType;
     iwad.value = "doom2";
     rows.value = [];
@@ -251,7 +256,6 @@ async function pickFile() {
   if (typeof picked !== "string") return;
   sourcePath.value = picked;
   inspection.value = null;
-  parsedAuthor.value = "";
   inspecting.value = true;
   try {
     const bytes = await invoke<number[]>("read_file_for_inspection", { sourcePath: picked });
@@ -260,10 +264,12 @@ async function pickFile() {
       throw new Error("This file is an IWAD (base game). Base games are managed in Settings, not added as custom mods.");
     }
     inspection.value = info;
-    parsedAuthor.value = info.author;
-    // Pre-fill fields. Only overwrite title if the user hasn't typed one yet.
+    // Pre-fill fields. Only overwrite a field if the user hasn't typed one yet.
     if (title.value.trim().length === 0) {
       title.value = info.firstMapTitle || stripExtension(basenameOf(picked));
+    }
+    if (author.value.trim().length === 0 && info.author) {
+      author.value = info.author;
     }
     entryType.value = info.suggestedType;
     iwad.value = info.suggestedIwad;
@@ -283,7 +289,6 @@ const inspectionSummary = computed<string>(() => {
   parts.push(info.format.toUpperCase());
   if (info.mapCount > 0) parts.push(`${info.mapCount} map${info.mapCount === 1 ? "" : "s"}`);
   if (info.hasGameplayCode) parts.push("gameplay code");
-  if (info.author) parts.push(`author: ${info.author}`);
   return parts.join(" · ");
 });
 
@@ -344,6 +349,8 @@ async function onSubmit() {
       const updated: WadEntry = {
         ...props.editWad,
         title: title.value.trim(),
+        authors: [{ name: author.value.trim() || "User import" }],
+        year: year.value,
         iwad: iwad.value,
         type: entryType.value,
         extraArgs: cleanedArgs.value,
@@ -389,8 +396,8 @@ async function onSubmit() {
     const entry: WadEntry = {
       slug,
       title: title.value.trim(),
-      authors: [{ name: parsedAuthor.value.trim() || "User import" }],
-      year: new Date().getFullYear(),
+      authors: [{ name: author.value.trim() || "User import" }],
+      year: year.value,
       description: "User-imported mod.",
       iwad: iwad.value,
       type: entryType.value,
@@ -467,6 +474,28 @@ async function onSubmit() {
           class="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
           placeholder="e.g. Ashes Blackwater"
         />
+      </div>
+
+      <!-- Author + Year (side by side) -->
+      <div class="flex gap-3">
+        <div class="flex-1 space-y-1.5">
+          <label class="text-sm font-medium text-zinc-300">Author</label>
+          <input
+            v-model="author"
+            type="text"
+            class="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+            placeholder="e.g. skillsaw"
+          />
+        </div>
+        <div class="w-32 space-y-1.5">
+          <label class="text-sm font-medium text-zinc-300">Year</label>
+          <input
+            v-model.number="year"
+            type="number"
+            min="1993"
+            class="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+          />
+        </div>
       </div>
 
       <!-- Type -->
