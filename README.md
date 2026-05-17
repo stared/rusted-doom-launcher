@@ -7,22 +7,26 @@ Browse community-made maps and episodes, then install and launch them with a sin
 
 ## Features
 
-- **Browse the catalog:** Filter by base game, type, and difficulty
+- **Browse the catalog:** Search by mood, type, and difficulty
+- **[Cacowards](https://www.doomworld.com/cacowards/) included:** Yearly awards for the best Doom maps, megawads, and mods
 - **One-click play:** Download and launch with a modern source port (GZDoom or UZDoom)
 - **Stack gameplay mods:** Run mods on top of any base game or WAD
 - **Bring your own:** Drop in a WAD you already have
 - **Track your runs:** Per-level stats and session history
 - **Plays the classics:** Doom, Doom II, Final Doom, Heretic, Hexen, Freedoom
+- **Auto-extracts game files:** Pulls IWADs directly from GOG installers
 - **Cross-system:** macOS (Apple Silicon and Intel), Windows, Linux (dev)
 
-If you want or need another featues, open [a feature request](https://github.com/stared/rusted-doom-launcher/issues) describing what you would like to see, or even better - open [a pull request](https://github.com/stared/rusted-doom-launcher/pulls).
+If you want or need other features, open [a feature request](https://github.com/stared/rusted-doom-launcher/issues) describing what you would like to see, or even better - open [a pull request](https://github.com/stared/rusted-doom-launcher/pulls).
+
+I am also open to expanding the maps, megawads and mod library - if you want to add your favorite WAD (or your WAD!), feel free to open a PR.
 
 ## Motivation
 
 The scene is alive and well - see [newest releases at Doomworld](https://www.doomworld.com/forum/4-map-releases-development/).
-I got inspired by gameplaces shared at [Doom & Retro FPS Mods](https://www.facebook.com/groups/495775970100553/) Facebook group. For now, the library consists of the top maps from [Cacowards](https://www.doomworld.com/cacowards/) - yearly awards for the best Doom maps, megawads and mod releases. I am open to expanding it.
+I got inspired by gameplays shared at [Doom & Retro FPS Mods](https://www.facebook.com/groups/495775970100553/) Facebook group.
 
-I build it for myself, so I can run it on my Apple Silicon Macbook - but sharing it so others may enjoys as well.
+I built it for myself, so I can run it on my Apple Silicon Macbook - but sharing it so others may enjoy it as well.
 While there are similar apps, notably [Doom Launcher](https://github.com/nstlaurent/DoomLauncher), they are either Windows-only or lack features I wanted.
 
 ## Requirements
@@ -62,7 +66,11 @@ See Windows binary in [releases](https://github.com/stared/rusted-doom-launcher/
 
 ### Linux
 
-No pre-built binary yet. You can run it from source — see [Development](#development) below.
+No pre-built binary yet. You can run it from source — see [Building from source](#building-from-source) below.
+
+### First run
+
+When you open the app for the first time, it will prompt you to locate your Doom engine (GZDoom/UZDoom) and your base game WADs (`doom.wad` / `doom2.wad`). If you have GOG offline installers, the app can extract the game files for you automatically (requires `innoextract`).
 
 ## Building from source
 
