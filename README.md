@@ -1,23 +1,34 @@
 # Rusted Doom Launcher
 
 A modern open-source launcher for classic Doom WADs and mods.
-Browse community-made maps and episodes, then install and launch them with a single click—essentially bringing the Steam experience to Doom.
+Browse community-made maps and episodes, then install and launch them with a single click - essentially bringing the Steam experience to Doom.
+
+![](./rusted_doom_launcher_screenshot.jpg)
+
+## Features
+
+- **Browse the catalog:** Filter by base game, type, and difficulty
+- **One-click play:** Download and launch with a modern source port (GZDoom or UZDoom)
+- **Stack gameplay mods:** Run mods on top of any base game or WAD
+- **Bring your own:** Drop in a WAD you already have
+- **Track your runs:** Per-level stats and session history
+- **Plays the classics:** Doom, Doom II, Final Doom, Heretic, Hexen, Freedoom
+- **Cross-system:** macOS (Apple Silicon and Intel), Windows, Linux (dev)
+
+If you want or need another featues, open [a feature request](https://github.com/stared/rusted-doom-launcher/issues) describing what you would like to see, or even better - open [a pull request](https://github.com/stared/rusted-doom-launcher/pulls).
+
+## Motivation
 
 The scene is alive and well - see [newest releases at Doomworld](https://www.doomworld.com/forum/4-map-releases-development/).
 I got inspired by gameplaces shared at [Doom & Retro FPS Mods](https://www.facebook.com/groups/495775970100553/) Facebook group. For now, the library consists of the top maps from [Cacowards](https://www.doomworld.com/cacowards/) - yearly awards for the best Doom maps, megawads and mod releases. I am open to expanding it.
 
-It is currently in alpha. I build it for myself, but sharing it so others may enjoys as well.
-There are similar apps, notably [Doom Launcher](https://github.com/nstlaurent/DoomLauncher), but they are either Windows-only or lack features I wanted.
-
-I use macOS (Apple Silicon) and created this tool specifically for it.
-There are no builds yet for other systems, but porting should be straightforward. If you want to make it runnable on Windows or Linux, I would be happy to add it to the repo.
-
-![](./rusted_doom_launcher_screenshot.jpg)
+I build it for myself, so I can run it on my Apple Silicon Macbook - but sharing it so others may enjoys as well.
+While there are similar apps, notably [Doom Launcher](https://github.com/nstlaurent/DoomLauncher), they are either Windows-only or lack features I wanted.
 
 ## Requirements
 
 - [GZDoom](https://github.com/ZDoom/gzdoom/) - Doom source port
-  - works also with newer [UZDoom](https://github.com/UZDoom/UZDoom/), there is some [drama about the GZDoom-UZDoom split](https://arstechnica.com/gaming/2025/10/civil-war-gzdoom-fan-developers-split-off-over-use-of-chatgpt-generated-code/)
+  - works also with the newer [UZDoom](https://github.com/UZDoom/UZDoom/)
 - `doom.wad` and `doom2.wad` - Doom game data from [GOG.com](https://www.gog.com/en/game/doom_doom_ii) or Steam
   - The app can extract IWADs directly from GOG installers using [innoextract](https://constexpr.org/innoextract/) (`brew install innoextract`)
 
@@ -45,20 +56,15 @@ brew install --cask gzdoom
 brew install --cask stared/doom/uzdoom
 ```
 
-### Linux and Windows
+### Windows
 
-Not yet!
+See Windows binary in [releases](https://github.com/stared/rusted-doom-launcher/releases).
 
-Contributions are welcome if you can make it work on these systems.
+### Linux
 
-## Features
+No pre-built binary yet. You can run it from source — see [Development](#development) below.
 
-- **Visual Browsing:** Explore WADs with embedded YouTube previews
-- **Instant Action:** One-click launch with UZDoom/GZDoom
-- **Mod Manager:** Download new WADs directly within the app
-- **Stat Tracking:** Track your play stats per level
-
-## Development
+## Building from source
 
 To build from source, you need [pnpm](https://pnpm.io/) and [Rust](https://rustup.rs/).
 
