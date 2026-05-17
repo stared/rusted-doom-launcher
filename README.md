@@ -109,7 +109,7 @@ With the app running (`pnpm tauri dev`), Claude Code can take screenshots, click
 
 ## Author
 
-[Piotr Migdal](https://p.migdal.pl)
+[Piotr Migdał](https://p.migdal.pl) and contributors
 
 ## License
 
