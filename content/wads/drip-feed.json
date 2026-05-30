@@ -43,6 +43,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Drip_Feed"
+    "https://doomwiki.org/wiki/Drip_Feed",
+    "https://www.doomworld.com/17years/",
+    "https://www.doomworld.com/forum/topic/50902-drip-feed-released/"
   ]
 }

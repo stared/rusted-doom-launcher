@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Dark_Universe"
+    "https://doomwiki.org/wiki/Dark_Universe",
+    "https://www.doomworld.com/vb/thread/98296",
+    "https://www.doomworld.com/cacowards/2018/"
   ]
 }

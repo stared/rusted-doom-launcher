@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Pirate_Doom_II"
+    "https://doomwiki.org/wiki/Pirate_Doom_II",
+    "https://www.doomworld.com/vb/thread/143805",
+    "https://www.doomworld.com/cacowards/2024/"
   ]
 }

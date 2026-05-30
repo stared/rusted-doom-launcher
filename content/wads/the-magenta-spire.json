@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/The_Magenta_Spire"
+    "https://doomwiki.org/wiki/The_Magenta_Spire",
+    "https://www.doomworld.com/vb/thread/121942",
+    "https://www.doomworld.com/cacowards/2022/"
   ]
 }

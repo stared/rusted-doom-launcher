@@ -43,6 +43,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Total_Control"
+    "https://doomwiki.org/wiki/Total_Control",
+    "https://www.doomworld.com/12years/"
   ]
 }

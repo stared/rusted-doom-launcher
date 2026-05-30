@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Maskim_Xul"
+    "https://doomwiki.org/wiki/Maskim_Xul",
+    "https://www.doomworld.com/vb/thread/69583",
+    "https://www.doomworld.com/cacowards/2018/"
   ]
 }

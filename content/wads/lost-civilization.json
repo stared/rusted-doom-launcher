@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Lost_Civilization"
+    "https://doomwiki.org/wiki/Lost_Civilization",
+    "https://www.doomworld.com/vb/thread/105215",
+    "https://www.doomworld.com/cacowards/2019/"
   ]
 }

@@ -47,6 +47,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Saturnine_Chapel"
+    "https://doomwiki.org/wiki/Saturnine_Chapel",
+    "https://www.doomworld.com/vb/thread/92310",
+    "https://www.doomworld.com/24years/"
   ]
 }

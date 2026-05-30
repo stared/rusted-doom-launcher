@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Resurgence"
+    "https://doomwiki.org/wiki/Resurgence",
+    "https://www.doomworld.com/21years/",
+    "https://www.doomworld.com/forum/topic/66084-resurgence-boom-compatible-megawad-final-version-released-idgames-link-up/"
   ]
 }

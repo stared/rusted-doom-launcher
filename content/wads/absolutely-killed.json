@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Absolutely_Killed"
+    "https://doomwiki.org/wiki/Absolutely_Killed",
+    "https://www.doomworld.com/23years/",
+    "https://www.doomworld.com/forum/topic/86495-absolutely-killed-an-ultimate-doom-episode-final-version-up-on-idgames/"
   ]
 }

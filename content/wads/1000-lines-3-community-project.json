@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/1000_Lines_3:_Community_Project"
+    "https://doomwiki.org/wiki/1000_Lines_3:_Community_Project",
+    "https://www.doomworld.com/vb/thread/125479",
+    "https://www.doomworld.com/cacowards/2021/"
   ]
 }

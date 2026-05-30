@@ -42,6 +42,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Sunlust"
+    "https://doomwiki.org/wiki/Sunlust",
+    "https://www.doomworld.com/vb/thread/68089",
+    "https://www.doomworld.com/22years/"
   ]
 }

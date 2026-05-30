@@ -95,6 +95,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Songs_of_the_Damned"
+    "https://doomwiki.org/wiki/Songs_of_the_Damned",
+    "https://www.doomworld.com/14years/",
+    "https://www.doomworld.com/forum/topic/38851-songs-of-the-damned-released/"
   ]
 }

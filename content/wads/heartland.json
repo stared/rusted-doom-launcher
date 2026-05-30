@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Heartland"
+    "https://doomwiki.org/wiki/Heartland",
+    "https://www.doomworld.com/vb/thread/120175",
+    "https://www.doomworld.com/cacowards/2021/"
   ]
 }

@@ -39,6 +39,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Brigandine"
+    "https://doomwiki.org/wiki/Brigandine",
+    "https://www.doomworld.com/vb/thread/92776",
+    "https://www.doomworld.com/24years/"
   ]
 }

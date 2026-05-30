@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Plutonia_2"
+    "https://doomwiki.org/wiki/Plutonia_2",
+    "https://www.doomworld.com/vb/thread/45022",
+    "https://www.doomworld.com/16years/"
   ]
 }

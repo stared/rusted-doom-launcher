@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Elf_Gets_Pissed"
+    "https://doomwiki.org/wiki/Elf_Gets_Pissed",
+    "https://www.doomworld.com/23years/",
+    "https://www.doomworld.com/forum/topic/84752-elf-gets-pissed-a-new-heretic-episode-release/"
   ]
 }

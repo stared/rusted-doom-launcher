@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Fractured_Worlds"
+    "https://doomwiki.org/wiki/Fractured_Worlds",
+    "https://www.doomworld.com/vb/thread/125253",
+    "https://www.doomworld.com/cacowards/2021/"
   ]
 }

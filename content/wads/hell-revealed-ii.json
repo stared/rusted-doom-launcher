@@ -39,6 +39,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Hell_Revealed_II"
+    "https://doomwiki.org/wiki/Hell_Revealed_II",
+    "https://www.doomworld.com/11years/"
   ]
 }

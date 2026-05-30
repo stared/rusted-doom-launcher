@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Deus_Vult_II"
+    "https://doomwiki.org/wiki/Deus_Vult_II",
+    "https://www.doomworld.com/15years/",
+    "https://www.doomworld.com/forum/topic/42544-deus-vult-ii-first-edition-released/"
   ]
 }

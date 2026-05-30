@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Community_Chest_4"
+    "https://doomwiki.org/wiki/Community_Chest_4",
+    "https://www.doomworld.com/vb/thread/61133",
+    "https://www.doomworld.com/19years/"
   ]
 }

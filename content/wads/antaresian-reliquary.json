@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Antaresian_Reliquary"
+    "https://doomwiki.org/wiki/Antaresian_Reliquary",
+    "https://www.doomworld.com/vb/thread/114478",
+    "https://www.doomworld.com/cacowards/2020/"
   ]
 }

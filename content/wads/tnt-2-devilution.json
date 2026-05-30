@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/TNT_2:_Devilution"
+    "https://doomwiki.org/wiki/TNT_2:_Devilution",
+    "https://www.doomworld.com/vb/thread/47721",
+    "https://www.doomworld.com/cacowards/2023/"
   ]
 }

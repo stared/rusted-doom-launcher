@@ -39,6 +39,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Arcadia_Demade"
+    "https://doomwiki.org/wiki/Arcadia_Demade",
+    "https://www.doomworld.com/17years/"
   ]
 }

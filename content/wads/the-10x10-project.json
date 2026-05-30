@@ -39,6 +39,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/The_10x10_Project"
+    "https://doomwiki.org/wiki/The_10x10_Project",
+    "https://www.doomworld.com/vb/thread/125783",
+    "https://www.doomworld.com/cacowards/2022/"
   ]
 }

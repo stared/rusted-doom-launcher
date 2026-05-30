@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Pirate_Doom"
+    "https://doomwiki.org/wiki/Pirate_Doom",
+    "https://www.doomworld.com/vb/thread/60067",
+    "https://www.doomworld.com/20years/"
   ]
 }

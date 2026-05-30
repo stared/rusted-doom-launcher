@@ -39,6 +39,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Sheer_Poison"
+    "https://doomwiki.org/wiki/Sheer_Poison",
+    "https://www.doomworld.com/vb/thread/72721",
+    "https://www.doomworld.com/22years/"
   ]
 }

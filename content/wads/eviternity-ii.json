@@ -103,6 +103,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Eviternity_II"
+    "https://doomwiki.org/wiki/Eviternity_II",
+    "https://www.doomworld.com/vb/thread/142015",
+    "https://www.doomworld.com/cacowards/2024/"
   ]
 }

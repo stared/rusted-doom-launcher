@@ -39,6 +39,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Monster_Hunter_Ltd._Part_I"
+    "https://doomwiki.org/wiki/Monster_Hunter_Ltd._Part_I",
+    "https://www.doomworld.com/21years/"
   ]
 }

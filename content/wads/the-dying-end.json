@@ -91,6 +91,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/The_Dying_End"
+    "https://doomwiki.org/wiki/The_Dying_End",
+    "https://www.doomworld.com/14years/"
   ]
 }

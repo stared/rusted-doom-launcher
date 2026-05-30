@@ -39,6 +39,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Phobos_Revisited"
+    "https://doomwiki.org/wiki/Phobos_Revisited",
+    "https://www.doomworld.com/vb/thread/27969",
+    "https://www.doomworld.com/11years/"
   ]
 }

@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Ultimate_Doom_In_Name_Only"
+    "https://doomwiki.org/wiki/Ultimate_Doom_In_Name_Only",
+    "https://www.doomworld.com/vb/thread/137395",
+    "https://www.doomworld.com/cacowards/2023/"
   ]
 }

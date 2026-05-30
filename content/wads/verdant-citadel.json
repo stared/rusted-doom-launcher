@@ -39,6 +39,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Verdant_Citadel"
+    "https://doomwiki.org/wiki/Verdant_Citadel",
+    "https://www.doomworld.com/vb/thread/105581",
+    "https://www.doomworld.com/cacowards/2019/"
   ]
 }

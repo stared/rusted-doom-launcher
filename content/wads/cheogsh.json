@@ -99,6 +99,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Cheogsh"
+    "https://doomwiki.org/wiki/Cheogsh",
+    "https://www.doomworld.com/14years/",
+    "https://www.doomworld.com/forum/topic/41127-cheogshwad/"
   ]
 }

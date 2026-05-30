@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Alpha_Accident:_Terra_Nova"
+    "https://doomwiki.org/wiki/Alpha_Accident:_Terra_Nova",
+    "https://www.doomworld.com/vb/thread/63266",
+    "https://www.doomworld.com/23years/"
   ]
 }

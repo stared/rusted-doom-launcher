@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Mapgame"
+    "https://doomwiki.org/wiki/Mapgame",
+    "https://www.doomworld.com/16years/",
+    "https://www.doomworld.com/forum/topic/46026-mapgame-finished-d/"
   ]
 }

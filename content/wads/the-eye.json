@@ -39,6 +39,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/The_Eye"
+    "https://doomwiki.org/wiki/The_Eye",
+    "https://www.doomworld.com/19years/",
+    "https://www.doomworld.com/forum/topic/62357-the-eye-now-on-idgames/"
   ]
 }
