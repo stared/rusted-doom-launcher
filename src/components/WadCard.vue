@@ -7,6 +7,7 @@ import { useLevelNames } from "../composables/useLevelNames";
 import { formatTics } from "../lib/format";
 import { SKILL_FULL_NAMES } from "../lib/statsSchema";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
+import WadLinks from "./WadLinks.vue";
 
 const { isDownloaded: checkDownloaded } = useDownload();
 const { getCachedPlaySummary } = useStats();
@@ -130,6 +131,9 @@ watch(showStatsModal, async (isOpen) => {
           </span>
         </template>
       </button>
+
+      <!-- Reference links (Doomworld thread, DoomWiki) -->
+      <WadLinks :wad="wad" class="mt-2" />
 
       <div class="mt-3 flex gap-2">
         <DownloadPlayButton

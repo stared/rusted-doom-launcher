@@ -3,6 +3,7 @@ import { ref, computed, onUnmounted } from "vue";
 import type { WadEntry } from "../lib/schema";
 import { useWadSummaries } from "../composables/useWadSummaries";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
+import WadLinks from "./WadLinks.vue";
 
 // Slideshow interval in milliseconds
 const SLIDESHOW_INTERVAL_MS = 2000;
@@ -145,6 +146,9 @@ const authorDisplay = computed(() => {
       >
         {{ wad.description.slice(0, 120) }}{{ wad.description.length > 120 ? '...' : '' }}
       </p>
+
+      <!-- Reference links (Doomworld thread, DoomWiki) -->
+      <WadLinks :wad="wad" />
 
       <!-- Play/Download button -->
       <DownloadPlayButton :wad="wad" @play="emit('play', wad)" />
