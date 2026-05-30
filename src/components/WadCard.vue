@@ -8,6 +8,7 @@ import { formatTics } from "../lib/format";
 import { SKILL_FULL_NAMES } from "../lib/statsSchema";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 import WadLinks from "./WadLinks.vue";
+import { getWadLinks } from "../lib/wadLinks";
 
 const { isDownloaded: checkDownloaded } = useDownload();
 const { getCachedPlaySummary } = useStats();
@@ -34,6 +35,7 @@ const props = defineProps<{
 
 const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
 const saveInfo = computed(() => getCachedPlaySummary(props.wad.slug));
+const hasLinks = computed(() => getWadLinks(props.wad).length > 0);
 
 // Level completion progress
 const totalLevels = computed(() => {
@@ -96,14 +98,7 @@ watch(showStatsModal, async (isOpen) => {
     </div>
 
     <div class="p-3">
-      <h3 class="truncate font-semibold text-zinc-100 flex items-center gap-2">
-        <span class="truncate">{{ wad.title }}</span>
-        <span
-          v-if="wad._source === 'custom'"
-          class="shrink-0 rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-300"
-          title="Imported from your disk"
-        >Custom</span>
-      </h3>
+      <h3 class="truncate font-semibold text-zinc-100">{{ wad.title }}</h3>
       <p class="truncate text-sm text-zinc-400">{{ wad.authors.map(a => a.name).join(", ") }} • {{ wad.year }} • {{ TYPE_LABELS[wad.type] }}<template v-if="wad.difficulty !== 'unknown'"> • {{ DIFFICULTY_CONFIG[wad.difficulty].label }}</template></p>
 
       <!-- Save/Progress info (clickable to show details) -->
@@ -132,8 +127,18 @@ watch(showStatsModal, async (isOpen) => {
         </template>
       </button>
 
-      <!-- Reference links (Doomworld thread, DoomWiki) -->
-      <WadLinks :wad="wad" class="mt-2" />
+      <!-- Custom badge + reference links (Doomworld, DoomWiki, source) -->
+      <div
+        v-if="wad._source === 'custom' || hasLinks"
+        class="mt-2 flex flex-wrap items-center gap-1.5"
+      >
+        <span
+          v-if="wad._source === 'custom'"
+          class="rounded border border-zinc-600 bg-zinc-700 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-300"
+          title="Imported from your disk"
+        >Custom</span>
+        <WadLinks :wad="wad" />
+      </div>
 
       <div class="mt-3 flex gap-2">
         <DownloadPlayButton
