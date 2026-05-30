@@ -110,7 +110,7 @@ onMounted(async () => {
     await initSettings();
     await loadDownloadState();
     await loadCustomWads();
-    await pruneActiveMods(isDownloaded);
+    await pruneActiveMods(s => wads.value.some(w => w.slug === s) && isDownloaded(s));
     await detectIwads();
 
     // If IWADs were migrated but not detected, retry after short delay
@@ -156,8 +156,13 @@ watch(isRunning, async (running, wasRunning) => {
 });
 
 function activeModPaths(launchedSlug: string): string[] {
+  // Require a known WadEntry: a stale download record alone isn't enough,
+  // otherwise an orphaned activeMods slug (no catalog/custom entry, but a
+  // leftover file in the downloads registry) silently injects -file into
+  // every launch with no way to toggle it off from the UI.
+  const knownSlugs = new Set(wads.value.map(w => w.slug));
   return settings.value.activeMods
-    .filter(s => s !== launchedSlug && isDownloaded(s))
+    .filter(s => s !== launchedSlug && knownSlugs.has(s) && isDownloaded(s))
     .map(s => {
       const info = getDownloadInfo(s);
       return info ? lib.wadFile(info.wadFilename ?? info.filename) : null;
@@ -238,7 +243,7 @@ async function handleDelete(wad: WadEntry) {
     if (!ok) return;
     await deleteWad(wad.slug);
     if (isCustom) await removeCustomWad(wad.slug);
-    await pruneActiveMods(isDownloaded);
+    await pruneActiveMods(s => wads.value.some(w => w.slug === s) && isDownloaded(s));
   } catch (e) {
     errorMsg.value = getErrorMessage(e);
   }
