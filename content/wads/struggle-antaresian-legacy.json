@@ -34,6 +34,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Struggle_-_Antaresian_Legacy"
+    "https://doomwiki.org/wiki/Struggle_-_Antaresian_Legacy",
+    "https://www.doomworld.com/vb/thread/74791"
   ]
 }

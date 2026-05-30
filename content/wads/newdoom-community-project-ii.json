@@ -34,6 +34,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/NewDoom_Community_Project_II"
+    "https://doomwiki.org/wiki/NewDoom_Community_Project_II",
+    "https://www.doomworld.com/vb/thread/46094"
   ]
 }

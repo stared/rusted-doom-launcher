@@ -79,6 +79,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Valiant"
+    "https://doomwiki.org/wiki/Valiant",
+    "https://www.doomworld.com/vb/thread/71704"
   ]
 }

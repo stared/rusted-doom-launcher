@@ -43,6 +43,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Action_Doom"
+    "https://doomwiki.org/wiki/Action_Doom",
+    "https://www.doomworld.com/vb/thread/132191"
   ]
 }

@@ -34,6 +34,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Shadows_of_the_Nightmare_Realm"
+    "https://doomwiki.org/wiki/Shadows_of_the_Nightmare_Realm",
+    "https://www.doomworld.com/vb/thread/94268"
   ]
 }

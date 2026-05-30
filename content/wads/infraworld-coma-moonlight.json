@@ -43,6 +43,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Infraworld_-_Coma_Moonlight"
+    "https://doomwiki.org/wiki/Infraworld_-_Coma_Moonlight",
+    "https://www.doomworld.com/vb/thread/121665"
   ]
 }

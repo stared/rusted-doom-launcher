@@ -39,6 +39,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/House_of_Dead_Skin"
+    "https://doomwiki.org/wiki/House_of_Dead_Skin",
+    "https://www.doomworld.com/vb/thread/147767"
   ]
 }

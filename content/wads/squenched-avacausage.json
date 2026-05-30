@@ -34,6 +34,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Squenched_Avacausage"
+    "https://doomwiki.org/wiki/Squenched_Avacausage",
+    "https://www.doomworld.com/vb/thread/128999"
   ]
 }

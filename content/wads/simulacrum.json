@@ -37,6 +37,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Simulacrum"
+    "https://doomwiki.org/wiki/Simulacrum",
+    "https://www.doomworld.com/vb/thread/145709"
   ]
 }

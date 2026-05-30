@@ -34,6 +34,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Mutabor"
+    "https://doomwiki.org/wiki/Mutabor",
+    "https://www.doomworld.com/vb/thread/112651"
   ]
 }

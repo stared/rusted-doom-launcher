@@ -39,6 +39,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Plutonia:_Revisited_Community_Project"
+    "https://doomwiki.org/wiki/Plutonia:_Revisited_Community_Project",
+    "https://www.doomworld.com/vb/thread/55598"
   ]
 }
