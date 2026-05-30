@@ -40,6 +40,7 @@
   "_source": "cacowards-scraper",
   "urls": [
     "https://doomwiki.org/wiki/Remnant",
-    "https://www.doomworld.com/vb/thread/109217"
+    "https://www.doomworld.com/vb/thread/109217",
+    "https://www.doomworld.com/cacowards/2019/"
   ]
 }

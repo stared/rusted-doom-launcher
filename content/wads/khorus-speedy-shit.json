@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Khorus%27_Speedy_Shit"
+    "https://doomwiki.org/wiki/Khorus%27_Speedy_Shit",
+    "https://www.doomworld.com/18years/",
+    "https://www.doomworld.com/forum/topic/57690-khorus-speedy-shit-all-maps-completed-idgames-download-available/"
   ]
 }

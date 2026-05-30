@@ -87,6 +87,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Decade"
+    "https://doomwiki.org/wiki/Decade",
+    "https://www.doomworld.com/11years/"
   ]
 }

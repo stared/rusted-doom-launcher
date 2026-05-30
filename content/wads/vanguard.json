@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Vanguard"
+    "https://doomwiki.org/wiki/Vanguard",
+    "https://www.doomworld.com/18years/",
+    "https://www.doomworld.com/forum/topic/55256-vanguardwad-now-on-idgames/"
   ]
 }

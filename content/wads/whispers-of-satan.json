@@ -37,6 +37,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Whispers_of_Satan"
+    "https://doomwiki.org/wiki/Whispers_of_Satan",
+    "https://www.doomworld.com/16years/",
+    "https://www.doomworld.com/forum/topic/43100-whispers-of-satan-released/"
   ]
 }

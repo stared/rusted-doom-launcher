@@ -34,6 +34,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Crimson_Canyon"
+    "https://doomwiki.org/wiki/Crimson_Canyon",
+    "https://www.doomworld.com/12years/"
   ]
 }

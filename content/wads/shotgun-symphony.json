@@ -34,6 +34,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Shotgun_Symphony"
+    "https://doomwiki.org/wiki/Shotgun_Symphony",
+    "https://www.doomworld.com/cacowards/2019/",
+    "https://www.doomworld.com/forum/topic/90983-shotgun-symphony-ultimate-doom-episode-working-on-v11/"
   ]
 }

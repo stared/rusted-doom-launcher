@@ -43,6 +43,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Escape_from_Castle_Chezcrea"
+    "https://doomwiki.org/wiki/Escape_from_Castle_Chezcrea",
+    "https://www.doomworld.com/15years/"
   ]
 }

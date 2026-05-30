@@ -43,6 +43,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Putrefier"
+    "https://doomwiki.org/wiki/Putrefier",
+    "https://www.doomworld.com/19years/",
+    "https://www.doomworld.com/forum/topic/61780-putrefier/"
   ]
 }

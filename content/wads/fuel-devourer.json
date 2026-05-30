@@ -39,6 +39,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Fuel_Devourer"
+    "https://doomwiki.org/wiki/Fuel_Devourer",
+    "https://www.doomworld.com/20years/",
+    "https://www.doomworld.com/forum/topic/65459-release-fuel-devourer-now-on-idgames/"
   ]
 }

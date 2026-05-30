@@ -39,6 +39,7 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/The_Outer_Darkness"
+    "https://doomwiki.org/wiki/The_Outer_Darkness",
+    "https://www.doomworld.com/14years/"
   ]
 }

@@ -43,6 +43,8 @@
   "_schemaVersion": 1,
   "_source": "cacowards-scraper",
   "urls": [
-    "https://doomwiki.org/wiki/Japanese_Community_Project"
+    "https://doomwiki.org/wiki/Japanese_Community_Project",
+    "https://www.doomworld.com/23years/",
+    "https://www.doomworld.com/forum/topic/87080-japanese-community-project-final-version-released-on-idgames/"
   ]
 }
