@@ -372,9 +372,12 @@ export function useSettings() {
     await saveSettings();
   }
 
-  async function pruneActiveMods(isDownloaded: (slug: string) => boolean): Promise<void> {
+  // Caller-supplied predicate: a slug is kept only if it's still a known,
+  // launchable mod. Callers should require both a matching WadEntry and a
+  // present download — checking download alone leaves orphaned slugs behind.
+  async function pruneActiveMods(isKeepable: (slug: string) => boolean): Promise<void> {
     const before = settings.value.activeMods.length;
-    settings.value.activeMods = settings.value.activeMods.filter(isDownloaded);
+    settings.value.activeMods = settings.value.activeMods.filter(isKeepable);
     if (settings.value.activeMods.length !== before) await saveSettings();
   }
 
