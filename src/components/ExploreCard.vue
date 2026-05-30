@@ -81,7 +81,7 @@ const authorDisplay = computed(() => {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
+  <div class="flex h-full flex-col overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
     <!-- Image area with overlay -->
     <div
       class="relative aspect-video overflow-hidden"
@@ -132,7 +132,7 @@ const authorDisplay = computed(() => {
     </div>
 
     <!-- Content area -->
-    <div class="p-3 space-y-3">
+    <div class="flex flex-1 flex-col p-3">
       <!-- Vibe text - the hook -->
       <p
         v-if="vibe"
@@ -142,16 +142,16 @@ const authorDisplay = computed(() => {
       </p>
       <p
         v-else
-        class="text-sm text-zinc-500 italic"
+        class="text-sm text-zinc-500 italic line-clamp-3"
       >
         {{ wad.description.slice(0, 120) }}{{ wad.description.length > 120 ? '...' : '' }}
       </p>
 
-      <!-- Reference links (Doomworld thread, DoomWiki) -->
-      <WadLinks :wad="wad" />
-
-      <!-- Play/Download button -->
-      <DownloadPlayButton :wad="wad" @play="emit('play', wad)" />
+      <!-- Bottom-anchored: reference links + play button (aligned across cards) -->
+      <div class="mt-auto space-y-3 pt-3">
+        <WadLinks :wad="wad" />
+        <DownloadPlayButton :wad="wad" @play="emit('play', wad)" />
+      </div>
     </div>
   </div>
 </template>

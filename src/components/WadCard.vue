@@ -77,7 +77,7 @@ watch(showStatsModal, async (isOpen) => {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-lg bg-zinc-800 shadow-lg">
+  <div class="flex h-full flex-col overflow-hidden rounded-lg bg-zinc-800 shadow-lg">
     <!-- 16:9 aspect ratio thumbnail area -->
     <div class="relative aspect-video overflow-hidden bg-zinc-900">
       <!-- Screenshot/thumbnail image -->
@@ -97,7 +97,7 @@ watch(showStatsModal, async (isOpen) => {
       </div>
     </div>
 
-    <div class="p-3">
+    <div class="flex flex-1 flex-col p-3">
       <h3 class="truncate font-semibold text-zinc-100">{{ wad.title }}</h3>
       <p class="truncate text-sm text-zinc-400">{{ wad.authors.map(a => a.name).join(", ") }} • {{ wad.year }} • {{ TYPE_LABELS[wad.type] }}<template v-if="wad.difficulty !== 'unknown'"> • {{ DIFFICULTY_CONFIG[wad.difficulty].label }}</template></p>
 
@@ -127,48 +127,51 @@ watch(showStatsModal, async (isOpen) => {
         </template>
       </button>
 
-      <!-- Custom badge + reference links (Doomworld, DoomWiki, source) -->
-      <div
-        v-if="wad._source === 'custom' || hasLinks"
-        class="mt-2 flex flex-wrap items-center gap-1.5"
-      >
-        <span
-          v-if="wad._source === 'custom'"
-          class="rounded border border-zinc-600 bg-zinc-700 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-300"
-          title="Imported from your disk"
-        >Custom</span>
-        <WadLinks :wad="wad" />
-      </div>
+      <!-- Bottom-anchored badge/links + actions: keeps the play button aligned
+           across cards regardless of how much content sits above -->
+      <div class="mt-auto">
+        <div
+          v-if="wad._source === 'custom' || hasLinks"
+          class="flex flex-nowrap items-center gap-1"
+        >
+          <span
+            v-if="wad._source === 'custom'"
+            class="cursor-default whitespace-nowrap rounded border border-zinc-700 px-1.5 py-0.5 text-[11px] text-zinc-400"
+            title="Imported from your disk"
+          >Custom</span>
+          <WadLinks :wad="wad" />
+        </div>
 
-      <div class="mt-3 flex gap-2">
-        <DownloadPlayButton
-          class="flex-1"
-          :wad="wad"
-          play-label="Play"
-          download-label="▶ Download & Play"
-          @play="emit('play', wad)"
-        />
-        <button
-          v-if="wad._source === 'custom'"
-          class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-zinc-600 hover:text-zinc-100"
-          @click="emit('edit', wad)"
-          title="Edit custom entry"
-        >
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-          </svg>
-        </button>
-        <button
-          v-if="isDownloaded"
-          class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-red-900 hover:text-red-400"
-          @click="emit('delete', wad)"
-          title="Delete WAD"
-        >
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M6 6l12 12M6 18L18 6"/>
-          </svg>
-        </button>
+        <div class="mt-3 flex gap-2">
+          <DownloadPlayButton
+            class="flex-1"
+            :wad="wad"
+            play-label="Play"
+            download-label="▶ Download & Play"
+            @play="emit('play', wad)"
+          />
+          <button
+            v-if="wad._source === 'custom'"
+            class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-zinc-600 hover:text-zinc-100"
+            @click="emit('edit', wad)"
+            title="Edit custom entry"
+          >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+            </svg>
+          </button>
+          <button
+            v-if="isDownloaded"
+            class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-red-900 hover:text-red-400"
+            @click="emit('delete', wad)"
+            title="Delete WAD"
+          >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M6 6l12 12M6 18L18 6"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>

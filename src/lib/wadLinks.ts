@@ -53,7 +53,7 @@ function sourceLink(wad: WadEntry): WadLink | null {
   }
   if (host.includes("archive.org")) {
     const item = dl.url.match(/archive\.org\/download\/([^/]+)/);
-    return { label: "Archive.org", url: item ? `https://archive.org/details/${item[1]}` : dl.url };
+    return { label: "Archive", url: item ? `https://archive.org/details/${item[1]}` : dl.url };
   }
   if (host.includes("github.com")) return { label: "GitHub", url: dl.url };
   if (host.includes("moddb.com")) return { label: "ModDB", url: dl.url };

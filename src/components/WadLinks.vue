@@ -10,11 +10,11 @@ const links = computed(() => getWadLinks(props.wad));
 </script>
 
 <template>
-  <div v-if="links.length" class="flex flex-wrap gap-1.5">
+  <div v-if="links.length" class="flex flex-nowrap gap-1">
     <button
       v-for="link in links"
       :key="link.label"
-      class="rounded border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
+      class="whitespace-nowrap rounded border border-zinc-700 px-1.5 py-0.5 text-[11px] text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
       @click.stop="open(link.url)"
     >
       {{ link.label }}
