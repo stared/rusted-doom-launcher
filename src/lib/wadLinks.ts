@@ -3,11 +3,23 @@ import type { WadEntry } from "./schema";
 export type WadLink = { label: string; url: string };
 
 // Reference labels we surface from urls/notes, in display order.
-const REF_ORDER = ["Doomworld", "DoomWiki"] as const;
+const REF_ORDER = ["Doomworld", "Cacoward", "DoomWiki"] as const;
 
-function refLabelForHost(host: string): (typeof REF_ORDER)[number] | null {
-  if (host.includes("doomworld.com")) return "Doomworld";
-  if (host.includes("doomwiki.org")) return "DoomWiki";
+// Classify a reference URL by what it points at (path matters: Doomworld hosts
+// forum threads, Cacoward writeups, and idgames pages under the same domain).
+function refLabel(url: string): (typeof REF_ORDER)[number] | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  const { host, pathname } = parsed;
+  if (host.includes("doomwiki.org") && pathname.startsWith("/wiki/")) return "DoomWiki";
+  if (host.includes("doomworld.com")) {
+    if (/^\/(cacowards\/\d+|\d+years)/.test(pathname)) return "Cacoward";
+    if (/^\/(forum\/topic|vb\/thread|vb\/showthread)/.test(pathname)) return "Doomworld";
+  }
   return null;
 }
 
@@ -54,9 +66,7 @@ function sourceLink(wad: WadEntry): WadLink | null {
 export function getWadLinks(wad: WadEntry): WadLink[] {
   const refs = new Map<string, string>();
   for (const url of [...wad.urls, ...extractUrls(wad.notes)]) {
-    const host = hostOf(url);
-    if (!host) continue;
-    const label = refLabelForHost(host);
+    const label = refLabel(url);
     if (label && !refs.has(label)) refs.set(label, url);
   }
 
