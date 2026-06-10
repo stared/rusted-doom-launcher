@@ -17,6 +17,8 @@ pub struct DownloadInfo {
 	#[serde(rename = "downloadedAt")]
 	pub downloaded_at: String,
 	pub size: u64,
+	#[serde(rename = "externalPath", skip_serializing_if = "Option::is_none", default)]
+	pub external_path: Option<String>,
 }
 
 impl LauncherDownloads {

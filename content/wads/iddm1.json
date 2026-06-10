@@ -1,0 +1,41 @@
+{
+  "slug": "iddm1",
+  "title": "IDDM1",
+  "authors": [
+    {
+      "name": "id Software"
+    },
+    {
+      "name": "MachineGames"
+    }
+  ],
+  "year": 2024,
+  "description": "Official deathmatch map pack shipped with Doom + Doom II (2024). Arena-style multiplayer levels built on the id24 spec.",
+  "iwad": "doom2",
+  "type": "deathmatch",
+  "sourcePort": "gzdoom",
+  "requires": [
+    {
+      "slug": "id24res",
+      "name": "id24 shared resources",
+      "required": true
+    }
+  ],
+  "downloads": [],
+  "thumbnail": "",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "official",
+    "deathmatch",
+    "id24"
+  ],
+  "difficulty": "unknown",
+  "notes": "Imported from an owned GOG release of Doom + Doom II (iddm1.wad).",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/IDDM1"
+  ]
+}

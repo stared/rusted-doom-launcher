@@ -1,0 +1,31 @@
+{
+  "slug": "master-levels",
+  "title": "Master Levels for Doom II",
+  "authors": [
+    {
+      "name": "Various (published by id Software)"
+    }
+  ],
+  "year": 1995,
+  "description": "Twenty commissioned expert levels for Doom II by community legends including John Anderson (Dr. Sleep), Sverre Kvernmo and Tom Mustaine. The modern official release compiles them into a single WAD playable as one continuous episode.",
+  "iwad": "doom2",
+  "type": "megawad",
+  "sourcePort": "vanilla",
+  "requires": [],
+  "downloads": [],
+  "thumbnail": "https://doomwiki.org/w/images/2/21/Master_Levels_title.png",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "classic",
+    "official"
+  ],
+  "difficulty": "hard",
+  "notes": "Imported from an owned GOG release (masterlevels.wad, the compiled single-WAD edition). [DoomWiki](https://doomwiki.org/wiki/Master_Levels_for_Doom_II)",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/Master_Levels_for_Doom_II"
+  ]
+}

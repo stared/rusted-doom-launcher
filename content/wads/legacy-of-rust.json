@@ -1,0 +1,44 @@
+{
+  "slug": "legacy-of-rust",
+  "title": "Legacy of Rust",
+  "authors": [
+    {
+      "name": "id Software"
+    },
+    {
+      "name": "MachineGames"
+    },
+    {
+      "name": "Nightdive Studios"
+    }
+  ],
+  "year": 2024,
+  "description": "The brand-new official episode duo shipped with Doom + Doom II (2024): sixteen levels built on the id24 spec, featuring new weapons like the Incinerator and Calamity Blade plus new enemy types. Requires a modern source port with id24 support (GZDoom 4.13+).",
+  "iwad": "doom2",
+  "type": "episode",
+  "sourcePort": "gzdoom",
+  "requires": [
+    {
+      "slug": "id24res",
+      "name": "id24 shared resources",
+      "required": true
+    }
+  ],
+  "downloads": [],
+  "thumbnail": "https://doomwiki.org/w/images/b/b9/Legacy_of_Rust_title.png",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "official",
+    "episode",
+    "id24"
+  ],
+  "difficulty": "medium",
+  "notes": "Imported from an owned GOG release of Doom + Doom II (id1.wad). [DoomWiki](https://doomwiki.org/wiki/Legacy_of_Rust)",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/Legacy_of_Rust"
+  ]
+}

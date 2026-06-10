@@ -171,10 +171,8 @@ pub fn read_zip_entry(zip_path: &str, entry_path: &str) -> Result<Vec<u8>, Strin
     Ok(buf)
 }
 
-/// Stream a zip entry into a fresh temp directory and return its path.
-/// Used at pick time in the custom-mod importer so inspection and the
-/// eventual copy into the library work from a real, seekable file.
-pub fn extract_zip_entry_to_temp(zip_path: &str, entry_path: &str) -> Result<String, String> {
+/// Create a unique, empty temp directory owned by the launcher.
+pub fn create_temp_dir() -> Result<std::path::PathBuf, String> {
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|e| format!("System clock error: {}", e))?
@@ -185,6 +183,14 @@ pub fn extract_zip_entry_to_temp(zip_path: &str, entry_path: &str) -> Result<Str
         nanos
     ));
     std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create {}: {}", dir.display(), e))?;
+    Ok(dir)
+}
+
+/// Stream a zip entry into a fresh temp directory and return its path.
+/// Used at pick time in the custom-mod importer so inspection and the
+/// eventual copy into the library work from a real, seekable file.
+pub fn extract_zip_entry_to_temp(zip_path: &str, entry_path: &str) -> Result<String, String> {
+    let dir = create_temp_dir()?;
     let dest = dir.join(basename(entry_path));
     let dest_str = dest.to_string_lossy().to_string();
     extract_zip_entry(zip_path, entry_path, &dest_str)?;

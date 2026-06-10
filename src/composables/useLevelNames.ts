@@ -54,7 +54,7 @@ export function useLevelNames() {
    * Reads launcher-downloads.json via IPC rather than importing useDownload
    * to avoid circular dependency (useDownload → useLevelNames → useDownload).
    */
-  async function getDownloadInfo(slug: string): Promise<{ filename: string } | null> {
+  async function getDownloadInfo(slug: string): Promise<{ filename: string; externalPath?: string } | null> {
     try {
       const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
       return state.downloads[slug] ?? null;
@@ -89,7 +89,10 @@ export function useLevelNames() {
         return null;
       }
 
-      const filePath = wadFile(downloadInfo.filename);
+      // externalPath is the authoritative absolute location when set
+      // (GOG-imported expansions in iwads/, user files referenced in place) —
+      // same resolution rule as the launch path in useDownload.
+      const filePath = downloadInfo.externalPath || wadFile(downloadInfo.filename);
       const filename = downloadInfo.filename.toLowerCase();
 
       let allLevels = new Map<string, string>();

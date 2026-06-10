@@ -60,13 +60,17 @@ const { wads, loading, error } = useWads();
 const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
 const lib = useLibrary();
 
+const { loadState: loadDownloadState, downloadWithDeps, downloadWad, deleteWad, isDownloaded, getDownloadInfo, registerOwnedExpansions } = useDownload();
+
 const iwadEntries = computed<WadEntry[]>(() => availableIwads.value.map(synthIwadEntry));
+// Entries with no download URL (official expansions sourced from GOG
+// installers) only appear once their file is owned/imported.
+const obtainable = (w: WadEntry) => w.downloads.length > 0 || isDownloaded(w.slug);
 const playableEntries = computed<WadEntry[]>(() =>
-  [...iwadEntries.value, ...wads.value.filter(w => w.type !== "gameplay-mod" && w.type !== "resource-pack")]
+  [...iwadEntries.value, ...wads.value.filter(w => w.type !== "gameplay-mod" && w.type !== "resource-pack" && obtainable(w))]
 );
 const modEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type === "gameplay-mod"));
-const exploreEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type !== "resource-pack"));
-const { loadState: loadDownloadState, downloadWithDeps, downloadWad, deleteWad, isDownloaded, getDownloadInfo } = useDownload();
+const exploreEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type !== "resource-pack" && obtainable(w)));
 const { hasSlug: isCustomSlug, removeCustomWad, loadState: loadCustomWads } = useCustomWads();
 const { settings, isFirstRun, migratedIwads, initSettings, toggleActiveMod, pruneActiveMods } = useSettings();
 const { loadAllLevelNames } = useLevelNames();
@@ -109,6 +113,7 @@ onMounted(async () => {
   try {
     await initSettings();
     await loadDownloadState();
+    await registerOwnedExpansions();
     await loadCustomWads();
     await pruneActiveMods(s => wads.value.some(w => w.slug === s) && isDownloaded(s));
     await detectIwads();
@@ -211,11 +216,11 @@ async function handlePlay(wad: WadEntry, extraArgs?: string[]) {
     const callExtra = extraArgs ?? [];
     const combinedExtra = [...wadExtra, ...callExtra];
     if (wad.type === "iwad") {
-      await launch("", wad.iwad, modPaths, wad.slug, "HMP", combinedExtra);
+      await launch("", wad.iwad, [], modPaths, wad.slug, "HMP", combinedExtra);
       return;
     }
     const { wadPath, depPaths } = await downloadWithDeps(wad, wads.value);
-    await launch(wadPath, wad.iwad, [...depPaths, ...modPaths], wad.slug, "HMP", combinedExtra);
+    await launch(wadPath, wad.iwad, depPaths, modPaths, wad.slug, "HMP", combinedExtra);
   } catch (e) {
     console.error(`[Play] Error launching ${wad.slug}:`, e);
     errorMsg.value = getErrorMessage(e);

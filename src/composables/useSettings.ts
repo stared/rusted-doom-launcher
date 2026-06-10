@@ -2,8 +2,10 @@ import { ref } from "vue";
 import { appConfigDir, appDataDir, homeDir, join } from "@tauri-apps/api/path";
 import { exists, readTextFile, writeTextFile, mkdir, readDir, readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { Command } from "@tauri-apps/plugin-shell";
+import { invoke } from "@tauri-apps/api/core";
 import { isNotFoundError } from "../lib/errors";
 import { getOs } from "../lib/platform";
+import { GOG_WANTED_WADS } from "../lib/gogContent";
 
 const OLD_APP_NAME = "gzdoom";
 
@@ -204,26 +206,16 @@ interface GOGExtractResult {
   errors: string[];
 }
 
-// Copyrighted WADs that must be extracted from owned installers
-// (SIGIL is free and can be downloaded separately, extras.wad is KEX-only bloat)
-const GOG_IWADS_TO_EXTRACT = [
-  "doom.wad",
-  "doom2.wad",
-  "plutonia.wad",
-  "tnt.wad",
-  "nerve.wad",
-  "masterlevels.wad",
-];
-
-// Extract IWADs from a GOG installer using innoextract
+// Extract game WADs from a GOG installer using innoextract. Installers
+// nest their WADs differently (doom2/DOOM2.WAD, DOOM_Data/StreamingAssets/
+// doom.wad, flat at the root, …), so extraction goes to a temp dir and
+// collect_known_wads flattens the wanted files into iwads/ regardless of
+// the layout inside the installer.
 async function extractFromGOG(
   installerPath: string,
   iwadsDir: string,
   innoextractCmd: string
 ): Promise<GOGExtractResult> {
-  // Ensure iwads directory exists
-  await mkdir(iwadsDir, { recursive: true });
-
   // List contents first to verify it's a valid Inno Setup installer
   const listResult = await Command.create(innoextractCmd, ["--list", installerPath]).execute();
   if (listResult.code !== 0) {
@@ -236,11 +228,11 @@ async function extractFromGOG(
     throw new Error("This installer doesn't appear to contain any WAD files");
   }
 
-  // Extract only copyrighted IWADs (skip extras.wad and freely available sigil)
-  const includeArgs = GOG_IWADS_TO_EXTRACT.flatMap(wad => ["--include", wad]);
+  const tempDir = await invoke<string>("make_temp_dir");
+  const includeArgs = GOG_WANTED_WADS.flatMap(wad => ["--include", wad]);
   const extractResult = await Command.create(innoextractCmd, [
     ...includeArgs,
-    "--output-dir", iwadsDir,
+    "--output-dir", tempDir,
     installerPath
   ]).execute();
 
@@ -249,20 +241,14 @@ async function extractFromGOG(
     errors.push(extractResult.stderr);
   }
 
-  // Check which WADs were actually extracted by checking if files exist
-  const extractedWads: string[] = [];
-  for (const wad of GOG_IWADS_TO_EXTRACT) {
-    try {
-      if (await exists(await join(iwadsDir, wad))) {
-        extractedWads.push(wad);
-      }
-    } catch {
-      // File doesn't exist
-    }
-  }
+  const collected = await invoke<{ name: string; size: number }[]>("collect_known_wads", {
+    srcDir: tempDir,
+    destDir: iwadsDir,
+    wanted: GOG_WANTED_WADS,
+  });
 
   return {
-    extractedWads,
+    extractedWads: collected.map(c => c.name),
     errors,
   };
 }
