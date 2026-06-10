@@ -4,7 +4,7 @@ import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { formatBytes } from "../lib/format";
 
-const { isDownloaded: checkDownloaded, isDownloading: checkDownloading, getDownloadProgress } = useDownload();
+const { isDownloaded: checkDownloaded, isDownloading: checkDownloading, isInstalling: checkInstalling, getDownloadProgress } = useDownload();
 
 const props = defineProps<{
   wad: WadEntry;
@@ -19,16 +19,19 @@ const props = defineProps<{
 const emit = defineEmits<{ play: [wad: WadEntry] }>();
 
 const isDownloaded = computed(() => props.wad.type === "iwad" || checkDownloaded(props.wad.slug));
-const isDownloading = computed(() => checkDownloading(props.wad.slug));
+const isInstalling = computed(() => checkInstalling(props.wad.slug));
+const isDownloading = computed(() => checkDownloading(props.wad.slug) || isInstalling.value);
 const downloadProgress = computed(() => getDownloadProgress(props.wad.slug));
 
 const progressPercent = computed(() => {
+  if (isInstalling.value) return 100;
   const dp = downloadProgress.value;
   if (!dp || dp.total === 0) return 0;
   return Math.round((dp.progress / dp.total) * 100);
 });
 
 const progressText = computed(() => {
+  if (isInstalling.value) return "Installing...";
   const dp = downloadProgress.value;
   if (!dp) return "Downloading...";
   if (dp.total === 0) return `${formatBytes(dp.progress)}`;
@@ -45,7 +48,7 @@ const progressText = computed(() => {
   >
     <!-- Progress bar background -->
     <div
-      v-if="isDownloading && downloadProgress"
+      v-if="isDownloading && (downloadProgress || isInstalling)"
       class="absolute inset-0 bg-blue-600 transition-all duration-300"
       :style="{ width: `${progressPercent}%` }"
     />

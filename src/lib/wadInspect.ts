@@ -30,8 +30,18 @@
 //     extraction date, etc.) to use as a year signal.
 //
 // Everything below is the minimum that earns its keep on the audit corpus.
-import { unzipSync, strFromU8 } from "fflate";
+import { unzipSync } from "fflate";
+import { invoke } from "@tauri-apps/api/core";
 import type { Iwad, WadEntry } from "./schema";
+
+function decodeText(data: Uint8Array): string {
+  return new TextDecoder("utf-8", { fatal: false }).decode(data);
+}
+
+// Caps for reading archive entries during inspection; larger entries are
+// skipped and inspection degrades gracefully.
+const MAX_TEXT_ENTRY_BYTES = 4 * 1024 * 1024;
+const MAX_IMAGE_ENTRY_BYTES = 32 * 1024 * 1024;
 
 export interface FileInspection {
   format: "wad" | "pk3";
@@ -259,9 +269,46 @@ async function inspectWad(data: Uint8Array): Promise<FileInspection> {
   };
 }
 
+// One pk3 entry the inspector can lazily pull — backed by an in-memory
+// unzip or by the Rust `read_zip_entry` command.
+interface Pk3EntryRef {
+  path: string;
+  size: number;
+  read: () => Promise<Uint8Array>;
+}
+
+/** Inspect a .pk3 on disk from its zip-entry listing. */
+export async function inspectPk3FromArchive(archivePath: string): Promise<FileInspection> {
+  const entries = await invoke<{ path: string; size: number }[]>("list_zip_entries", {
+    zipPath: archivePath,
+  });
+  const refs: Pk3EntryRef[] = entries.map(e => ({
+    path: e.path,
+    size: e.size,
+    read: async () =>
+      new Uint8Array(
+        await invoke<ArrayBuffer>("read_zip_entry", {
+          zipPath: archivePath,
+          entryPath: e.path,
+          maxBytes: e.size,
+        })
+      ),
+  }));
+  return inspectPk3Entries(refs);
+}
+
 async function inspectPk3(data: Uint8Array): Promise<FileInspection> {
   const entries = unzipSync(data);
-  const paths = Object.keys(entries);
+  const refs: Pk3EntryRef[] = Object.entries(entries).map(([path, payload]) => ({
+    path,
+    size: payload.length,
+    read: async () => payload,
+  }));
+  return inspectPk3Entries(refs);
+}
+
+async function inspectPk3Entries(refs: Pk3EntryRef[]): Promise<FileInspection> {
+  const paths = refs.map(r => r.path);
 
   const mapNamesSet = new Set<string>();
   for (const p of paths) {
@@ -282,13 +329,13 @@ async function inspectPk3(data: Uint8Array): Promise<FileInspection> {
   let year = 0;
 
   // MAPINFO/ZMAPINFO — used only for the human-readable map name.
-  const mapInfoEntry = Object.entries(entries).find(([p]) => {
-    const base = (p.toLowerCase().split("/").pop() ?? "");
+  const mapInfoEntry = refs.find(r => {
+    const base = (r.path.toLowerCase().split("/").pop() ?? "");
     return base === "mapinfo" || base === "zmapinfo" ||
       base.startsWith("mapinfo.") || base.startsWith("zmapinfo.");
   });
-  if (mapInfoEntry) {
-    const text = strFromU8(mapInfoEntry[1]);
+  if (mapInfoEntry && mapInfoEntry.size <= MAX_TEXT_ENTRY_BYTES) {
+    const text = decodeText(await mapInfoEntry.read());
     const m = text.match(MAPINFO_MAP_NAME_RE);
     if (m) firstMapTitle = m[1];
   }
@@ -297,12 +344,13 @@ async function inspectPk3(data: Uint8Array): Promise<FileInspection> {
   // These reliably carry Title/Authors/Release-date when present (Beautiful
   // Doom, game_support.pk3, etc.). Scan them in order and take first hit per
   // field.
-  for (const [path, payload] of Object.entries(entries)) {
-    const depth = path.split("/").length - 1;
+  for (const ref of refs) {
+    const depth = ref.path.split("/").length - 1;
     if (depth > 1) continue;
-    const base = path.toLowerCase().split("/").pop() ?? "";
+    const base = ref.path.toLowerCase().split("/").pop() ?? "";
     if (!/\.(txt|md|nfo)$/i.test(base)) continue;
-    const text = strFromU8(payload);
+    if (ref.size > MAX_TEXT_ENTRY_BYTES) continue;
+    const text = decodeText(await ref.read());
     const parsed = parseInfoText(text);
     if (!author && parsed.author) author = parsed.author;
     if (!year && parsed.year) year = parsed.year;
@@ -315,14 +363,14 @@ async function inspectPk3(data: Uint8Array): Promise<FileInspection> {
   let titlepic: Titlepic | null = null;
   const candidatePaths = ["TITLEPIC", "INTERPIC"];
   for (const candidate of candidatePaths) {
-    const entry = Object.entries(entries).find(([p]) => {
-      const base = (p.split("/").pop() ?? "").toUpperCase();
+    const entry = refs.find(r => {
+      const base = (r.path.split("/").pop() ?? "").toUpperCase();
       const stem = base.replace(/\.[^.]+$/, "");
       return stem === candidate;
     });
-    if (entry) {
+    if (entry && entry.size <= MAX_IMAGE_ENTRY_BYTES) {
       try {
-        titlepic = await imageBytesToPng(entry[1]);
+        titlepic = await imageBytesToPng(await entry.read());
         if (titlepic) break;
       } catch (e) {
         console.warn(`[wadInspect] ${candidate} decode failed:`, e);
@@ -366,6 +414,26 @@ export function parseInfoText(text: string): { title: string; author: string; ye
     title: titleMatch ? titleMatch[1].trim() : "",
     author: authorMatch ? authorMatch[1].trim() : "",
     year,
+  };
+}
+
+/**
+ * Minimal inspection for files too large to read into the webview.
+ * Import still works; the user just fills in metadata by hand.
+ */
+export function fallbackInspection(format: "wad" | "pk3"): FileInspection {
+  return {
+    format,
+    isIwad: false,
+    mapCount: 0,
+    mapNames: [],
+    firstMapTitle: "",
+    author: "",
+    year: 0,
+    hasGameplayCode: false,
+    suggestedType: format === "pk3" ? "gameplay-mod" : "megawad",
+    suggestedIwad: "doom2",
+    titlepic: null,
   };
 }
 

@@ -1,11 +1,11 @@
 import { ref } from "vue";
-import { exists, mkdir, remove, readFile, rename, stat, writeFile } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, remove, rename, stat } from "@tauri-apps/plugin-fs";
 import { download as tauriDownload } from "@tauri-apps/plugin-upload";
 import { invoke } from "@tauri-apps/api/core";
 import type { WadEntry } from "../lib/schema";
 import { type LauncherDownloads } from "../lib/schema";
 import { useLevelNames } from "./useLevelNames";
-import { findGameFilesInZip, selectPrimaryGameFile } from "../lib/zipExtract";
+import { selectPrimaryGameFile, type GameFileInfo } from "../lib/zipExtract";
 import { useLibrary } from "./useLibrary";
 
 // Progress info for a download
@@ -17,6 +17,7 @@ export interface DownloadProgress {
 // Singleton state
 const downloads = ref<LauncherDownloads>({ version: 1, downloads: {} });
 const downloading = ref<Set<string>>(new Set());
+const installing = ref<Set<string>>(new Set());
 const downloadProgress = ref<Record<string, DownloadProgress>>({});
 
 /**
@@ -24,27 +25,7 @@ const downloadProgress = ref<Record<string, DownloadProgress>>({});
  * Throws if file is corrupt or wrong format.
  */
 async function validateDownload(path: string, filename: string): Promise<void> {
-  const data = await readFile(path);
-  const bytes = new Uint8Array(data);
-  const ext = filename.toLowerCase().split(".").pop();
-
-  if (ext === "zip" || ext === "pk3") {
-    // ZIP files start with PK (0x50 0x4B)
-    if (bytes.length < 2 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
-      throw new Error(
-        `Invalid ZIP file: ${filename} - file appears corrupted or is not a ZIP archive (got ${bytes.length} bytes, magic: ${bytes[0]?.toString(16)} ${bytes[1]?.toString(16)})`
-      );
-    }
-  } else if (ext === "wad") {
-    // WAD files start with IWAD or PWAD
-    if (bytes.length < 4) {
-      throw new Error(`Invalid WAD file: ${filename} - file too small (${bytes.length} bytes)`);
-    }
-    const magic = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
-    if (magic !== "IWAD" && magic !== "PWAD") {
-      throw new Error(`Invalid WAD file: ${filename} - expected IWAD/PWAD header, got "${magic}"`);
-    }
-  }
+  await invoke("validate_game_file", { path, filename });
 }
 
 export function useDownload() {
@@ -52,27 +33,30 @@ export function useDownload() {
   const { base, wadFile } = useLibrary();
 
   /**
-   * Extract game files (.wad/.pk3) from a ZIP archive and write them to disk.
-   * Returns the primary wadFilename and any additional file paths.
+   * Extract game files (.wad/.pk3) from a ZIP archive into the library.
+   * Returns the primary wadFilename and any additional file names.
    */
   async function extractAndWriteGameFiles(
+    slug: string,
     zipPath: string
   ): Promise<{ wadFilename: string; additionalFiles: string[] }> {
-    const zipData = await readFile(zipPath);
-    const gameFiles = findGameFilesInZip(new Uint8Array(zipData));
-    const { primary, additional } = selectPrimaryGameFile(gameFiles);
+    installing.value.add(slug);
+    try {
+      const extracted = await invoke<GameFileInfo[]>("extract_game_files", {
+        zipPath,
+        destDir: base(),
+      });
+      const { primary, additional } = selectPrimaryGameFile(extracted);
 
-    await writeFile(wadFile(primary.name), primary.data);
-    console.log(`[extract] Extracted primary: ${primary.name} (${primary.data.length} bytes)`);
+      console.log(`[extract] Extracted primary: ${primary.name} (${primary.size} bytes)`);
+      for (const file of additional) {
+        console.log(`[extract] Extracted additional: ${file.name} (${file.size} bytes)`);
+      }
 
-    const additionalFiles: string[] = [];
-    for (const file of additional) {
-      await writeFile(wadFile(file.name), file.data);
-      additionalFiles.push(file.name);
-      console.log(`[extract] Extracted additional: ${file.name} (${file.data.length} bytes)`);
+      return { wadFilename: primary.name, additionalFiles: additional.map(f => f.name) };
+    } finally {
+      installing.value.delete(slug);
     }
-
-    return { wadFilename: primary.name, additionalFiles };
   }
 
   async function loadState() {
@@ -89,6 +73,10 @@ export function useDownload() {
 
   function isDownloading(slug: string): boolean {
     return downloading.value.has(slug);
+  }
+
+  function isInstalling(slug: string): boolean {
+    return installing.value.has(slug);
   }
 
   function getDownloadProgress(slug: string): DownloadProgress | undefined {
@@ -118,14 +106,14 @@ export function useDownload() {
       }
 
       if (info.wadFilename && info.filename.endsWith('.zip') && await exists(wadFile(info.filename))) {
-        const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
+        const { wadFilename } = await extractAndWriteGameFiles(wad.slug, wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
         return wadFile(wadFilename);
       }
 
       if (info.filename.endsWith('.zip') && !info.wadFilename && await exists(wadFile(info.filename))) {
-        const { wadFilename } = await extractAndWriteGameFiles(wadFile(info.filename));
+        const { wadFilename } = await extractAndWriteGameFiles(wad.slug, wadFile(info.filename));
         info.wadFilename = wadFilename;
         await saveState();
         return wadFile(wadFilename);
@@ -186,7 +174,7 @@ export function useDownload() {
       const isZip = filename.toLowerCase().endsWith('.zip');
 
       if (isZip) {
-        const { wadFilename } = await extractAndWriteGameFiles(path);
+        const { wadFilename } = await extractAndWriteGameFiles(wad.slug, path);
         downloads.value.downloads[wad.slug] = {
           filename, wadFilename, downloadedAt: new Date().toISOString(), size: fileStat.size, externalPath: "",
         };
@@ -270,6 +258,7 @@ export function useDownload() {
     loadState,
     isDownloaded,
     isDownloading,
+    isInstalling,
     getDownloadProgress,
     getDownloadInfo,
     downloadProgress,
