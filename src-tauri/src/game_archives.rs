@@ -158,20 +158,12 @@ pub fn list_zip_entries(zip_path: &str) -> Result<Vec<ZipEntryInfo>, String> {
     Ok(entries)
 }
 
-/// Read one entry into memory, refusing anything over `max_bytes`.
-pub fn read_zip_entry(zip_path: &str, entry_path: &str, max_bytes: u64) -> Result<Vec<u8>, String> {
+/// Read one entry into memory.
+pub fn read_zip_entry(zip_path: &str, entry_path: &str) -> Result<Vec<u8>, String> {
     let mut archive = open_archive(zip_path)?;
     let mut entry = archive
         .by_name(entry_path)
         .map_err(|e| format!("Entry {} not found in {}: {}", entry_path, zip_path, e))?;
-    if entry.size() > max_bytes {
-        return Err(format!(
-            "Zip entry {} is too large to read into memory ({} bytes, cap {} bytes)",
-            entry_path,
-            entry.size(),
-            max_bytes
-        ));
-    }
     let mut buf = Vec::with_capacity(entry.size() as usize);
     entry
         .read_to_end(&mut buf)
@@ -179,18 +171,41 @@ pub fn read_zip_entry(zip_path: &str, entry_path: &str, max_bytes: u64) -> Resul
     Ok(buf)
 }
 
-/// Read a whole file into memory, refusing anything over `max_bytes`.
-pub fn read_file_capped(path: &str, max_bytes: u64) -> Result<Vec<u8>, String> {
-    let meta =
-        std::fs::metadata(path).map_err(|e| format!("Failed to stat {}: {}", path, e))?;
-    if meta.len() > max_bytes {
-        return Err(format!(
-            "File is too large to inspect ({} bytes, cap {} bytes)",
-            meta.len(),
-            max_bytes
-        ));
-    }
-    std::fs::read(path).map_err(|e| format!("Failed to read {}: {}", path, e))
+/// Stream a zip entry into a fresh temp directory and return its path.
+/// Used at pick time in the custom-mod importer so inspection and the
+/// eventual copy into the library work from a real, seekable file.
+pub fn extract_zip_entry_to_temp(zip_path: &str, entry_path: &str) -> Result<String, String> {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| format!("System clock error: {}", e))?
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!(
+        "rusted-doom-launcher-{}-{}",
+        std::process::id(),
+        nanos
+    ));
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create {}: {}", dir.display(), e))?;
+    let dest = dir.join(basename(entry_path));
+    let dest_str = dest.to_string_lossy().to_string();
+    extract_zip_entry(zip_path, entry_path, &dest_str)?;
+    Ok(dest_str)
+}
+
+/// Read `len` bytes at `offset` from a file. Errors if the range is out of
+/// bounds — short reads never succeed silently.
+pub fn read_file_range(path: &str, offset: u64, len: u64) -> Result<Vec<u8>, String> {
+    use std::io::{Seek, SeekFrom};
+    let mut file = File::open(path).map_err(|e| format!("Failed to open {}: {}", path, e))?;
+    file.seek(SeekFrom::Start(offset))
+        .map_err(|e| format!("Failed to seek {} to {}: {}", path, offset, e))?;
+    let mut buf = vec![0u8; len as usize];
+    file.read_exact(&mut buf).map_err(|e| {
+        format!(
+            "Failed to read {} bytes at offset {} from {}: {}",
+            len, offset, path, e
+        )
+    })?;
+    Ok(buf)
 }
 
 #[cfg(test)]
@@ -264,11 +279,28 @@ mod tests {
     }
 
     #[test]
-    fn read_entry_respects_cap() {
-        let zip = make_zip("cap.zip", &[("big.bin", &[0u8; 1024])]);
-        assert!(read_zip_entry(&zip, "big.bin", 1024).is_ok());
-        let err = read_zip_entry(&zip, "big.bin", 1023).unwrap_err();
-        assert!(err.contains("too large"), "unexpected error: {}", err);
+    fn reads_single_entry() {
+        let zip = make_zip("entry.zip", &[("dir/notes.txt", b"hello world")]);
+        assert_eq!(read_zip_entry(&zip, "dir/notes.txt").unwrap(), b"hello world");
+        assert!(read_zip_entry(&zip, "missing.txt").is_err());
+    }
+
+    #[test]
+    fn reads_file_range_and_errors_out_of_bounds() {
+        let path = temp_path("range.bin");
+        std::fs::write(&path, b"0123456789").unwrap();
+        let p = path.to_str().unwrap();
+        assert_eq!(read_file_range(p, 2, 4).unwrap(), b"2345");
+        assert_eq!(read_file_range(p, 0, 0).unwrap(), b"");
+        assert!(read_file_range(p, 8, 4).is_err());
+    }
+
+    #[test]
+    fn extracts_entry_to_temp_file() {
+        let zip = make_zip("totemp.zip", &[("inner/mod.pk3", b"PK\x03\x04abc")]);
+        let temp = extract_zip_entry_to_temp(&zip, "inner/mod.pk3").unwrap();
+        assert!(temp.ends_with("mod.pk3"), "{}", temp);
+        assert_eq!(std::fs::read(&temp).unwrap(), b"PK\x03\x04abc");
     }
 
     #[test]

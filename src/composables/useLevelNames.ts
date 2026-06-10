@@ -7,11 +7,6 @@ import { useLibrary } from "./useLibrary";
 import type { LauncherDownloads } from "../lib/schema";
 import type { ZipEntryInfo } from "../lib/zipExtract";
 
-// Caps for reading archive entries into the webview; larger entries are
-// skipped (missing level names beats a multi-GB webview process).
-const MAX_WAD_ENTRY_BYTES = 128 * 1024 * 1024;
-const MAX_MAPINFO_BYTES = 8 * 1024 * 1024;
-
 // Singleton cache: slug -> (mapId -> levelName)
 const levelNamesCache = ref<Map<string, Map<string, string>>>(new Map());
 
@@ -105,11 +100,10 @@ export function useLevelNames() {
         try {
           const entries = await invoke<ZipEntryInfo[]>("list_zip_entries", { zipPath: filePath });
 
-          const readEntry = async (entryPath: string, maxBytes: number): Promise<Uint8Array> => {
+          const readEntry = async (entryPath: string): Promise<Uint8Array> => {
             const buf = await invoke<ArrayBuffer>("read_zip_entry", {
               zipPath: filePath,
               entryPath,
-              maxBytes,
             });
             return new Uint8Array(buf);
           };
@@ -117,12 +111,8 @@ export function useLevelNames() {
           // Find WAD files inside the ZIP
           for (const entry of entries) {
             if (!entry.path.toLowerCase().endsWith(".wad")) continue;
-            if (entry.size > MAX_WAD_ENTRY_BYTES) {
-              console.warn(`[LevelNames] Skipping ${entry.path}: ${entry.size} bytes exceeds cap`);
-              continue;
-            }
             try {
-              const levels = extractLevelNamesFromData(await readEntry(entry.path, MAX_WAD_ENTRY_BYTES));
+              const levels = extractLevelNamesFromData(await readEntry(entry.path));
               for (const [mapId, levelName] of levels) {
                 if (!allLevels.has(mapId)) {
                   allLevels.set(mapId, levelName);
@@ -138,9 +128,8 @@ export function useLevelNames() {
           for (const entry of entries) {
             const baseName = entry.path.split("/").pop()?.toUpperCase() || "";
             if (!mapinfoLumps.includes(baseName)) continue;
-            if (entry.size > MAX_MAPINFO_BYTES) continue;
             try {
-              const content = new TextDecoder().decode(await readEntry(entry.path, MAX_MAPINFO_BYTES));
+              const content = new TextDecoder().decode(await readEntry(entry.path));
               const levels = parseLevelNamesFromContent(baseName, content);
               for (const [mapId, levelName] of levels) {
                 if (!allLevels.has(mapId)) {

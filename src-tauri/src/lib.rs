@@ -32,15 +32,16 @@ async fn import_custom_wad(source_path: String, target_path: String) -> Result<u
         .map_err(|e| format!("Failed to copy {} -> {}: {}", source_path, target_path, e))
 }
 
-/// Read a user-picked file into memory for inspection. Bypasses fs:scope.
-/// Used by the custom-WAD importer to peek at a bare .wad before copying
-/// it into the library.
+/// Read a byte range from a file. Bypasses fs:scope so the custom-WAD
+/// importer can inspect user-picked files (WAD header, directory, lumps)
+/// without ever reading them whole.
 #[tauri::command]
-async fn read_file_for_inspection(
-    source_path: String,
-    max_bytes: u64,
+async fn read_file_range(
+    path: String,
+    offset: u64,
+    len: u64,
 ) -> Result<tauri::ipc::Response, String> {
-    game_archives::read_file_capped(&source_path, max_bytes).map(tauri::ipc::Response::new)
+    game_archives::read_file_range(&path, offset, len).map(tauri::ipc::Response::new)
 }
 
 /// Streaming magic-byte check of a downloaded file (no full read).
@@ -58,31 +59,25 @@ async fn extract_game_files(
     game_archives::extract_game_files(&zip_path, &dest_dir)
 }
 
-/// Stream one zip entry to a destination path. Bypasses fs:scope (the
-/// source is a user-picked zip anywhere on disk).
-#[tauri::command]
-async fn extract_zip_entry(
-    zip_path: String,
-    entry_path: String,
-    dest_path: String,
-) -> Result<u64, String> {
-    game_archives::extract_zip_entry(&zip_path, &entry_path, &dest_path)
-}
-
 /// List zip entries (path + uncompressed size) without reading contents.
 #[tauri::command]
 async fn list_zip_entries(zip_path: String) -> Result<Vec<game_archives::ZipEntryInfo>, String> {
     game_archives::list_zip_entries(&zip_path)
 }
 
-/// Read a single zip entry as raw bytes. Errors if it exceeds `max_bytes`.
+/// Read a single zip entry as raw bytes.
 #[tauri::command]
 async fn read_zip_entry(
     zip_path: String,
     entry_path: String,
-    max_bytes: u64,
 ) -> Result<tauri::ipc::Response, String> {
-    game_archives::read_zip_entry(&zip_path, &entry_path, max_bytes).map(tauri::ipc::Response::new)
+    game_archives::read_zip_entry(&zip_path, &entry_path).map(tauri::ipc::Response::new)
+}
+
+/// Stream a zip entry to a temp file and return its path. Bypasses fs:scope.
+#[tauri::command]
+async fn extract_zip_entry_to_temp(zip_path: String, entry_path: String) -> Result<String, String> {
+    game_archives::extract_zip_entry_to_temp(&zip_path, &entry_path)
 }
 
 /// Look for an idgames-style metadata sidecar next to a user-picked file.
@@ -520,13 +515,13 @@ pub fn run() {
             read_launcher_downloads,
             write_launcher_downloads,
             import_custom_wad,
-            read_file_for_inspection,
+            read_file_range,
             read_sibling_text,
             read_custom_wads,
             write_custom_wads,
             validate_game_file,
             extract_game_files,
-            extract_zip_entry,
+            extract_zip_entry_to_temp,
             list_zip_entries,
             read_zip_entry
         ]);

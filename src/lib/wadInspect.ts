@@ -30,7 +30,6 @@
 //     extraction date, etc.) to use as a year signal.
 //
 // Everything below is the minimum that earns its keep on the audit corpus.
-import { unzipSync } from "fflate";
 import { invoke } from "@tauri-apps/api/core";
 import type { Iwad, WadEntry } from "./schema";
 
@@ -38,10 +37,9 @@ function decodeText(data: Uint8Array): string {
   return new TextDecoder("utf-8", { fatal: false }).decode(data);
 }
 
-// Caps for reading archive entries during inspection; larger entries are
-// skipped and inspection degrades gracefully.
-const MAX_TEXT_ENTRY_BYTES = 4 * 1024 * 1024;
-const MAX_IMAGE_ENTRY_BYTES = 32 * 1024 * 1024;
+async function readRange(path: string, offset: number, len: number): Promise<Uint8Array> {
+  return new Uint8Array(await invoke<ArrayBuffer>("read_file_range", { path, offset, len }));
+}
 
 export interface FileInspection {
   format: "wad" | "pk3";
@@ -189,31 +187,39 @@ const TXT_DATE_RE = /^\s*(?:Release\s*date|Date)\s*:\s*(.+?)\s*$/im;
 
 const MAPINFO_MAP_NAME_RE = /^\s*map\s+\S+\s+"([^"]+)"/im;
 
-export async function inspectFile(filename: string, data: Uint8Array): Promise<FileInspection> {
+/**
+ * Inspect a .wad or .pk3 on disk. Reads only what it parses — WAD header,
+ * directory and selected lumps via byte ranges; pk3 entries via the zip
+ * listing — so file size is irrelevant.
+ */
+export async function inspectGameFile(filename: string, path: string): Promise<FileInspection> {
   const ext = filename.toLowerCase().split(".").pop() ?? "";
-  if (ext === "wad") return inspectWad(data);
-  if (ext === "pk3") return inspectPk3(data);
+  if (ext === "wad") return inspectWadFromFile(path);
+  if (ext === "pk3") return inspectPk3FromArchive(path);
   throw new Error(`Unsupported extension: .${ext}`);
 }
 
-async function inspectWad(data: Uint8Array): Promise<FileInspection> {
-  if (data.length < 12) throw new Error("WAD file too small");
-  const magic = String.fromCharCode(data[0], data[1], data[2], data[3]);
+async function inspectWadFromFile(path: string): Promise<FileInspection> {
+  const header = await readRange(path, 0, 12);
+  const magic = String.fromCharCode(header[0], header[1], header[2], header[3]);
   if (magic !== "IWAD" && magic !== "PWAD") {
     throw new Error(`Not a WAD file (magic: ${magic})`);
   }
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  const numLumps = view.getInt32(4, true);
-  const dirOffset = view.getInt32(8, true);
+  const headerView = new DataView(header.buffer, header.byteOffset, header.byteLength);
+  const numLumps = headerView.getInt32(4, true);
+  const dirOffset = headerView.getInt32(8, true);
+  if (numLumps < 0) throw new Error(`Invalid WAD: negative lump count (${numLumps})`);
 
+  const dir = await readRange(path, dirOffset, numLumps * 16);
+  const view = new DataView(dir.buffer, dir.byteOffset, dir.byteLength);
   const lumps: { name: string; offset: number; size: number }[] = [];
   for (let i = 0; i < numLumps; i++) {
-    const entry = dirOffset + i * 16;
+    const entry = i * 16;
     const offset = view.getInt32(entry, true);
     const size = view.getInt32(entry + 4, true);
     let name = "";
     for (let j = 0; j < 8; j++) {
-      const c = data[entry + 8 + j];
+      const c = dir[entry + 8 + j];
       if (c === 0) break;
       name += String.fromCharCode(c);
     }
@@ -231,9 +237,7 @@ async function inspectWad(data: Uint8Array): Promise<FileInspection> {
 
   const mapInfoLump = lumps.find(l => l.name === "ZMAPINFO" || l.name === "MAPINFO");
   if (mapInfoLump) {
-    const text = new TextDecoder("utf-8", { fatal: false }).decode(
-      data.subarray(mapInfoLump.offset, mapInfoLump.offset + mapInfoLump.size)
-    );
+    const text = decodeText(await readRange(path, mapInfoLump.offset, mapInfoLump.size));
     const m = text.match(MAPINFO_MAP_NAME_RE);
     if (m) firstMapTitle = m[1];
   }
@@ -244,7 +248,7 @@ async function inspectWad(data: Uint8Array): Promise<FileInspection> {
   for (const lumpName of ["TITLEPIC", "INTERPIC"]) {
     const lump = lumps.find(l => l.name === lumpName);
     if (lump) {
-      const bytes = data.subarray(lump.offset, lump.offset + lump.size);
+      const bytes = await readRange(path, lump.offset, lump.size);
       try {
         titlepic = await imageBytesToPng(bytes);
         if (titlepic) break;
@@ -269,11 +273,10 @@ async function inspectWad(data: Uint8Array): Promise<FileInspection> {
   };
 }
 
-// One pk3 entry the inspector can lazily pull — backed by an in-memory
-// unzip or by the Rust `read_zip_entry` command.
+// One pk3 entry the inspector can lazily pull via the Rust `read_zip_entry`
+// command.
 interface Pk3EntryRef {
   path: string;
-  size: number;
   read: () => Promise<Uint8Array>;
 }
 
@@ -284,25 +287,13 @@ export async function inspectPk3FromArchive(archivePath: string): Promise<FileIn
   });
   const refs: Pk3EntryRef[] = entries.map(e => ({
     path: e.path,
-    size: e.size,
     read: async () =>
       new Uint8Array(
         await invoke<ArrayBuffer>("read_zip_entry", {
           zipPath: archivePath,
           entryPath: e.path,
-          maxBytes: e.size,
         })
       ),
-  }));
-  return inspectPk3Entries(refs);
-}
-
-async function inspectPk3(data: Uint8Array): Promise<FileInspection> {
-  const entries = unzipSync(data);
-  const refs: Pk3EntryRef[] = Object.entries(entries).map(([path, payload]) => ({
-    path,
-    size: payload.length,
-    read: async () => payload,
   }));
   return inspectPk3Entries(refs);
 }
@@ -334,7 +325,7 @@ async function inspectPk3Entries(refs: Pk3EntryRef[]): Promise<FileInspection> {
     return base === "mapinfo" || base === "zmapinfo" ||
       base.startsWith("mapinfo.") || base.startsWith("zmapinfo.");
   });
-  if (mapInfoEntry && mapInfoEntry.size <= MAX_TEXT_ENTRY_BYTES) {
+  if (mapInfoEntry) {
     const text = decodeText(await mapInfoEntry.read());
     const m = text.match(MAPINFO_MAP_NAME_RE);
     if (m) firstMapTitle = m[1];
@@ -349,7 +340,6 @@ async function inspectPk3Entries(refs: Pk3EntryRef[]): Promise<FileInspection> {
     if (depth > 1) continue;
     const base = ref.path.toLowerCase().split("/").pop() ?? "";
     if (!/\.(txt|md|nfo)$/i.test(base)) continue;
-    if (ref.size > MAX_TEXT_ENTRY_BYTES) continue;
     const text = decodeText(await ref.read());
     const parsed = parseInfoText(text);
     if (!author && parsed.author) author = parsed.author;
@@ -368,7 +358,7 @@ async function inspectPk3Entries(refs: Pk3EntryRef[]): Promise<FileInspection> {
       const stem = base.replace(/\.[^.]+$/, "");
       return stem === candidate;
     });
-    if (entry && entry.size <= MAX_IMAGE_ENTRY_BYTES) {
+    if (entry) {
       try {
         titlepic = await imageBytesToPng(await entry.read());
         if (titlepic) break;
@@ -414,26 +404,6 @@ export function parseInfoText(text: string): { title: string; author: string; ye
     title: titleMatch ? titleMatch[1].trim() : "",
     author: authorMatch ? authorMatch[1].trim() : "",
     year,
-  };
-}
-
-/**
- * Minimal inspection for files too large to read into the webview.
- * Import still works; the user just fills in metadata by hand.
- */
-export function fallbackInspection(format: "wad" | "pk3"): FileInspection {
-  return {
-    format,
-    isIwad: false,
-    mapCount: 0,
-    mapNames: [],
-    firstMapTitle: "",
-    author: "",
-    year: 0,
-    hasGameplayCode: false,
-    suggestedType: format === "pk3" ? "gameplay-mod" : "megawad",
-    suggestedIwad: "doom2",
-    titlepic: null,
   };
 }
 

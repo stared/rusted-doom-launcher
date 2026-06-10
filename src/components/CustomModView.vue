@@ -8,13 +8,8 @@ import { useLibrary } from "../composables/useLibrary";
 import { useDownload } from "../composables/useDownload";
 import { useCustomWads } from "../composables/useCustomWads";
 import { useSettings } from "../composables/useSettings";
-import { inspectFile, inspectPk3FromArchive, fallbackInspection, parseInfoText, type FileInspection } from "../lib/wadInspect";
+import { inspectGameFile, parseInfoText, type FileInspection } from "../lib/wadInspect";
 import { findGameFileEntries, selectPrimaryGameFile, type ZipEntryInfo } from "../lib/zipExtract";
-
-// Largest file we'll read into memory to inspect. Bigger files still
-// import fine; they just skip the metadata pre-fill.
-const MAX_INSPECT_BYTES = 128 * 1024 * 1024;
-const MAX_SIDECAR_TXT_BYTES = 4 * 1024 * 1024;
 
 const props = defineProps<{
   defaultType: WadEntry["type"];
@@ -143,10 +138,10 @@ const errorMsg = ref<string>("");
 const submitting = ref(false);
 const inspection = ref<FileInspection | null>(null);
 const inspecting = ref(false);
-// When user picks a .zip bundle, we remember which entry inside it is the
-// game file so onSubmit can stream-extract it (vs. file-to-file copy used
-// for bare .wad/.pk3). innerName is the basename we'll save as.
-const pickedZip = ref<{ innerName: string; entryPath: string; size: number } | null>(null);
+// When user picks a .zip bundle, the inner game file is stream-extracted
+// to a temp file at pick time; inspection and the eventual copy into the
+// library both work from that file. innerName is the basename we'll save as.
+const pickedZip = ref<{ innerName: string; tempPath: string; size: number } | null>(null);
 
 const pickerOpen = ref(false);
 const pickerRef = ref<HTMLElement | null>(null);
@@ -304,28 +299,31 @@ async function pickFile() {
 
     // What we inspect (and ultimately copy into the library) depends on
     // whether the picked file is a raw .wad/.pk3 or a .zip bundle that
-    // contains one.
+    // contains one. For a .zip, the inner game file is stream-extracted to
+    // a temp file so the same on-disk inspection path covers all picks.
     let innerName = sourceBasename;
+    let innerPath = picked;
     let zipSidecarText = "";
-    let info: FileInspection;
 
     if (sourceExt === "zip") {
       const entries = await invoke<ZipEntryInfo[]>("list_zip_entries", { zipPath: picked });
       const gameFiles = findGameFileEntries(entries);  // throws if none
       const { primary } = selectPrimaryGameFile(gameFiles);
       innerName = primary.name;
-      pickedZip.value = { innerName, entryPath: primary.path, size: primary.size };
+      innerPath = await invoke<string>("extract_zip_entry_to_temp", {
+        zipPath: picked,
+        entryPath: primary.path,
+      });
+      pickedZip.value = { innerName, tempPath: innerPath, size: primary.size };
 
       // Read any .txt at the zip root (the idgames upload-template sidecar).
       // We scan all entries since "Beautiful Doom" style PK3s nest the .txt
       // inside a single folder.
       for (const entry of entries) {
         if (!entry.path.toLowerCase().endsWith(".txt")) continue;
-        if (entry.size > MAX_SIDECAR_TXT_BYTES) continue;
         const buf = await invoke<ArrayBuffer>("read_zip_entry", {
           zipPath: picked,
           entryPath: entry.path,
-          maxBytes: MAX_SIDECAR_TXT_BYTES,
         });
         const text = new TextDecoder().decode(new Uint8Array(buf));
         if (/^\s*Title\s*:/im.test(text) || /^\s*Authors?\s*:/im.test(text)) {
@@ -333,34 +331,9 @@ async function pickFile() {
           break;
         }
       }
-
-      if (primary.size <= MAX_INSPECT_BYTES) {
-        const buf = await invoke<ArrayBuffer>("read_zip_entry", {
-          zipPath: picked,
-          entryPath: primary.path,
-          maxBytes: MAX_INSPECT_BYTES,
-        });
-        info = await inspectFile(innerName, new Uint8Array(buf));
-      } else {
-        console.warn(`[CustomModView] ${innerName} too large to inspect (${primary.size} bytes)`);
-        info = fallbackInspection(innerName.toLowerCase().endsWith(".pk3") ? "pk3" : "wad");
-      }
-    } else if (sourceExt === "pk3") {
-      info = await inspectPk3FromArchive(picked);
-    } else {
-      try {
-        const buf = await invoke<ArrayBuffer>("read_file_for_inspection", {
-          sourcePath: picked,
-          maxBytes: MAX_INSPECT_BYTES,
-        });
-        info = await inspectFile(sourceBasename, new Uint8Array(buf));
-      } catch (e) {
-        if (!String(e).includes("too large to inspect")) throw e;
-        console.warn(`[CustomModView] ${sourceBasename} too large to inspect`);
-        info = fallbackInspection("wad");
-      }
     }
 
+    const info = await inspectGameFile(innerName, innerPath);
     if (info.isIwad) {
       throw new Error("This file is an IWAD (base game). Base games are managed in Settings, not added as custom mods.");
     }
@@ -558,10 +531,9 @@ async function onSubmit() {
       if (!sourceIsTarget && await exists(targetPath)) {
         throw new Error(`A file named "${sourceFilename}" already exists in the library. Rename it or remove it before importing.`);
       }
-      actualSize = await invoke<number>("extract_zip_entry", {
-        zipPath: sourcePath.value,
-        entryPath: pickedZip.value.entryPath,
-        destPath: targetPath,
+      actualSize = await invoke<number>("import_custom_wad", {
+        sourcePath: pickedZip.value.tempPath,
+        targetPath,
       });
     } else if (sourceIsTarget) {
       const st = await stat(targetPath);
