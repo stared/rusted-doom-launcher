@@ -1,0 +1,33 @@
+{
+  "slug": "sigil-2",
+  "title": "SIGIL II",
+  "authors": [
+    {
+      "name": "John Romero"
+    }
+  ],
+  "year": 2023,
+  "description": "John Romero's unofficial sixth episode for the original Doom, released for the game's 30th anniversary. Nine more single-player and deathmatch levels of vicious, lava-soaked combat, with a soundtrack by THORR.",
+  "iwad": "doom",
+  "type": "episode",
+  "sourcePort": "vanilla",
+  "requires": [],
+  "downloads": [],
+  "thumbnail": "https://doomwiki.org/w/images/a/a4/SIGIL_II_title.png",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "classic",
+    "episode",
+    "john-romero",
+    "official"
+  ],
+  "difficulty": "hard",
+  "notes": "Imported from an owned GOG release (sigil2.wad). Also available free at [romero.com](https://romero.com/sigil). [DoomWiki](https://doomwiki.org/wiki/SIGIL_II)",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/SIGIL_II"
+  ]
+}

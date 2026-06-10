@@ -6,6 +6,7 @@ use std::thread;
 use tauri::Manager;
 
 pub mod game_archives;
+pub mod gog_import;
 pub mod launcher_downloads;
 
 #[tauri::command]
@@ -78,6 +79,23 @@ async fn read_zip_entry(
 #[tauri::command]
 async fn extract_zip_entry_to_temp(zip_path: String, entry_path: String) -> Result<String, String> {
     game_archives::extract_zip_entry_to_temp(&zip_path, &entry_path)
+}
+
+/// Create a unique temp directory (innoextract's --output-dir target).
+#[tauri::command]
+async fn make_temp_dir() -> Result<String, String> {
+    gog_import::make_temp_dir()
+}
+
+/// Move wanted WADs out of a GOG extraction temp dir into the iwads
+/// folder, flat and lowercase, regardless of the installer's layout.
+#[tauri::command]
+async fn collect_known_wads(
+    src_dir: String,
+    dest_dir: String,
+    wanted: Vec<String>,
+) -> Result<Vec<gog_import::CollectedWad>, String> {
+    gog_import::collect_known_wads(&src_dir, &dest_dir, &wanted)
 }
 
 /// Look for an idgames-style metadata sidecar next to a user-picked file.
@@ -523,7 +541,9 @@ pub fn run() {
             extract_game_files,
             extract_zip_entry_to_temp,
             list_zip_entries,
-            read_zip_entry
+            read_zip_entry,
+            make_temp_dir,
+            collect_known_wads
         ]);
 
     // MCP bridge for Claude Code debugging (dev mode only)

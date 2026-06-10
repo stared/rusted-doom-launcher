@@ -6,6 +6,7 @@ import type { WadEntry } from "../lib/schema";
 import { type LauncherDownloads } from "../lib/schema";
 import { useLevelNames } from "./useLevelNames";
 import { selectPrimaryGameFile, type GameFileInfo } from "../lib/zipExtract";
+import { GOG_EXPANSIONS } from "../lib/gogContent";
 import { useLibrary } from "./useLibrary";
 
 // Progress info for a download
@@ -30,7 +31,7 @@ async function validateDownload(path: string, filename: string): Promise<void> {
 
 export function useDownload() {
   const { loadLevelNames } = useLevelNames();
-  const { base, wadFile } = useLibrary();
+  const { base, wadFile, iwadFile } = useLibrary();
 
   /**
    * Extract game files (.wad/.pk3) from a ZIP archive into the library.
@@ -234,6 +235,36 @@ export function useDownload() {
   }
 
   /**
+   * Register official expansion WADs found in iwads/ (GOG import puts them
+   * there) as playable: each gets a synthetic download record whose
+   * externalPath points at the file, lighting up its catalog entry.
+   * Idempotent — existing records (including real downloads) are left alone.
+   * Returns the newly registered slugs.
+   */
+  async function registerOwnedExpansions(): Promise<string[]> {
+    const registered: string[] = [];
+    for (const expansion of GOG_EXPANSIONS) {
+      if (expansion.slug in downloads.value.downloads) continue;
+      const path = iwadFile(expansion.file);
+      if (!(await exists(path))) continue;
+      const fileStat = await stat(path);
+      downloads.value.downloads[expansion.slug] = {
+        filename: expansion.file,
+        wadFilename: expansion.file,
+        downloadedAt: new Date().toISOString(),
+        size: fileStat.size,
+        externalPath: path,
+      };
+      registered.push(expansion.slug);
+    }
+    if (registered.length > 0) {
+      await saveState();
+      console.log(`[registerOwnedExpansions] Registered: ${registered.join(", ")}`);
+    }
+    return registered;
+  }
+
+  /**
    * Write a synthetic LauncherDownloads record for a slug whose file is
    * already on disk (e.g. user-imported custom WAD). Mirrors what downloadWad
    * writes after a successful network download, so isDownloaded/getDownloadInfo
@@ -266,5 +297,6 @@ export function useDownload() {
     downloadWithDeps,
     deleteWad,
     registerSyntheticDownload,
+    registerOwnedExpansions,
   };
 }

@@ -1,0 +1,32 @@
+{
+  "slug": "no-rest-for-the-living",
+  "title": "No Rest for the Living",
+  "authors": [
+    {
+      "name": "Nerve Software"
+    }
+  ],
+  "year": 2010,
+  "description": "The official Doom II expansion episode by Nerve Software, originally made for the Xbox Live Arcade release. Nine tightly designed levels (plus a secret map) that ramp up classic Doom II combat with expert pacing. Included with modern official Doom II releases.",
+  "iwad": "doom2",
+  "type": "episode",
+  "sourcePort": "vanilla",
+  "requires": [],
+  "downloads": [],
+  "thumbnail": "https://doomwiki.org/w/images/5/59/NoRestForTheLiving_logo.png",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "classic",
+    "episode",
+    "official"
+  ],
+  "difficulty": "medium",
+  "notes": "Imported from an owned GOG release (nerve.wad). [DoomWiki](https://doomwiki.org/wiki/No_Rest_for_the_Living)",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/No_Rest_for_the_Living"
+  ]
+}

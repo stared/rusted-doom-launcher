@@ -1,0 +1,31 @@
+{
+  "slug": "id24res",
+  "title": "id24 shared resources",
+  "authors": [
+    {
+      "name": "id Software"
+    }
+  ],
+  "year": 2024,
+  "description": "Shared asset WAD of the id24 standard (new weapon and monster sprites, textures, sounds) introduced with Doom + Doom II (2024). Pure dependency: auto-loaded by content that requires it, such as Legacy of Rust.",
+  "iwad": "doom2",
+  "type": "resource-pack",
+  "sourcePort": "gzdoom",
+  "requires": [],
+  "downloads": [],
+  "thumbnail": "",
+  "screenshots": [],
+  "youtubeVideos": [],
+  "awards": [],
+  "tags": [
+    "official",
+    "id24"
+  ],
+  "difficulty": "unknown",
+  "notes": "Imported from an owned GOG release of Doom + Doom II (id24res.wad).",
+  "_schemaVersion": 1,
+  "_source": "manual",
+  "urls": [
+    "https://doomwiki.org/wiki/ID24"
+  ]
+}

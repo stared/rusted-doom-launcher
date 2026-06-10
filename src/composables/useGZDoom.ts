@@ -59,7 +59,10 @@ export function useGZDoom() {
   async function launch(
     wadPath: string,
     iwad: Iwad,
-    additionalFiles: string[] = [],
+    // Load order matters: dependencies (resource packs) come before the
+    // main WAD so it overrides them; mods come after so they override it.
+    depFiles: string[] = [],
+    modFiles: string[] = [],
     wadSlug?: string,
     skill: SkillLevel = "HMP",
     extraArgs: string[] = []
@@ -81,8 +84,9 @@ export function useGZDoom() {
 
     const args = [
       "-iwad", iwadPath,
+      ...depFiles.flatMap(f => ["-file", f]),
       ...(wadPath ? ["-file", wadPath] : []),
-      ...additionalFiles.flatMap(f => ["-file", f]),
+      ...modFiles.flatMap(f => ["-file", f]),
       ...(saveDir ? ["-savedir", saveDir] : []),
       ...extraArgs,
     ];

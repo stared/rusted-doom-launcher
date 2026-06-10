@@ -6,6 +6,7 @@ import {
   YouTubeVideoSchema,
   safeValidateWadEntry,
 } from "./schema";
+import { GOG_EXPANSIONS } from "./gogContent";
 
 // Check if a YouTube video actually exists via oEmbed API
 async function youtubeVideoExists(videoId: string): Promise<boolean> {
@@ -270,9 +271,14 @@ describe("WAD JSON files content checks", () => {
         expect(data.authors[0].name.length).toBeGreaterThan(0);
       });
 
-      it("should have at least one download source", () => {
-        expect(data.downloads.length).toBeGreaterThan(0);
-        expect(data.downloads[0].url).toMatch(/^https?:\/\//);
+      it("should have at least one download source (unless obtainable via GOG import)", () => {
+        const gogSourced = GOG_EXPANSIONS.some(e => e.slug === data.slug);
+        if (!gogSourced) {
+          expect(data.downloads.length).toBeGreaterThan(0);
+        }
+        for (const download of data.downloads) {
+          expect(download.url).toMatch(/^https?:\/\//);
+        }
       });
 
       it("should have valid year", () => {

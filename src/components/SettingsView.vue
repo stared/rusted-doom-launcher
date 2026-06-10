@@ -8,6 +8,7 @@ import { Check, X } from "lucide-vue-next";
 import { useSettings } from "../composables/useSettings";
 import { useGZDoom } from "../composables/useGZDoom";
 import { useLibrary } from "../composables/useLibrary";
+import { useDownload } from "../composables/useDownload";
 import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
 import { shortenPath, getOs } from "../lib/platform";
@@ -16,6 +17,7 @@ const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, chec
 const { availableIwads, detectIwads } = useGZDoom();
 const { wads } = useWads();
 const { iwadsDir } = useLibrary();
+const { registerOwnedExpansions } = useDownload();
 
 // IWADs required by games in the catalog
 const requiredIwads = computed<Iwad[]>(() => {
@@ -107,10 +109,12 @@ async function browseAndImportGOG() {
   try {
     const result = await importFromGOG(installerPath);
     await detectIwads();
+    const playable = await registerOwnedExpansions();
     if (result.extractedWads.length > 0) {
+      const expansionNote = playable.length > 0 ? ` — now playable: ${playable.join(", ")}` : "";
       gogImportResult.value = {
         success: true,
-        message: `Extracted: ${result.extractedWads.join(", ")}`,
+        message: `Extracted: ${result.extractedWads.join(", ")}${expansionNote}`,
       };
     } else {
       gogImportResult.value = {
