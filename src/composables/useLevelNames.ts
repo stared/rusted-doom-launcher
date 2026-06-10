@@ -1,11 +1,11 @@
 import { ref } from "vue";
-import { readFile, readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-fs";
-import { unzipSync, strFromU8 } from "fflate";
+import { readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-fs";
 import { extractLevelNames, extractLevelNamesFromData, parseLevelNamesFromContent } from "../lib/wadParser";
 import { invoke } from "@tauri-apps/api/core";
 import { isNotFoundError } from "../lib/errors";
 import { useLibrary } from "./useLibrary";
 import type { LauncherDownloads } from "../lib/schema";
+import type { ZipEntryInfo } from "../lib/zipExtract";
 
 // Singleton cache: slug -> (mapId -> levelName)
 const levelNamesCache = ref<Map<string, Map<string, string>>>(new Map());
@@ -95,49 +95,53 @@ export function useLevelNames() {
       let allLevels = new Map<string, string>();
 
       if (filename.endsWith(".zip") || filename.endsWith(".pk3")) {
-        // Handle ZIP archives (including .pk3 which are also ZIP format)
-        const data = await readFile(filePath);
-        const uint8 = new Uint8Array(data);
-
+        // Handle ZIP archives (including .pk3 which are also ZIP format).
+        // Work from the entry listing and fetch only the entries we parse.
         try {
-          const unzipped = unzipSync(uint8);
+          const entries = await invoke<ZipEntryInfo[]>("list_zip_entries", { zipPath: filePath });
+
+          const readEntry = async (entryPath: string): Promise<Uint8Array> => {
+            const buf = await invoke<ArrayBuffer>("read_zip_entry", {
+              zipPath: filePath,
+              entryPath,
+            });
+            return new Uint8Array(buf);
+          };
 
           // Find WAD files inside the ZIP
-          for (const [entryName, entryData] of Object.entries(unzipped)) {
-            if (entryName.toLowerCase().endsWith(".wad")) {
-              try {
-                const levels = extractLevelNamesFromData(entryData);
-                for (const [mapId, levelName] of levels) {
-                  if (!allLevels.has(mapId)) {
-                    allLevels.set(mapId, levelName);
-                  }
+          for (const entry of entries) {
+            if (!entry.path.toLowerCase().endsWith(".wad")) continue;
+            try {
+              const levels = extractLevelNamesFromData(await readEntry(entry.path));
+              for (const [mapId, levelName] of levels) {
+                if (!allLevels.has(mapId)) {
+                  allLevels.set(mapId, levelName);
                 }
-              } catch (e) {
-                console.warn(`Failed to parse ${entryName}:`, e);
               }
+            } catch (e) {
+              console.warn(`Failed to parse ${entry.path}:`, e);
             }
           }
 
           // Also check for MAPINFO files directly in the ZIP (for .pk3)
           const mapinfoLumps = ["MAPINFO", "ZMAPINFO", "EMAPINFO", "UMAPINFO"];
-          for (const [entryName, entryData] of Object.entries(unzipped)) {
-            const baseName = entryName.split("/").pop()?.toUpperCase() || "";
-            if (mapinfoLumps.includes(baseName)) {
-              try {
-                const content = strFromU8(entryData);
-                const levels = parseLevelNamesFromContent(baseName, content);
-                for (const [mapId, levelName] of levels) {
-                  if (!allLevels.has(mapId)) {
-                    allLevels.set(mapId, levelName);
-                  }
+          for (const entry of entries) {
+            const baseName = entry.path.split("/").pop()?.toUpperCase() || "";
+            if (!mapinfoLumps.includes(baseName)) continue;
+            try {
+              const content = new TextDecoder().decode(await readEntry(entry.path));
+              const levels = parseLevelNamesFromContent(baseName, content);
+              for (const [mapId, levelName] of levels) {
+                if (!allLevels.has(mapId)) {
+                  allLevels.set(mapId, levelName);
                 }
-              } catch (e) {
-                console.warn(`Failed to parse ${entryName}:`, e);
               }
+            } catch (e) {
+              console.warn(`Failed to parse ${entry.path}:`, e);
             }
           }
         } catch (e) {
-          console.warn(`Failed to unzip ${filename}:`, e);
+          console.warn(`Failed to scan ${filename}:`, e);
         }
       } else if (filename.endsWith(".wad")) {
         // Direct WAD file

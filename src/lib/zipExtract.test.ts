@@ -1,92 +1,71 @@
 import { describe, it, expect } from "vitest";
-import { zipSync } from "fflate";
-import { findGameFilesInZip, selectPrimaryGameFile, type GameFile } from "./zipExtract";
+import { findGameFileEntries, selectPrimaryGameFile, type ZipEntryInfo, type GameFileInfo } from "./zipExtract";
 
-/** Helper: create a synthetic ZIP containing given files */
-function makeZip(files: Record<string, Uint8Array>): Uint8Array {
-  return zipSync(files);
+/** Helper: build a zip listing like the `list_zip_entries` command returns */
+function listing(files: Record<string, number>): ZipEntryInfo[] {
+  return Object.entries(files).map(([path, size]) => ({ path, size }));
 }
 
-/** Helper: create dummy data of a given size */
-function dummyData(size: number): Uint8Array {
-  return new Uint8Array(size).fill(0x42);
-}
-
-describe("findGameFilesInZip", () => {
-  it("extracts single .wad from ZIP", () => {
-    const zip = makeZip({ "map01.wad": dummyData(100) });
-    const files = findGameFilesInZip(zip);
+describe("findGameFileEntries", () => {
+  it("finds single .wad in listing", () => {
+    const files = findGameFileEntries(listing({ "map01.wad": 100 }));
     expect(files).toHaveLength(1);
     expect(files[0].name).toBe("map01.wad");
-    expect(files[0].data.length).toBe(100);
+    expect(files[0].size).toBe(100);
   });
 
-  it("extracts single .pk3 from ZIP", () => {
-    const zip = makeZip({ "mod.pk3": dummyData(200) });
-    const files = findGameFilesInZip(zip);
+  it("finds single .pk3 in listing", () => {
+    const files = findGameFileEntries(listing({ "mod.pk3": 200 }));
     expect(files).toHaveLength(1);
     expect(files[0].name).toBe("mod.pk3");
   });
 
-  it("extracts multiple .wad files", () => {
-    const zip = makeZip({
-      "map01.wad": dummyData(100),
-      "map02.wad": dummyData(200),
-      "readme.txt": dummyData(50),
-    });
-    const files = findGameFilesInZip(zip);
+  it("finds multiple .wad files", () => {
+    const files = findGameFileEntries(
+      listing({ "map01.wad": 100, "map02.wad": 200, "readme.txt": 50 })
+    );
     expect(files).toHaveLength(2);
     const names = files.map(f => f.name).sort();
     expect(names).toEqual(["map01.wad", "map02.wad"]);
   });
 
   it("ignores non-game files (.txt, .deh, .bex)", () => {
-    const zip = makeZip({
-      "readme.txt": dummyData(50),
-      "patch.deh": dummyData(80),
-      "compat.bex": dummyData(30),
-      "level.wad": dummyData(100),
-    });
-    const files = findGameFilesInZip(zip);
+    const files = findGameFileEntries(
+      listing({ "readme.txt": 50, "patch.deh": 80, "compat.bex": 30, "level.wad": 100 })
+    );
     expect(files).toHaveLength(1);
     expect(files[0].name).toBe("level.wad");
   });
 
-  it("handles files in subdirectories (uses basename)", () => {
-    const zip = makeZip({
-      "mymod/maps/level.wad": dummyData(100),
-      "mymod/readme.txt": dummyData(50),
-    });
-    const files = findGameFilesInZip(zip);
+  it("handles files in subdirectories (uses basename, keeps entry path)", () => {
+    const files = findGameFileEntries(
+      listing({ "mymod/maps/level.wad": 100, "mymod/readme.txt": 50 })
+    );
     expect(files).toHaveLength(1);
+    expect(files[0].name).toBe("level.wad");
+    expect(files[0].path).toBe("mymod/maps/level.wad");
+  });
+
+  it("handles backslash-separated paths from Windows-built zips", () => {
+    const files = findGameFileEntries(listing({ "mymod\\level.wad": 100 }));
     expect(files[0].name).toBe("level.wad");
   });
 
-  it("case-insensitive matching (.WAD, .Wad)", () => {
-    const zip = makeZip({
-      "LEVEL.WAD": dummyData(100),
-      "Mod.Pk3": dummyData(200),
-    });
-    const files = findGameFilesInZip(zip);
+  it("case-insensitive matching (.WAD, .Pk3)", () => {
+    const files = findGameFileEntries(listing({ "LEVEL.WAD": 100, "Mod.Pk3": 200 }));
     expect(files).toHaveLength(2);
     const names = files.map(f => f.name).sort();
     expect(names).toEqual(["LEVEL.WAD", "Mod.Pk3"]);
   });
 
-  it("throws when ZIP contains no game files", () => {
-    const zip = makeZip({
-      "readme.txt": dummyData(50),
-      "screenshot.png": dummyData(1000),
-    });
-    expect(() => findGameFilesInZip(zip)).toThrow("No WAD or PK3 files found inside ZIP archive");
+  it("throws when listing contains no game files", () => {
+    expect(() =>
+      findGameFileEntries(listing({ "readme.txt": 50, "screenshot.png": 1000 }))
+    ).toThrow("No WAD or PK3 files found inside ZIP archive");
   });
 
   it("handles mixed .wad and .pk3 files", () => {
-    const zip = makeZip({
-      "level.wad": dummyData(100),
-      "textures.pk3": dummyData(300),
-    });
-    const files = findGameFilesInZip(zip);
+    const files = findGameFileEntries(listing({ "level.wad": 100, "textures.pk3": 300 }));
     expect(files).toHaveLength(2);
     const names = files.map(f => f.name).sort();
     expect(names).toEqual(["level.wad", "textures.pk3"]);
@@ -95,17 +74,17 @@ describe("findGameFilesInZip", () => {
 
 describe("selectPrimaryGameFile", () => {
   it("single file: returns it as primary", () => {
-    const files: GameFile[] = [{ name: "level.wad", data: dummyData(100) }];
+    const files: GameFileInfo[] = [{ name: "level.wad", size: 100 }];
     const result = selectPrimaryGameFile(files);
     expect(result.primary.name).toBe("level.wad");
     expect(result.additional).toHaveLength(0);
   });
 
   it("multiple files: largest is primary", () => {
-    const files: GameFile[] = [
-      { name: "small.wad", data: dummyData(100) },
-      { name: "big.wad", data: dummyData(500) },
-      { name: "medium.wad", data: dummyData(300) },
+    const files: GameFileInfo[] = [
+      { name: "small.wad", size: 100 },
+      { name: "big.wad", size: 500 },
+      { name: "medium.wad", size: 300 },
     ];
     const result = selectPrimaryGameFile(files);
     expect(result.primary.name).toBe("big.wad");
@@ -113,10 +92,10 @@ describe("selectPrimaryGameFile", () => {
   });
 
   it("additional files sorted by name for determinism", () => {
-    const files: GameFile[] = [
-      { name: "zebra.wad", data: dummyData(100) },
-      { name: "main.wad", data: dummyData(500) },
-      { name: "alpha.wad", data: dummyData(100) },
+    const files: GameFileInfo[] = [
+      { name: "zebra.wad", size: 100 },
+      { name: "main.wad", size: 500 },
+      { name: "alpha.wad", size: 100 },
     ];
     const result = selectPrimaryGameFile(files);
     expect(result.primary.name).toBe("main.wad");

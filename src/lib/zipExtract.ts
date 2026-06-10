@@ -1,27 +1,37 @@
-import { unzipSync } from "fflate";
+// Pure helpers for zip entry listings. Listing and extraction happen in
+// the Rust commands of src-tauri/src/game_archives.rs.
 
-export interface GameFile {
+/** One entry of a zip listing, as returned by the `list_zip_entries` command. */
+export interface ZipEntryInfo {
+  path: string;
+  size: number;
+}
+
+/** A .wad/.pk3 found in a listing: entry path + display basename. */
+export interface GameFileEntry extends ZipEntryInfo {
   name: string;
-  data: Uint8Array;
+}
+
+/** Anything with a name and size — enough to pick the primary file. */
+export interface GameFileInfo {
+  name: string;
+  size: number;
 }
 
 /**
- * Find all .wad and .pk3 files inside a ZIP archive.
+ * Find all .wad and .pk3 entries in a zip listing.
  * Strips directory paths and uses basename only.
  * Throws if no game files are found.
  */
-export function findGameFilesInZip(zipData: Uint8Array): GameFile[] {
-  const entries = unzipSync(zipData);
+export function findGameFileEntries(entries: ZipEntryInfo[]): GameFileEntry[] {
+  const gameFiles: GameFileEntry[] = [];
 
-  const gameFiles: GameFile[] = [];
-
-  for (const [path, data] of Object.entries(entries)) {
-    const lowerPath = path.toLowerCase();
+  for (const entry of entries) {
+    const lowerPath = entry.path.toLowerCase();
     if (lowerPath.endsWith(".wad") || lowerPath.endsWith(".pk3")) {
-      // Use basename only (strip directory paths)
-      const basename = path.split("/").pop() ?? path;
+      const basename = entry.path.split(/[/\\]/).pop() ?? entry.path;
       if (basename) {
-        gameFiles.push({ name: basename, data });
+        gameFiles.push({ ...entry, name: basename });
       }
     }
   }
@@ -36,18 +46,18 @@ export function findGameFilesInZip(zipData: Uint8Array): GameFile[] {
 /**
  * Select which file is primary (for -file) vs additional.
  * If one file: it's the primary.
- * If multiple: largest by data.length is primary, rest are additional (sorted by name).
+ * If multiple: largest by size is primary, rest are additional (sorted by name).
  */
-export function selectPrimaryGameFile(files: GameFile[]): {
-  primary: GameFile;
-  additional: GameFile[];
+export function selectPrimaryGameFile<T extends GameFileInfo>(files: T[]): {
+  primary: T;
+  additional: T[];
 } {
   if (files.length === 1) {
     return { primary: files[0], additional: [] };
   }
 
   // Sort by size descending to find largest
-  const sorted = [...files].sort((a, b) => b.data.length - a.data.length);
+  const sorted = [...files].sort((a, b) => b.size - a.size);
   const primary = sorted[0];
   const additional = sorted.slice(1).sort((a, b) => a.name.localeCompare(b.name));
 
