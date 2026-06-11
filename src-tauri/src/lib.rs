@@ -518,6 +518,9 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        // Folders granted via the file dialog stay in the fs scope across
+        // restarts; without this a custom Data Folder breaks on next launch.
+        .plugin(tauri_plugin_persisted_scope::init())
         .plugin(tauri_plugin_upload::init())
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;

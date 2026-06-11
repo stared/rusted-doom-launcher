@@ -4,6 +4,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { open as openShell } from "@tauri-apps/plugin-shell";
 import { invoke } from "@tauri-apps/api/core";
 import { mkdir } from "@tauri-apps/plugin-fs";
+import { join } from "@tauri-apps/api/path";
 import { Check, X } from "lucide-vue-next";
 import { useSettings } from "../composables/useSettings";
 import { useGZDoom } from "../composables/useGZDoom";
@@ -171,7 +172,16 @@ async function browseLibrary() {
   });
   if (selected) {
     const path = typeof selected === "string" ? selected : selected[0];
+    // The folder must be usable before we store it: creating iwads/ here
+    // rejects unwritable picks (e.g. system /Library) at dialog time.
+    try {
+      await mkdir(await join(path, "iwads"), { recursive: true });
+    } catch (e) {
+      errorMsg.value = `Cannot use "${path}" as Data Folder: ${e instanceof Error ? e.message : String(e)}`;
+      return;
+    }
     await setLibraryPath(path);
+    errorMsg.value = "";
     await detectIwads();
   }
 }

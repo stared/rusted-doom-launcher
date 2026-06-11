@@ -17,6 +17,7 @@ tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-persisted-scope = "2"
 tauri-plugin-upload = "2"
 # MCP bridge for Claude Code debugging (hypothesi/tauri-mcp-server)
 tauri-plugin-mcp-bridge = "0.8"
