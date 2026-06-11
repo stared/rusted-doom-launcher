@@ -18,8 +18,8 @@
   "downloads": [
     {
       "type": "direct",
-      "url": "https://archive.org/download/myhouse.wad/files/myhouse.pk3",
-      "filename": "myhouse.pk3"
+      "url": "https://archive.org/download/myhouse-versions/myhouse-20250428.pk3",
+      "filename": "myhouse-20250428.pk3"
     }
   ],
   "thumbnail": "https://doomwiki.org/w/images/c/ce/Myhousepk3_title.png",
@@ -50,7 +50,7 @@
   ],
   "tags": ["horror", "psychological", "non-euclidean"],
   "difficulty": "medium",
-  "notes": "Requires GZDoom with hardware renderer. Archive.org version is outdated - for GZDoom 4.14+ get updated pk3 from Google Drive.",
+  "notes": "Requires GZDoom/UZDoom with hardware renderer. April 2025 author's update — works on GZDoom 4.8.1 and newer, adds a few new areas.",
   "_schemaVersion": 1,
   "_source": "manual",
   "urls": [
