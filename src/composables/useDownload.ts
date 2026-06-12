@@ -4,6 +4,7 @@ import { download as tauriDownload } from "@tauri-apps/plugin-upload";
 import { invoke } from "@tauri-apps/api/core";
 import type { WadEntry } from "../lib/schema";
 import { type LauncherDownloads } from "../lib/schema";
+import { downloads } from "./downloadState";
 import { useLevelNames } from "./useLevelNames";
 import { selectPrimaryGameFile, type GameFileInfo } from "../lib/zipExtract";
 import { GOG_EXPANSIONS } from "../lib/gogContent";
@@ -15,8 +16,7 @@ export interface DownloadProgress {
   total: number;     // total bytes (0 if unknown)
 }
 
-// Singleton state
-const downloads = ref<LauncherDownloads>({ version: 1, downloads: {} });
+// Singleton state (downloads itself lives in downloadState.ts)
 const downloading = ref<Set<string>>(new Set());
 const installing = ref<Set<string>>(new Set());
 const downloadProgress = ref<Record<string, DownloadProgress>>({});

@@ -4,14 +4,14 @@ import { extractLevelNames, extractLevelNamesFromData, parseLevelNamesFromConten
 import { invoke } from "@tauri-apps/api/core";
 import { isNotFoundError } from "../lib/errors";
 import { useLibrary } from "./useLibrary";
-import type { LauncherDownloads } from "../lib/schema";
+import { getDownloadRecord } from "./downloadState";
 import type { ZipEntryInfo } from "../lib/zipExtract";
 
 // Singleton cache: slug -> (mapId -> levelName)
 const levelNamesCache = ref<Map<string, Map<string, string>>>(new Map());
 
 export function useLevelNames() {
-  const { base, levelNamesPath, levelNamesDir, wadFile } = useLibrary();
+  const { levelNamesPath, levelNamesDir, wadFile } = useLibrary();
 
   /**
    * Load level names from persistent storage.
@@ -50,20 +50,6 @@ export function useLevelNames() {
   }
 
   /**
-   * Get download info for a slug.
-   * Reads launcher-downloads.json via IPC rather than importing useDownload
-   * to avoid circular dependency (useDownload → useLevelNames → useDownload).
-   */
-  async function getDownloadInfo(slug: string): Promise<{ filename: string; externalPath?: string } | null> {
-    try {
-      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
-      return state.downloads[slug] ?? null;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
    * Load level names for a WAD.
    * 1. Check memory cache
    * 2. Check persistent storage
@@ -84,7 +70,7 @@ export function useLevelNames() {
 
     // 3. Parse WAD file
     try {
-      const downloadInfo = await getDownloadInfo(slug);
+      const downloadInfo = getDownloadRecord(slug);
       if (!downloadInfo) {
         return null;
       }
