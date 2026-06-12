@@ -2,7 +2,7 @@ import { ref } from "vue";
 import { exists, mkdir, remove, rename, stat } from "@tauri-apps/plugin-fs";
 import { download as tauriDownload } from "@tauri-apps/plugin-upload";
 import { invoke } from "@tauri-apps/api/core";
-import type { WadEntry } from "../lib/schema";
+import type { DownloadRecord, WadEntry } from "../lib/schema";
 import { type LauncherDownloads } from "../lib/schema";
 import { downloads } from "./downloadState";
 import { useLevelNames } from "./useLevelNames";
@@ -84,7 +84,7 @@ export function useDownload() {
     return downloadProgress.value[slug];
   }
 
-  function getDownloadInfo(slug: string): { filename: string; wadFilename?: string; externalPath: string } | null {
+  function getDownloadInfo(slug: string): DownloadRecord | null {
     return downloads.value.downloads[slug] ?? null;
   }
 

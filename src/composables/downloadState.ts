@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import type { LauncherDownloads } from "../lib/schema";
+import type { DownloadRecord, LauncherDownloads } from "../lib/schema";
 
 // Singleton download bookkeeping. useDownload owns mutation and persistence;
 // useLevelNames only resolves slugs to files. Holding the state in its own
@@ -8,6 +8,6 @@ import type { LauncherDownloads } from "../lib/schema";
 // disk via IPC on every lookup.
 export const downloads = ref<LauncherDownloads>({ version: 1, downloads: {} });
 
-export function getDownloadRecord(slug: string): LauncherDownloads["downloads"][string] | null {
+export function getDownloadRecord(slug: string): DownloadRecord | null {
   return downloads.value.downloads[slug] ?? null;
 }

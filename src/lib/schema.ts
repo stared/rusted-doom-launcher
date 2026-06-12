@@ -86,3 +86,5 @@ export const LauncherDownloadsSchema = z.object({
 });
 
 export type LauncherDownloads = z.infer<typeof LauncherDownloadsSchema>;
+/** One slug's bookkeeping record inside LauncherDownloads. */
+export type DownloadRecord = LauncherDownloads["downloads"][string];
