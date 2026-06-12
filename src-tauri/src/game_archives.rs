@@ -172,15 +172,20 @@ pub fn read_zip_entry(zip_path: &str, entry_path: &str) -> Result<Vec<u8>, Strin
 }
 
 /// Create a unique, empty temp directory owned by the launcher.
+/// pid + timestamp alone collide when callers race within one clock tick
+/// (parallel tests do), so a process-wide counter disambiguates.
 pub fn create_temp_dir() -> Result<std::path::PathBuf, String> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|e| format!("System clock error: {}", e))?
         .as_nanos();
     let dir = std::env::temp_dir().join(format!(
-        "rusted-doom-launcher-{}-{}",
+        "rusted-doom-launcher-{}-{}-{}",
         std::process::id(),
-        nanos
+        nanos,
+        COUNTER.fetch_add(1, Ordering::Relaxed)
     ));
     std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create {}: {}", dir.display(), e))?;
     Ok(dir)
