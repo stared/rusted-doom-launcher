@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
-import { stat, exists } from "@tauri-apps/plugin-fs";
-import { WadEntrySchema, type WadEntry, type Iwad } from "../lib/schema";
-import { useLibrary } from "../composables/useLibrary";
+import { type WadEntry, type Iwad } from "../lib/schema";
+import { IWAD_PICKER_OPTIONS } from "../lib/constants";
 import { useDownload } from "../composables/useDownload";
-import { useCustomWads } from "../composables/useCustomWads";
 import { useSettings } from "../composables/useSettings";
-import { inspectGameFile, parseInfoText, type FileInspection } from "../lib/wadInspect";
-import { findGameFileEntries, selectPrimaryGameFile, type ZipEntryInfo } from "../lib/zipExtract";
+import { useCustomImport, discardPickedZip, type PickedZip } from "../composables/useCustomImport";
+import { type FileInspection } from "../lib/wadInspect";
+import { basenameOf } from "../lib/platform";
+import {
+  KNOWN_FLAGS,
+  SKILL_OPTIONS,
+  flagDefFor,
+  defaultValuesFor,
+  rowsFromTokens,
+  rowsToTokens,
+  type ArgRow,
+} from "../lib/extraArgs";
 
 const props = defineProps<{
   defaultType: WadEntry["type"];
@@ -21,17 +28,6 @@ const emit = defineEmits<{
   added: [wad: WadEntry];
 }>();
 
-const IWADS: { value: Iwad; label: string }[] = [
-  { value: "doom2", label: "Doom II" },
-  { value: "doom", label: "Doom" },
-  { value: "plutonia", label: "Plutonia" },
-  { value: "tnt", label: "TNT: Evilution" },
-  { value: "heretic", label: "Heretic" },
-  { value: "hexen", label: "Hexen" },
-  { value: "freedoom2", label: "Freedoom Phase 2" },
-  { value: "freedoom1", label: "Freedoom Phase 1" },
-];
-
 const TYPES: { value: WadEntry["type"]; label: string }[] = [
   { value: "megawad",          label: "Megawad — full game replacement (15+ maps)" },
   { value: "episode",          label: "Episode — themed set, ~9 maps" },
@@ -41,87 +37,11 @@ const TYPES: { value: WadEntry["type"]; label: string }[] = [
   { value: "deathmatch",       label: "Deathmatch — multiplayer arena maps" },
 ];
 
-type ValueKind = "none" | "skill" | "map" | "file" | "int" | "cvar";
-
-interface FlagDef {
-  flag: string;
-  description: string;
-  valueKind: ValueKind;
-}
-
-const KNOWN_FLAGS: FlagDef[] = [
-  { flag: "-skill",      description: "set difficulty (1=ITYTD … 5=Nightmare!)", valueKind: "skill" },
-  { flag: "-warp",       description: "jump to a specific map",                  valueKind: "map" },
-  { flag: "-fast",       description: "fast monsters",                           valueKind: "none" },
-  { flag: "-respawn",    description: "monsters respawn",                        valueKind: "none" },
-  { flag: "-nomonsters", description: "empty maps",                              valueKind: "none" },
-  { flag: "-file",       description: "load extra WAD/PK3 (dependencies)",       valueKind: "file" },
-  { flag: "-loadgame",   description: "auto-load save slot (0–9)",               valueKind: "int" },
-  { flag: "-nomusic",    description: "disable music",                           valueKind: "none" },
-  { flag: "-nosound",    description: "disable all audio",                       valueKind: "none" },
-  { flag: "-deathmatch", description: "enable deathmatch",                       valueKind: "none" },
-  { flag: "-altdeath",   description: "alt deathmatch (items respawn)",          valueKind: "none" },
-  { flag: "-timer",      description: "round time limit (minutes)",              valueKind: "int" },
-  { flag: "+set",        description: "set any CVAR (advanced)",                 valueKind: "cvar" },
-];
-
-const SKILL_OPTIONS = [
-  { value: "1", label: "1 — I'm Too Young To Die" },
-  { value: "2", label: "2 — Hey, Not Too Rough" },
-  { value: "3", label: "3 — Hurt Me Plenty" },
-  { value: "4", label: "4 — Ultra-Violence" },
-  { value: "5", label: "5 — Nightmare!" },
-];
-
-function defaultValuesFor(kind: ValueKind): string[] {
-  switch (kind) {
-    case "none":  return [];
-    case "skill": return ["4"];
-    case "map":   return [""];
-    case "file":  return [""];
-    case "int":   return [""];
-    case "cvar":  return ["", ""];
-  }
-}
-
-function flagDefFor(flag: string): FlagDef | undefined {
-  return KNOWN_FLAGS.find(f => f.flag === flag);
-}
-
-type ArgRow =
-  | { kind: "known"; flag: string; values: string[] }
-  | { kind: "custom"; raw: string };
-
-const { base, wadFile } = useLibrary();
-const { registerSyntheticDownload, getDownloadInfo } = useDownload();
-const { customWads, addCustomWad, updateCustomWad } = useCustomWads();
+const { getDownloadInfo } = useDownload();
 const { settings } = useSettings();
+const { inspectPick, importCustomWad, updateCustomEntry } = useCustomImport();
 
 const editing = computed(() => props.editWad != null);
-
-function rowsFromTokens(tokens: string[]): ArgRow[] {
-  const out: ArgRow[] = [];
-  let i = 0;
-  while (i < tokens.length) {
-    const tok = tokens[i];
-    const def = flagDefFor(tok);
-    if (def) {
-      const need = def.valueKind === "none" ? 0 : def.valueKind === "cvar" ? 2 : 1;
-      const values: string[] = [];
-      for (let j = 0; j < need && i + 1 + j < tokens.length; j++) values.push(tokens[i + 1 + j]);
-      if (def.valueKind === "cvar") while (values.length < 2) values.push("");
-      else if (need === 1 && values.length === 0) values.push("");
-      out.push({ kind: "known", flag: tok, values });
-      i += 1 + values.length;
-    } else {
-      const start = i;
-      i++;
-      while (i < tokens.length && !flagDefFor(tokens[i])) i++;
-      out.push({ kind: "custom", raw: tokens.slice(start, i).join(" ") });
-    }
-  }
-  return out;
-}
 
 const sourcePath = ref<string>("");
 // When false, the picked file is referenced in place — we skip the copy
@@ -141,7 +61,7 @@ const inspecting = ref(false);
 // When user picks a .zip bundle, the inner game file is stream-extracted
 // to a temp file at pick time; inspection and the eventual copy into the
 // library both work from that file. innerName is the basename we'll save as.
-const pickedZip = ref<{ innerName: string; tempPath: string; size: number } | null>(null);
+const pickedZip = ref<PickedZip | null>(null);
 
 const pickerOpen = ref(false);
 const pickerRef = ref<HTMLElement | null>(null);
@@ -197,35 +117,10 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener("mousedown", handleDocClick);
   document.removeEventListener("keydown", handleKeyDown);
+  // Cancel path: a pick-time temp extraction may still be around. (After a
+  // successful import this is a harmless no-op — cleanup is idempotent.)
+  void discardPickedZip(pickedZip.value);
 });
-
-function basenameOf(path: string): string {
-  return path.split(/[\\/]/).pop() ?? path;
-}
-
-function stripExtension(filename: string): string {
-  const dot = filename.lastIndexOf(".");
-  return dot > 0 ? filename.slice(0, dot) : filename;
-}
-
-function kebab(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "-");
-}
-
-function makeUniqueSlug(baseSlug: string): string {
-  const existing = new Set(customWads.value.map(w => w.slug));
-  let slug = `custom-${baseSlug}`;
-  if (!existing.has(slug)) return slug;
-  for (let i = 2; i < 100; i++) {
-    const candidate = `custom-${baseSlug}-${i}`;
-    if (!existing.has(candidate)) return candidate;
-  }
-  throw new Error(`Could not allocate slug for "${baseSlug}" — too many duplicates.`);
-}
 
 const engineName = computed(() => {
   const raw = settings.value.gzdoomPath;
@@ -238,22 +133,7 @@ const engineName = computed(() => {
 
 const heading = computed(() => editing.value ? "Edit custom WAD or mod" : "Add custom WAD or mod");
 
-const cleanedArgs = computed<string[]>(() => {
-  const out: string[] = [];
-  for (const row of rows.value) {
-    if (row.kind === "known") {
-      out.push(row.flag);
-      for (const v of row.values.map(x => x.trim()).filter(x => x.length > 0)) {
-        out.push(v);
-      }
-    } else {
-      for (const tok of row.raw.split(/\s+/).filter(t => t.length > 0)) {
-        out.push(tok);
-      }
-    }
-  }
-  return out;
-});
+const cleanedArgs = computed<string[]>(() => rowsToTokens(rows.value));
 
 const effectiveFilename = computed<string>(() => {
   // When the user opts out of copying, the launch will use the path they
@@ -289,96 +169,29 @@ async function pickFile() {
     ],
   });
   if (typeof picked !== "string") return;
+  // A previous pick may have left a temp extraction behind — discard it.
+  await discardPickedZip(pickedZip.value);
   sourcePath.value = picked;
   inspection.value = null;
   pickedZip.value = null;
   inspecting.value = true;
   try {
-    const sourceBasename = basenameOf(picked);
-    const sourceExt = sourceBasename.toLowerCase().split(".").pop() ?? "";
-
-    // What we inspect (and ultimately copy into the library) depends on
-    // whether the picked file is a raw .wad/.pk3 or a .zip bundle that
-    // contains one. For a .zip, the inner game file is stream-extracted to
-    // a temp file so the same on-disk inspection path covers all picks.
-    let innerName = sourceBasename;
-    let innerPath = picked;
-    let zipSidecarText = "";
-
-    if (sourceExt === "zip") {
-      const entries = await invoke<ZipEntryInfo[]>("list_zip_entries", { zipPath: picked });
-      const gameFiles = findGameFileEntries(entries);  // throws if none
-      const { primary } = selectPrimaryGameFile(gameFiles);
-      innerName = primary.name;
-      innerPath = await invoke<string>("extract_zip_entry_to_temp", {
-        zipPath: picked,
-        entryPath: primary.path,
-      });
-      pickedZip.value = { innerName, tempPath: innerPath, size: primary.size };
-
-      // Read any .txt at the zip root (the idgames upload-template sidecar).
-      // We scan all entries since "Beautiful Doom" style PK3s nest the .txt
-      // inside a single folder.
-      for (const entry of entries) {
-        if (!entry.path.toLowerCase().endsWith(".txt")) continue;
-        const buf = await invoke<ArrayBuffer>("read_zip_entry", {
-          zipPath: picked,
-          entryPath: entry.path,
-        });
-        const text = new TextDecoder().decode(new Uint8Array(buf));
-        if (/^\s*Title\s*:/im.test(text) || /^\s*Authors?\s*:/im.test(text)) {
-          zipSidecarText = text;
-          break;
-        }
-      }
-    }
-
-    const info = await inspectGameFile(innerName, innerPath);
-    if (info.isIwad) {
-      throw new Error("This file is an IWAD (base game). Base games are managed in Settings, not added as custom mods.");
-    }
-    inspection.value = info;
-
-    // Idgames-format metadata sources, in priority order:
-    //   1. .txt at the root of the picked .zip (richest, 100% on idgames bundles)
-    //   2. sibling .txt next to a bare .wad/.pk3 (when user kept the .txt after extracting)
-    //   3. .txt at root of a .pk3 (Beautiful Doom etc.)
-    //   The inspector already covers (3) inside info.author/info.year.
-    let sidecarTitle = "";
-    let sidecarAuthor = info.author;
-    let sidecarYear = info.year;
-
-    if (zipSidecarText) {
-      const parsed = parseInfoText(zipSidecarText);
-      if (parsed.author) sidecarAuthor = parsed.author;
-      if (parsed.year) sidecarYear = parsed.year;
-      if (parsed.title) sidecarTitle = parsed.title;
-    } else if (sourceExt !== "zip") {
-      try {
-        const sibling = await invoke<string>("read_sibling_text", { sourcePath: picked });
-        if (sibling) {
-          const parsed = parseInfoText(sibling);
-          if (!sidecarAuthor && parsed.author) sidecarAuthor = parsed.author;
-          if (!sidecarYear && parsed.year) sidecarYear = parsed.year;
-          if (parsed.title) sidecarTitle = parsed.title;
-        }
-      } catch (e) {
-        console.warn("[CustomModView] sibling .txt scan failed:", e);
-      }
-    }
+    const result = await inspectPick(picked);
+    pickedZip.value = result.pickedZip;
+    inspection.value = result.inspection;
 
     // Pre-fill fields. Only overwrite a field if the user hasn't typed one yet.
     if (title.value.trim().length === 0) {
-      title.value = sidecarTitle || info.firstMapTitle || stripExtension(innerName);
+      title.value = result.title;
     }
-    if (author.value.trim().length === 0 && sidecarAuthor) {
-      author.value = sidecarAuthor;
+    if (author.value.trim().length === 0 && result.author) {
+      author.value = result.author;
     }
-    if (sidecarYear > 0) {
-      year.value = sidecarYear;
+    if (result.year > 0) {
+      year.value = result.year;
     }
-    entryType.value = info.suggestedType;
-    iwad.value = info.suggestedIwad;
+    entryType.value = result.inspection.suggestedType;
+    iwad.value = result.inspection.suggestedIwad;
   } catch (e) {
     console.error("[CustomModView] Inspection failed:", e);
     errorMsg.value = e instanceof Error ? e.message : String(e);
@@ -472,139 +285,27 @@ async function onSubmit() {
   if (!canSubmit.value) return;
   submitting.value = true;
   try {
-    if (editing.value && props.editWad) {
-      // Edit path: keep slug + file + _source; refresh user-editable fields.
-      const updated: WadEntry = {
-        ...props.editWad,
-        title: title.value.trim(),
-        authors: [{ name: author.value.trim() || "User import" }],
-        year: year.value,
-        iwad: iwad.value,
-        type: entryType.value,
-        extraArgs: cleanedArgs.value,
-      };
-      const parsed = WadEntrySchema.safeParse(updated);
-      if (!parsed.success) {
-        console.error("[CustomModView] Edited entry failed schema:", parsed.error.format());
-        throw new Error("Internal error: edited entry doesn't match schema. See console.");
-      }
-      await updateCustomWad(parsed.data);
-      emit("added", parsed.data);
-      return;
-    }
-
-    const libraryRoot = base();
-    if (!libraryRoot) {
-      throw new Error("Library path is not set. Configure it in Settings first.");
-    }
-
-    // Three modes, branching on copyToLibrary + zip-pick:
-    //   A) copy=on,  bare .wad/.pk3 → fs::copy via import_custom_wad
-    //   B) copy=on,  .zip          → write inner bytes via plugin-fs writeFile
-    //   C) copy=off, bare or zip   → reference the picked path in place;
-    //                                 nothing lands in the library folder.
-    //
-    // When copy=off the launcher uses externalPath on the synthetic download
-    // record and never deletes the file on Remove. The picked .zip is fine
-    // to pass to GZDoom as -file (GZDoom can load archives directly).
-    const sourceFilename = pickedZip.value ? pickedZip.value.innerName : basenameOf(sourcePath.value);
-    const targetPath = wadFile(sourceFilename);
-    const sourceIsTarget = !pickedZip.value && sourcePath.value === targetPath;
-
-    let actualSize: number;
-    let externalPath = "";
-    let externalFilename = "";
-
-    if (!copyToLibrary.value) {
-      // External reference: pick the path GZDoom will actually launch with.
-      // For a .zip pick we point at the zip itself (no inner extraction);
-      // for a bare .wad/.pk3 we point at it directly.
-      externalPath = sourcePath.value;
-      externalFilename = basenameOf(sourcePath.value);
-      try {
-        const st = await stat(sourcePath.value);
-        actualSize = st.size;
-      } catch {
-        actualSize = pickedZip.value?.size ?? 0;
-      }
-    } else if (pickedZip.value) {
-      if (!sourceIsTarget && await exists(targetPath)) {
-        throw new Error(`A file named "${sourceFilename}" already exists in the library. Rename it or remove it before importing.`);
-      }
-      actualSize = await invoke<number>("import_custom_wad", {
-        sourcePath: pickedZip.value.tempPath,
-        targetPath,
-      });
-    } else if (sourceIsTarget) {
-      const st = await stat(targetPath);
-      actualSize = st.size;
-    } else {
-      if (await exists(targetPath)) {
-        throw new Error(`A file named "${sourceFilename}" already exists in the library. Rename it or remove it before importing.`);
-      }
-      actualSize = await invoke<number>("import_custom_wad", {
-        sourcePath: sourcePath.value,
-        targetPath,
-      });
-    }
-
-    const baseSlug = kebab(title.value.trim());
-    if (baseSlug.length === 0) throw new Error("Title must contain at least one letter or number.");
-    const slug = makeUniqueSlug(baseSlug);
-
-    // If the inspector decoded a TITLEPIC, embed it as a data: URL on the
-    // entry's thumbnail. The card renders <img :src="wad.thumbnail"> which
-    // works out of the box for data URLs — no Tauri asset-protocol setup or
-    // CSP changes needed. Cost: a ~70 KB PNG becomes ~93 KB base64 inside
-    // custom-wads.json. Acceptable for the typical few-entries case.
-    let thumbnail = "";
-    if (inspection.value?.titlepic) {
-      const bytes = inspection.value.titlepic.png;
-      let bin = "";
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-      thumbnail = `data:image/png;base64,${btoa(bin)}`;
-    }
-
-    const entry: WadEntry = {
-      slug,
-      title: title.value.trim(),
-      authors: [{ name: author.value.trim() || "User import" }],
+    const fields = {
+      title: title.value,
+      author: author.value,
       year: year.value,
-      description: "User-imported mod.",
       iwad: iwad.value,
       type: entryType.value,
-      sourcePort: "gzdoom",
-      requires: [],
-      downloads: [],
-      thumbnail,
-      screenshots: [],
-      youtubeVideos: [],
-      awards: [],
-      tags: [],
-      difficulty: "unknown",
-      urls: [],
-      notes: "",
       extraArgs: cleanedArgs.value,
-      _schemaVersion: 1,
-      _source: "custom",
     };
-
-    const parsed = WadEntrySchema.safeParse(entry);
-    if (!parsed.success) {
-      console.error("[CustomModView] Built entry failed schema:", parsed.error.format());
-      throw new Error("Internal error: imported entry doesn't match schema. See console.");
+    if (editing.value && props.editWad) {
+      const updated = await updateCustomEntry(props.editWad, fields);
+      emit("added", updated);
+      return;
     }
-
-    const recordedFilename = externalFilename || sourceFilename;
-    await registerSyntheticDownload(slug, {
-      filename: recordedFilename,
-      wadFilename: recordedFilename,
-      size: actualSize,
-      externalPath,
+    const entry = await importCustomWad({
+      sourcePath: sourcePath.value,
+      pickedZip: pickedZip.value,
+      copyToLibrary: copyToLibrary.value,
+      fields,
+      titlepic: inspection.value?.titlepic ?? null,
     });
-    await addCustomWad(parsed.data);
-
-    emit("added", parsed.data);
+    emit("added", entry);
   } catch (e) {
     console.error("[CustomModView] Import failed:", e);
     errorMsg.value = e instanceof Error ? e.message : String(e);
@@ -715,7 +416,7 @@ async function onSubmit() {
             v-model="iwad"
             class="w-full appearance-none rounded border border-zinc-700 bg-zinc-900 pl-3 pr-9 py-2 text-sm text-zinc-100 focus:border-red-600 focus:outline-none"
           >
-            <option v-for="i in IWADS" :key="i.value" :value="i.value">{{ i.label }}</option>
+            <option v-for="i in IWAD_PICKER_OPTIONS" :key="i.value" :value="i.value">{{ i.label }}</option>
           </select>
           <svg
             class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500"

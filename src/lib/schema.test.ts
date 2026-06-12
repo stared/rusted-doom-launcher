@@ -1,54 +1,10 @@
+// Unit tests for the schema's validation rules. The catalog itself is
+// linted against the schema by content/catalog.test.ts (pnpm test:content).
+
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "fs";
-import { join } from "path";
-import {
-  WadEntrySchema,
-  YouTubeVideoSchema,
-  safeValidateWadEntry,
-} from "./schema";
-import { GOG_EXPANSIONS } from "./gogContent";
-
-// Check if a YouTube video actually exists via oEmbed API
-async function youtubeVideoExists(videoId: string): Promise<boolean> {
-  const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
-  try {
-    const response = await fetch(url);
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-const CONTENT_DIR = join(__dirname, "../../content/wads");
-
-// Get all WAD JSON files
-function getWadFiles(): string[] {
-  return readdirSync(CONTENT_DIR).filter((f) => f.endsWith(".json"));
-}
+import { WadEntrySchema, YouTubeVideoSchema } from "./schema";
 
 describe("WAD Entry Schema", () => {
-  describe("validates all WAD JSON files", () => {
-    const wadFiles = getWadFiles();
-
-    it("should have at least one WAD file", () => {
-      expect(wadFiles.length).toBeGreaterThan(0);
-    });
-
-    wadFiles.forEach((filename) => {
-      it(`should validate ${filename}`, () => {
-        const filePath = join(CONTENT_DIR, filename);
-        const content = readFileSync(filePath, "utf-8");
-        const data = JSON.parse(content);
-
-        const result = safeValidateWadEntry(data);
-        if (!result.success) {
-          console.error(`Validation errors in ${filename}:`, result.error.issues);
-        }
-        expect(result.success).toBe(true);
-      });
-    });
-  });
-
   describe("year validation", () => {
     const baseWad = {
       slug: "test-wad",
@@ -249,82 +205,5 @@ describe("YouTube Video Schema", () => {
         type: "invalid-type",
       })
     ).toThrow();
-  });
-});
-
-describe("WAD JSON files content checks", () => {
-  const wadFiles = getWadFiles();
-
-  wadFiles.forEach((filename) => {
-    describe(filename, () => {
-      const filePath = join(CONTENT_DIR, filename);
-      const content = readFileSync(filePath, "utf-8");
-      const data = JSON.parse(content);
-
-      it("should have slug matching filename", () => {
-        const expectedSlug = filename.replace(".json", "");
-        expect(data.slug).toBe(expectedSlug);
-      });
-
-      it("should have at least one author", () => {
-        expect(data.authors.length).toBeGreaterThan(0);
-        expect(data.authors[0].name.length).toBeGreaterThan(0);
-      });
-
-      it("should have at least one download source (unless obtainable via GOG import)", () => {
-        const gogSourced = GOG_EXPANSIONS.some(e => e.slug === data.slug);
-        if (!gogSourced) {
-          expect(data.downloads.length).toBeGreaterThan(0);
-        }
-        for (const download of data.downloads) {
-          expect(download.url).toMatch(/^https?:\/\//);
-        }
-      });
-
-      it("should have valid year", () => {
-        expect(data.year).toBeGreaterThanOrEqual(1993);
-        expect(data.year).toBeLessThanOrEqual(new Date().getFullYear() + 1);
-      });
-
-      it("should have thumbnail as empty string or valid URL", () => {
-        if (data.thumbnail === "") {
-          expect(data.thumbnail).toBe("");
-        } else {
-          expect(data.thumbnail).toMatch(/^https?:\/\/.+/);
-        }
-      });
-
-      it("should have all screenshots as valid URLs", () => {
-        data.screenshots.forEach((screenshot: { url: string }) => {
-          expect(screenshot.url).toMatch(/^https?:\/\/.+/);
-        });
-      });
-
-      if (data.youtubeVideos && data.youtubeVideos.length > 0) {
-        it("should have valid YouTube video IDs (format)", () => {
-          data.youtubeVideos.forEach((video: { id: string }) => {
-            // YouTube IDs are exactly 11 characters
-            expect(video.id).toMatch(/^[a-zA-Z0-9_-]{11}$/);
-          });
-        });
-
-        // Actually verify YouTube videos exist via network request
-        data.youtubeVideos.forEach((video: { id: string; title: string }) => {
-          it(`YouTube video "${video.title}" (${video.id}) should exist`, async () => {
-            const exists = await youtubeVideoExists(video.id);
-            expect(exists, `YouTube video ${video.id} does not exist`).toBe(true);
-          });
-        });
-      }
-
-      if (data.awards && data.awards.length > 0) {
-        it("should have valid award years", () => {
-          data.awards.forEach((award: { year: number }) => {
-            expect(award.year).toBeGreaterThanOrEqual(1994); // Cacowards started in 2004, but some old awards exist
-            expect(award.year).toBeLessThanOrEqual(new Date().getFullYear());
-          });
-        });
-      }
-    });
   });
 });

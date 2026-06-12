@@ -11,8 +11,6 @@ import { useWadSummaries } from "../composables/useWadSummaries";
 
 const props = defineProps<{
   wads: WadEntry[];
-  loading: boolean;
-  error: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -117,15 +115,7 @@ const exploreMatchCount = computed(() => {
 
 <template>
   <div>
-    <div v-if="loading" class="flex items-center justify-center py-20">
-      <p class="text-zinc-400">Loading WADs...</p>
-    </div>
-
-    <div v-else-if="error" class="rounded bg-red-900/50 p-4 text-red-200">
-      {{ error }}
-    </div>
-
-    <div v-else-if="playableWads.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+    <div v-if="playableWads.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
       <Gamepad2 :size="48" :stroke-width="1.5" class="text-zinc-600 mb-4" />
       <p class="text-zinc-500">No WADs downloaded yet</p>
       <p class="text-zinc-600 text-sm mt-2">Pick a WAD from Explore, or import one you already have:</p>

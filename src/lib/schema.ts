@@ -6,6 +6,8 @@ const MAX_YEAR = new Date().getFullYear() + 1;
 // IWADs
 const IwadEnum = z.enum(["doom", "doom2", "plutonia", "tnt", "heretic", "hexen", "freedoom1", "freedoom2"]);
 export type Iwad = z.infer<typeof IwadEnum>;
+/** All supported IWAD ids — the single list everything else derives from. */
+export const IWADS = IwadEnum.options;
 
 // YouTube Video (exported for tests)
 export const YouTubeVideoSchema = z.object({
@@ -86,3 +88,5 @@ export const LauncherDownloadsSchema = z.object({
 });
 
 export type LauncherDownloads = z.infer<typeof LauncherDownloadsSchema>;
+/** One slug's bookkeeping record inside LauncherDownloads. */
+export type DownloadRecord = LauncherDownloads["downloads"][string];

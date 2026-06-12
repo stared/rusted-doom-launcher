@@ -1,17 +1,18 @@
 import { ref } from "vue";
 import { readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-fs";
-import { extractLevelNames, extractLevelNamesFromData, parseLevelNamesFromContent } from "../lib/wadParser";
+import { extractLevelNames, parseLevelNamesFromContent } from "../lib/wadParser";
 import { invoke } from "@tauri-apps/api/core";
 import { isNotFoundError } from "../lib/errors";
+import { dirnameOf } from "../lib/platform";
 import { useLibrary } from "./useLibrary";
-import type { LauncherDownloads } from "../lib/schema";
+import { getDownloadRecord } from "./downloadState";
 import type { ZipEntryInfo } from "../lib/zipExtract";
 
 // Singleton cache: slug -> (mapId -> levelName)
 const levelNamesCache = ref<Map<string, Map<string, string>>>(new Map());
 
 export function useLevelNames() {
-  const { base, levelNamesPath, levelNamesDir, wadFile } = useLibrary();
+  const { levelNamesPath, levelNamesDir, wadFile } = useLibrary();
 
   /**
    * Load level names from persistent storage.
@@ -50,20 +51,6 @@ export function useLevelNames() {
   }
 
   /**
-   * Get download info for a slug.
-   * Reads launcher-downloads.json via IPC rather than importing useDownload
-   * to avoid circular dependency (useDownload → useLevelNames → useDownload).
-   */
-  async function getDownloadInfo(slug: string): Promise<{ filename: string; externalPath?: string } | null> {
-    try {
-      const state = await invoke<LauncherDownloads>("read_launcher_downloads", { libraryPath: base() });
-      return state.downloads[slug] ?? null;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
    * Load level names for a WAD.
    * 1. Check memory cache
    * 2. Check persistent storage
@@ -84,7 +71,7 @@ export function useLevelNames() {
 
     // 3. Parse WAD file
     try {
-      const downloadInfo = await getDownloadInfo(slug);
+      const downloadInfo = getDownloadRecord(slug);
       if (!downloadInfo) {
         return null;
       }
@@ -111,15 +98,25 @@ export function useLevelNames() {
             return new Uint8Array(buf);
           };
 
-          // Find WAD files inside the ZIP
+          // Find WAD files inside the ZIP. Stream each to a temp file and
+          // parse it by byte ranges — a megawad entry can be 100+ MB and
+          // must not transit the webview whole.
           for (const entry of entries) {
             if (!entry.path.toLowerCase().endsWith(".wad")) continue;
             try {
-              const levels = extractLevelNamesFromData(await readEntry(entry.path));
-              for (const [mapId, levelName] of levels) {
-                if (!allLevels.has(mapId)) {
-                  allLevels.set(mapId, levelName);
+              const tempPath = await invoke<string>("extract_zip_entry_to_temp", {
+                zipPath: filePath,
+                entryPath: entry.path,
+              });
+              try {
+                const levels = await extractLevelNames(tempPath);
+                for (const [mapId, levelName] of levels) {
+                  if (!allLevels.has(mapId)) {
+                    allLevels.set(mapId, levelName);
+                  }
                 }
+              } finally {
+                await invoke("cleanup_temp_dir", { path: dirnameOf(tempPath) });
               }
             } catch (e) {
               console.warn(`Failed to parse ${entry.path}:`, e);

@@ -1,5 +1,5 @@
 import { readDir, readTextFile, writeTextFile, mkdir, exists } from "@tauri-apps/plugin-fs";
-import { isNotFoundError } from "../lib/errors";
+import { isExistsError } from "../lib/errors";
 import { useLibrary } from "./useLibrary";
 import {
   PATTERNS,
@@ -103,11 +103,11 @@ export function useGameplayLog() {
   ): Promise<string> {
     const sessionsDirPath = sessionsDir(slug);
 
-    // Ensure directory exists
+    // Ensure directory exists ("already exists" is the only acceptable failure)
     try {
       await mkdir(sessionsDirPath, { recursive: true });
     } catch (e) {
-      if (!isNotFoundError(e)) {
+      if (!isExistsError(e)) {
         console.error(`Error creating sessions dir for ${slug}:`, e);
         throw e;
       }

@@ -1,4 +1,4 @@
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { WadEntry, WadEntrySchema } from "../lib/schema";
 import { useCustomWads } from "./useCustomWads";
 
@@ -17,8 +17,6 @@ for (const [path, module] of Object.entries(wadModules)) {
 const catalogSlugs = new Set(catalogWads.map(w => w.slug));
 
 export function useWads() {
-  const loading = ref(false);
-  const error = ref<string | null>(null);
   const { customWads } = useCustomWads();
 
   // Catalog wins on slug collisions — custom entries with a clashing slug
@@ -37,5 +35,5 @@ export function useWads() {
   // loadState() from this composable's onMounted we'd race with
   // initSettings() and read from an empty library path. App.vue calls
   // useCustomWads().loadState() explicitly after initSettings().
-  return { wads, loading, error };
+  return { wads };
 }

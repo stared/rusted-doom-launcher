@@ -56,7 +56,7 @@ declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unkno
 
 type View = "main" | "mods" | "explore" | "runs" | "logs" | "settings" | "about" | "addCustom";
 
-const { wads, loading, error } = useWads();
+const { wads } = useWads();
 const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
 const lib = useLibrary();
 
@@ -72,7 +72,7 @@ const playableEntries = computed<WadEntry[]>(() =>
 const modEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type === "gameplay-mod"));
 const exploreEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type !== "resource-pack" && obtainable(w)));
 const { hasSlug: isCustomSlug, removeCustomWad, loadState: loadCustomWads } = useCustomWads();
-const { settings, isFirstRun, migratedIwads, initSettings, toggleActiveMod, pruneActiveMods } = useSettings();
+const { settings, isFirstRun, initSettings, toggleActiveMod, pruneActiveMods } = useSettings();
 const { loadAllLevelNames } = useLevelNames();
 const { captureStats, loadAllPlaySummaries, refreshPlaySummary } = useStats();
 
@@ -105,6 +105,19 @@ function closeCustomImporter() {
 // Track last played WAD to refresh its save info when game closes
 const lastPlayedSlug = ref<string | null>(null);
 
+// Init is strictly sequential: every step below assumes settings (and thus
+// the library path) are loaded. The wads watch is gated on this flag so it
+// only handles post-init changes (custom WAD add/remove) — never a partially
+// initialized state.
+const appInitialized = ref(false);
+
+async function loadWadData(entries: WadEntry[]) {
+  if (entries.length === 0) return;
+  const slugs = entries.map(w => w.slug);
+  await loadAllLevelNames(slugs);
+  await loadAllPlaySummaries(slugs);
+}
+
 onMounted(async () => {
   if (!window.__TAURI_INTERNALS__) {
     errorMsg.value = "Open in Tauri app, not browser";
@@ -117,21 +130,8 @@ onMounted(async () => {
     await loadCustomWads();
     await pruneActiveMods(s => wads.value.some(w => w.slug === s) && isDownloaded(s));
     await detectIwads();
-
-    // If IWADs were migrated but not detected, retry after short delay
-    if (migratedIwads.value.length > 0 && availableIwads.value.length === 0) {
-      console.log("[App] IWADs migrated but not detected, retrying...");
-      await new Promise(r => setTimeout(r, 100));
-      await detectIwads();
-    }
-
-    // Load save info and level names now that settings are initialized
-    // (the watch fires before initSettings completes, so we retry here)
-    if (wads.value.length > 0) {
-      const slugs = wads.value.map(w => w.slug);
-      await loadAllLevelNames(slugs);
-      await loadAllPlaySummaries(slugs);
-    }
+    await loadWadData(wads.value);
+    appInitialized.value = true;
 
     // On first run, open Settings so user can verify configuration
     if (isFirstRun.value) {
@@ -143,13 +143,10 @@ onMounted(async () => {
   }
 });
 
-// Load save info and level names when WADs change (initial load handled in onMounted after initSettings)
+// Refresh save info and level names when the WAD list changes after init.
 watch(wads, async (newWads) => {
-  if (newWads.length > 0 && settings.value.libraryPath) {
-    const slugs = newWads.map(w => w.slug);
-    await loadAllLevelNames(slugs);
-    await loadAllPlaySummaries(slugs);
-  }
+  if (!appInitialized.value) return;
+  await loadWadData(newWads);
 });
 
 // Refresh save info and capture stats when game closes
@@ -273,8 +270,6 @@ async function handleDelete(wad: WadEntry) {
       <MainView
         v-if="activeView === 'main'"
         :wads="playableEntries"
-        :loading="loading"
-        :error="error"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
@@ -284,8 +279,6 @@ async function handleDelete(wad: WadEntry) {
       <ModsView
         v-else-if="activeView === 'mods'"
         :wads="modEntries"
-        :loading="loading"
-        :error="error"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @toggle-active="handleToggleActive"

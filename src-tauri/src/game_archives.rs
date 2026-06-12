@@ -3,7 +3,8 @@
 // Bulk archive bytes must stay out of the webview: WebKit kills the
 // WebContent process when it balloons (a 500 MB mod zip read there costs
 // ~3 GB RSS). The frontend gets entry listings and small size-capped
-// entries; everything else streams disk-to-disk here.
+// entries (MAX_INMEMORY_READ enforces the cap); everything else streams
+// disk-to-disk here.
 
 use serde::Serialize;
 use std::fs::File;
@@ -158,12 +159,24 @@ pub fn list_zip_entries(zip_path: &str) -> Result<Vec<ZipEntryInfo>, String> {
     Ok(entries)
 }
 
-/// Read one entry into memory.
+/// Hard cap on bytes handed to the webview in one read. Callers wanting more
+/// must stream to disk (extract_zip_entry*) and read ranges from there.
+pub const MAX_INMEMORY_READ: u64 = 16 * 1024 * 1024;
+
+/// Read one entry into memory. Capped at MAX_INMEMORY_READ.
 pub fn read_zip_entry(zip_path: &str, entry_path: &str) -> Result<Vec<u8>, String> {
     let mut archive = open_archive(zip_path)?;
     let mut entry = archive
         .by_name(entry_path)
         .map_err(|e| format!("Entry {} not found in {}: {}", entry_path, zip_path, e))?;
+    if entry.size() > MAX_INMEMORY_READ {
+        return Err(format!(
+            "Entry {} is {} bytes, over the {} MB in-memory read cap — extract it to disk instead",
+            entry_path,
+            entry.size(),
+            MAX_INMEMORY_READ / (1024 * 1024)
+        ));
+    }
     let mut buf = Vec::with_capacity(entry.size() as usize);
     entry
         .read_to_end(&mut buf)
@@ -172,18 +185,47 @@ pub fn read_zip_entry(zip_path: &str, entry_path: &str) -> Result<Vec<u8>, Strin
 }
 
 /// Create a unique, empty temp directory owned by the launcher.
+/// pid + timestamp alone collide when callers race within one clock tick
+/// (parallel tests do), so a process-wide counter disambiguates.
 pub fn create_temp_dir() -> Result<std::path::PathBuf, String> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|e| format!("System clock error: {}", e))?
         .as_nanos();
     let dir = std::env::temp_dir().join(format!(
-        "rusted-doom-launcher-{}-{}",
+        "rusted-doom-launcher-{}-{}-{}",
         std::process::id(),
-        nanos
+        nanos,
+        COUNTER.fetch_add(1, Ordering::Relaxed)
     ));
     std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create {}: {}", dir.display(), e))?;
     Ok(dir)
+}
+
+/// Remove a temp directory previously created by create_temp_dir. Refuses
+/// anything that isn't a launcher-owned directory directly under the system
+/// temp dir — this is reachable from the webview. Tolerates an already
+/// removed directory so double-cleanup is harmless.
+pub fn cleanup_temp_dir(path: &str) -> Result<(), String> {
+    let p = Path::new(path);
+    let parent_ok = p.parent() == Some(std::env::temp_dir().as_path());
+    let name_ok = p
+        .file_name()
+        .map(|n| n.to_string_lossy().starts_with("rusted-doom-launcher-"))
+        .unwrap_or(false);
+    if !parent_ok || !name_ok {
+        return Err(format!(
+            "Refusing to remove {}: not a launcher temp directory",
+            path
+        ));
+    }
+    match std::fs::remove_dir_all(p) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(format!("Failed to remove {}: {}", path, e)),
+    }
 }
 
 /// Stream a zip entry into a fresh temp directory and return its path.
@@ -198,9 +240,19 @@ pub fn extract_zip_entry_to_temp(zip_path: &str, entry_path: &str) -> Result<Str
 }
 
 /// Read `len` bytes at `offset` from a file. Errors if the range is out of
-/// bounds — short reads never succeed silently.
+/// bounds — short reads never succeed silently. Capped at MAX_INMEMORY_READ:
+/// requested lengths come from file-internal directories, so a corrupt WAD
+/// header must not translate into a multi-GB webview allocation.
 pub fn read_file_range(path: &str, offset: u64, len: u64) -> Result<Vec<u8>, String> {
     use std::io::{Seek, SeekFrom};
+    if len > MAX_INMEMORY_READ {
+        return Err(format!(
+            "Refusing to read {} bytes from {} — over the {} MB in-memory read cap",
+            len,
+            path,
+            MAX_INMEMORY_READ / (1024 * 1024)
+        ));
+    }
     let mut file = File::open(path).map_err(|e| format!("Failed to open {}: {}", path, e))?;
     file.seek(SeekFrom::Start(offset))
         .map_err(|e| format!("Failed to seek {} to {}: {}", path, offset, e))?;
@@ -292,6 +344,22 @@ mod tests {
     }
 
     #[test]
+    fn read_zip_entry_rejects_oversized_entries() {
+        let big = vec![0u8; (MAX_INMEMORY_READ + 1) as usize];
+        let zip = make_zip("oversize.zip", &[("big.bin", &big)]);
+        let err = read_zip_entry(&zip, "big.bin").unwrap_err();
+        assert!(err.contains("in-memory read cap"), "{}", err);
+    }
+
+    #[test]
+    fn read_file_range_rejects_oversized_lengths() {
+        let path = temp_path("range_cap.bin");
+        std::fs::write(&path, b"abc").unwrap();
+        let err = read_file_range(path.to_str().unwrap(), 0, MAX_INMEMORY_READ + 1).unwrap_err();
+        assert!(err.contains("in-memory read cap"), "{}", err);
+    }
+
+    #[test]
     fn reads_file_range_and_errors_out_of_bounds() {
         let path = temp_path("range.bin");
         std::fs::write(&path, b"0123456789").unwrap();
@@ -307,6 +375,21 @@ mod tests {
         let temp = extract_zip_entry_to_temp(&zip, "inner/mod.pk3").unwrap();
         assert!(temp.ends_with("mod.pk3"), "{}", temp);
         assert_eq!(std::fs::read(&temp).unwrap(), b"PK\x03\x04abc");
+    }
+
+    #[test]
+    fn cleanup_removes_only_launcher_temp_dirs() {
+        let dir = create_temp_dir().unwrap();
+        std::fs::write(dir.join("file.wad"), b"PWAD").unwrap();
+        cleanup_temp_dir(dir.to_str().unwrap()).unwrap();
+        assert!(!dir.exists());
+        // Idempotent: removing again is fine.
+        cleanup_temp_dir(dir.to_str().unwrap()).unwrap();
+
+        // Not launcher-owned, not under temp root: refused.
+        assert!(cleanup_temp_dir("/etc").is_err());
+        let foreign = std::env::temp_dir().join("some-other-dir");
+        assert!(cleanup_temp_dir(foreign.to_str().unwrap()).is_err());
     }
 
     #[test]

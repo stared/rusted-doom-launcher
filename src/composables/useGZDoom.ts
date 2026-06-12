@@ -1,15 +1,13 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { readDir, mkdir } from "@tauri-apps/plugin-fs";
-import type { Iwad } from "../lib/schema";
+import { IWADS, type Iwad } from "../lib/schema";
 import type { SkillLevel } from "../lib/statsSchema";
 import { useSettings } from "./useSettings";
 import { useGameplayLog } from "./useGameplayLog";
 import { useLibrary } from "./useLibrary";
 import { isExistsError } from "../lib/errors";
-import { getOs } from "../lib/platform";
-
-const IWADS: Iwad[] = ["doom", "doom2", "plutonia", "tnt", "heretic", "hexen", "freedoom1", "freedoom2"];
 
 // Session tracking for gameplay log
 interface SessionInfo {
@@ -24,9 +22,29 @@ const availableIwads = ref<Iwad[]>([]);
 const currentSession = ref<SessionInfo | null>(null);
 const iwadFilenames = new Map<Iwad, string>(); // e.g., "doom" -> "doom.wad"
 
+// The Rust side emits "gzdoom-exited" from the thread that wait()s on the
+// spawned engine process — no polling needed. Registered once, before the
+// first launch.
+let exitListener: UnlistenFn | null = null;
+
+async function handleEngineExit() {
+  isRunning.value = false;
+  const session = currentSession.value;
+  currentSession.value = null;
+  if (!session) return;
+  try {
+    const log = await invoke<Array<[number, string]> | null>("get_gzdoom_log");
+    if (log && log.length > 0) {
+      const { saveGameplayLog } = useGameplayLog();
+      await saveGameplayLog(session.slug, session.skill, log, session.startedAt, new Date());
+    }
+  } catch (e) {
+    console.error("Failed to save gameplay log:", e);
+  }
+}
+
 export function useGZDoom() {
   const { settings } = useSettings();
-  const { saveGameplayLog } = useGameplayLog();
   const lib = useLibrary();
 
   async function detectIwads() {
@@ -105,57 +123,14 @@ export function useGZDoom() {
       };
     }
 
+    // Register the exit listener before launching so the event can't beat it.
+    if (!exitListener) {
+      exitListener = await listen("gzdoom-exited", handleEngineExit);
+    }
+
     // Use Rust command to launch GZDoom (supports custom paths)
     await invoke("launch_gzdoom", { gzdoomPath, args });
     isRunning.value = true;
-
-    // Poll to detect when GZDoom exits
-    pollForExit();
-  }
-
-  function pollForExit() {
-    // Derive process name from path for each platform (e.g., C:\...\gzdoom.exe -> gzdoom.exe)
-    const enginePath = settings.value.gzdoomPath;
-    const engineName = enginePath?.split(/[\\/]/).pop() ?? "gzdoom";
-    const isWindows = getOs() === "win";
-    const processName =
-      isWindows && !engineName.toLowerCase().endsWith(".exe")
-        ? `${engineName}.exe`
-        : engineName;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const running = await invoke<boolean>("is_process_running", { processName });
-        if (!running) {
-          clearInterval(pollInterval);
-          isRunning.value = false;
-
-          // Capture gameplay log if we have session info
-          if (currentSession.value) {
-            try {
-              const log = await invoke<Array<[number, string]> | null>("get_gzdoom_log");
-              if (log && log.length > 0) {
-                await saveGameplayLog(
-                  currentSession.value.slug,
-                  currentSession.value.skill,
-                  log,
-                  currentSession.value.startedAt,
-                  new Date()
-                );
-              }
-            } catch (e) {
-              console.error("Failed to save gameplay log:", e);
-            }
-            currentSession.value = null;
-          }
-        }
-      } catch {
-        // If check fails, assume not running
-        clearInterval(pollInterval);
-        isRunning.value = false;
-        currentSession.value = null;
-      }
-    }, 2000); // Check every 2 seconds
   }
 
   return { isRunning, availableIwads, detectIwads, launch };

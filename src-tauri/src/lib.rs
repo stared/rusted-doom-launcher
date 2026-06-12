@@ -3,7 +3,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use tauri::Manager;
+use tauri::{Emitter, Manager, State};
 
 pub mod game_archives;
 pub mod gog_import;
@@ -85,6 +85,12 @@ async fn extract_zip_entry_to_temp(zip_path: String, entry_path: String) -> Resu
 #[tauri::command]
 async fn make_temp_dir() -> Result<String, String> {
     gog_import::make_temp_dir()
+}
+
+/// Remove a launcher-owned temp directory (validated in game_archives).
+#[tauri::command]
+async fn cleanup_temp_dir(path: String) -> Result<(), String> {
+    game_archives::cleanup_temp_dir(&path)
 }
 
 /// Move wanted WADs out of a GOG extraction temp dir into the iwads
@@ -179,10 +185,9 @@ async fn write_custom_wads(library_path: String, state: serde_json::Value) -> Re
         .map_err(|e| format!("Failed to write {}: {}", path.display(), e))
 }
 
-// Global state to hold the running GZDoom process output collector.
-// Using Mutex<Option<...>> instead of OnceLock so we can reset between launches.
-static GZDOOM_LOG: std::sync::LazyLock<Mutex<Option<Arc<Mutex<GZDoomSession>>>>> =
-    std::sync::LazyLock::new(|| Mutex::new(None));
+// Output collector for the most recent GZDoom launch, held in Tauri managed
+// state. Mutex<Option<...>> so each launch replaces the previous session.
+struct GzdoomLog(Mutex<Option<Arc<Mutex<GZDoomSession>>>>);
 
 struct GZDoomSession {
     start_time: std::time::Instant,
@@ -200,23 +205,32 @@ impl GZDoomSession {
     }
 }
 
+/// Sanity check that a configured engine path names a GZDoom-family binary
+/// before we exec it. This guards against misconfiguration (picking the
+/// wrong file in Settings), not a hostile webview — it is not a security
+/// boundary. The executable's basename must name the engine; a mere
+/// substring anywhere in the path (/tmp/gzdoom-stuff/other) doesn't pass.
+fn validate_engine_path(engine_path: &str) -> Result<(), String> {
+    let stem = Path::new(engine_path)
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    if stem.contains("gzdoom") || stem.contains("uzdoom") {
+        Ok(())
+    } else {
+        Err(format!(
+            "Invalid engine path: expected a GZDoom/UZDoom executable, got '{}'",
+            engine_path
+        ))
+    }
+}
+
 /// Get the version of GZDoom/UZDoom from the app bundle's Info.plist.
 /// Returns the version string (e.g., "g4.14.2") or an error.
 #[tauri::command]
 async fn get_engine_version(engine_path: String) -> Result<String, String> {
-    // Security: Validate the path looks like a doom engine
-    let path_lower = engine_path.to_lowercase();
-    if !path_lower.contains("gzdoom") && !path_lower.contains("uzdoom") {
-        return Err("Invalid path: must be GZDoom or UZDoom".to_string());
-    }
-
+    validate_engine_path(&engine_path)?;
     get_engine_version_impl(&engine_path)
-}
-
-/// Check if a process with the given name is running.
-#[tauri::command]
-async fn is_process_running(process_name: String) -> Result<bool, String> {
-    is_process_running_impl(&process_name)
 }
 
 #[cfg(target_os = "macos")]
@@ -370,81 +384,21 @@ fn get_engine_version_impl(engine_path: &str) -> Result<String, String> {
     }
 }
 
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
-    let output = Command::new("pgrep")
-        .arg("-x")
-        .arg(process_name)
-        .output()
-        .map_err(|e| format!("Failed to run pgrep: {}", e))?;
-    Ok(output.status.success())
-}
-
-#[cfg(target_os = "windows")]
-fn is_process_running_impl(process_name: &str) -> Result<bool, String> {
-    use windows::Win32::Foundation::CloseHandle;
-    use windows::Win32::System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
-        TH32CS_SNAPPROCESS,
-    };
-
-    let target = process_name.to_lowercase();
-
-    unsafe {
-        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
-            .map_err(|e| format!("Failed to create process snapshot: {}", e))?;
-
-        let mut entry = PROCESSENTRY32W::default();
-        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
-
-        let mut found = false;
-
-        if Process32FirstW(snapshot, &mut entry).is_ok() {
-            loop {
-                let exe_name = String::from_utf16_lossy(
-                    &entry
-                        .szExeFile
-                        .iter()
-                        .take_while(|&&c| c != 0)
-                        .copied()
-                        .collect::<Vec<u16>>(),
-                )
-                .to_lowercase();
-
-                if exe_name == target {
-                    found = true;
-                    break;
-                }
-
-                if Process32NextW(snapshot, &mut entry).is_err() {
-                    break;
-                }
-            }
-        }
-
-        CloseHandle(snapshot)
-            .map_err(|e| format!("Failed to close process snapshot handle: {}", e))?;
-
-        Ok(found)
-    }
-}
-
 /// Launch GZDoom/UZDoom with the specified executable path and arguments.
-/// Captures stdout/stderr for later retrieval via get_gzdoom_log.
+/// Captures stdout/stderr for later retrieval via get_gzdoom_log and emits
+/// a "gzdoom-exited" event when the process ends.
 #[tauri::command]
 async fn launch_gzdoom(
+    app: tauri::AppHandle,
+    log: State<'_, GzdoomLog>,
     gzdoom_path: String,
     args: Vec<String>,
 ) -> Result<(), String> {
-    // Security: Validate the path looks like a doom engine
-    let path_lower = gzdoom_path.to_lowercase();
-    if !path_lower.contains("gzdoom") && !path_lower.contains("uzdoom") {
-        return Err("Invalid path: must be GZDoom or UZDoom".to_string());
-    }
+    validate_engine_path(&gzdoom_path)?;
 
     // Create a new session (replaces any previous one)
     let session = Arc::new(Mutex::new(GZDoomSession::new()));
-    *GZDOOM_LOG.lock().unwrap() = Some(session.clone());
+    *log.0.lock().unwrap() = Some(session.clone());
 
     // Spawn GZDoom with piped stdout/stderr
     let mut child = Command::new(&gzdoom_path)
@@ -484,11 +438,19 @@ async fn launch_gzdoom(
         });
     }
 
-    // Spawn thread to wait for process exit and mark session as finished
+    // Wait for process exit, mark the session finished, then tell the
+    // frontend. The output-reader threads above may still be draining their
+    // final lines when wait() returns, so mark finished under the same lock
+    // they take per line — get_gzdoom_log snapshots whatever has been read.
     thread::spawn(move || {
         let _ = child.wait();
-        let mut guard = session.lock().unwrap();
-        guard.finished = true;
+        {
+            let mut guard = session.lock().unwrap();
+            guard.finished = true;
+        }
+        if let Err(e) = app.emit("gzdoom-exited", ()) {
+            eprintln!("Failed to emit gzdoom-exited: {}", e);
+        }
     });
 
     Ok(())
@@ -497,8 +459,8 @@ async fn launch_gzdoom(
 /// Get the captured GZDoom console log after the game exits.
 /// Returns JSON array of [time_ms, text] pairs, or null if no session/not finished.
 #[tauri::command]
-async fn get_gzdoom_log() -> Result<Option<Vec<(u64, String)>>, String> {
-    let slot = GZDOOM_LOG.lock().unwrap();
+async fn get_gzdoom_log(log: State<'_, GzdoomLog>) -> Result<Option<Vec<(u64, String)>>, String> {
+    let slot = log.0.lock().unwrap();
     match slot.as_ref() {
         Some(session) => {
             let guard = session.lock().unwrap();
@@ -512,6 +474,21 @@ async fn get_gzdoom_log() -> Result<Option<Vec<(u64, String)>>, String> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::validate_engine_path;
+
+    #[test]
+    fn accepts_engine_basenames_rejects_substring_paths() {
+        assert!(validate_engine_path("/Applications/GZDoom.app/Contents/MacOS/gzdoom").is_ok());
+        assert!(validate_engine_path("C:\\Program Files\\UZDoom\\uzdoom.exe").is_ok());
+        assert!(validate_engine_path("/opt/homebrew/bin/gzdoom-4.11").is_ok());
+        // "gzdoom" in a parent directory is not enough.
+        assert!(validate_engine_path("/tmp/gzdoom-evil/malware").is_err());
+        assert!(validate_engine_path("/usr/bin/doom").is_err());
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
@@ -522,6 +499,7 @@ pub fn run() {
         // restarts; without this a custom Data Folder breaks on next launch.
         .plugin(tauri_plugin_persisted_scope::init())
         .plugin(tauri_plugin_upload::init())
+        .manage(GzdoomLog(Mutex::new(None)))
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&app_data_dir)
@@ -532,7 +510,6 @@ pub fn run() {
             launch_gzdoom,
             get_gzdoom_log,
             get_engine_version,
-            is_process_running,
             read_launcher_downloads,
             write_launcher_downloads,
             import_custom_wad,
@@ -546,6 +523,7 @@ pub fn run() {
             list_zip_entries,
             read_zip_entry,
             make_temp_dir,
+            cleanup_temp_dir,
             collect_known_wads
         ]);
 

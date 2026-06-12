@@ -3,7 +3,7 @@ import { ref, computed, watch } from "vue";
 import { Compass } from "lucide-vue-next";
 import FilterBar from "./FilterBar.vue";
 import ExploreCard from "./ExploreCard.vue";
-import type { WadEntry } from "../lib/schema";
+import type { Iwad, WadEntry } from "../lib/schema";
 import { useWadSummaries } from "../composables/useWadSummaries";
 import { TYPE_LABELS, IWAD_LABELS } from "../lib/constants";
 
@@ -68,8 +68,8 @@ const filterDefs = computed(() => {
   ];
 });
 
-function formatIwad(iwad: string): string {
-  return IWAD_LABELS[iwad] ?? iwad;
+function formatIwad(iwad: Iwad): string {
+  return IWAD_LABELS[iwad];
 }
 
 function formatType(type: string): string {
