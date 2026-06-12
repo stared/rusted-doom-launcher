@@ -67,11 +67,6 @@ export const WadEntrySchema = z.object({
 
 export type WadEntry = z.infer<typeof WadEntrySchema>;
 
-export function safeValidateWadEntry(data: unknown): { success: true; data: WadEntry } | { success: false; error: z.ZodError } {
-  const result = WadEntrySchema.safeParse(data);
-  return result.success ? { success: true, data: result.data } : { success: false, error: result.error };
-}
-
 // Launcher Downloads State
 export const LauncherDownloadsSchema = z.object({
   version: z.literal(1),

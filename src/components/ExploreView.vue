@@ -7,7 +7,7 @@ import type { Iwad, WadEntry } from "../lib/schema";
 import { useWadSummaries } from "../composables/useWadSummaries";
 import { TYPE_LABELS, IWAD_LABELS } from "../lib/constants";
 
-const props = defineProps<{
+const { wads, initialQuery } = defineProps<{
   wads: WadEntry[];
   initialQuery?: string;
 }>();
@@ -20,12 +20,12 @@ const emit = defineEmits<{
 const { getDifficulty, getVibe } = useWadSummaries();
 
 // Filter/sort state
-const searchQuery = ref(props.initialQuery ?? "");
+const searchQuery = ref(initialQuery ?? "");
 const sortBy = ref("year-desc");
 const activeFilters = ref<Record<string, string>>({});
 
 // Update search when navigating from Play with a query
-watch(() => props.initialQuery, (newQuery) => {
+watch(() => initialQuery, (newQuery) => {
   if (newQuery) searchQuery.value = newQuery;
 }, { immediate: true });
 
@@ -41,8 +41,8 @@ const sortOptions = [
 // Filter definitions
 const filterDefs = computed(() => {
   // Get unique IWADs from data
-  const iwads = [...new Set(props.wads.map(w => w.iwad))].sort();
-  const types = [...new Set(props.wads.map(w => w.type))].sort();
+  const iwads = [...new Set(wads.map(w => w.iwad))].sort();
+  const types = [...new Set(wads.map(w => w.type))].sort();
 
   return [
     {
@@ -78,7 +78,7 @@ function formatType(type: string): string {
 
 // Filtered and sorted WADs
 const filteredWads = computed(() => {
-  let result = [...props.wads];
+  let result = wads;
 
   // Search filter
   if (searchQuery.value) {
@@ -121,7 +121,7 @@ const filteredWads = computed(() => {
   }
 
   // Sort
-  result.sort((a, b) => {
+  return result.toSorted((a, b) => {
     switch (sortBy.value) {
       case "year-desc":
         return b.year - a.year;
@@ -143,8 +143,6 @@ const filteredWads = computed(() => {
         return 0;
     }
   });
-
-  return result;
 });
 </script>
 
