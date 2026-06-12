@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { Gamepad2 } from "lucide-vue-next";
+import { Gamepad2 } from "@lucide/vue";
 import FilterBar from "./FilterBar.vue";
 import WadCard from "./WadCard.vue";
 import AddCustomTile from "./AddCustomTile.vue";

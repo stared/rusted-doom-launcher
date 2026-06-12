@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Gamepad2, Layers, Compass, History, ScrollText, Settings2, Info } from "lucide-vue-next";
+import { Gamepad2, Layers, Compass, History, ScrollText, Settings2, Info } from "@lucide/vue";
 
 type View = "main" | "mods" | "explore" | "runs" | "logs" | "settings" | "about" | "addCustom";
 

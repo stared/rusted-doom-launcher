@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { History, Skull, KeyRound, Package, Clock } from "lucide-vue-next";
+import { History, Skull, KeyRound, Package, Clock } from "@lucide/vue";
 import { useStats } from "../composables/useStats";
 import { useLevelNames } from "../composables/useLevelNames";
 import { SKILL_FULL_NAMES, type SkillLevel } from "../lib/statsSchema";

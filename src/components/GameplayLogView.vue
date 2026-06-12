@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { ScrollText, Skull, MapPin, KeyRound, Package, Clock, ChevronDown, ChevronRight } from "lucide-vue-next";
+import { ScrollText, Skull, MapPin, KeyRound, Package, Clock, ChevronDown, ChevronRight } from "@lucide/vue";
 import { useGameplayLog, getDeathCount, getLevelsVisited } from "../composables/useGameplayLog";
 import type { GameplayLog, GameEvent } from "../composables/useGameplayLog";
 import type { WadEntry } from "../lib/schema";

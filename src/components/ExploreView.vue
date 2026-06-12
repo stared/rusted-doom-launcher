@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { Compass } from "lucide-vue-next";
+import { Compass } from "@lucide/vue";
 import FilterBar from "./FilterBar.vue";
 import ExploreCard from "./ExploreCard.vue";
 import type { Iwad, WadEntry } from "../lib/schema";
