@@ -13,6 +13,11 @@ crate-type = ["cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+# NOTE: `time` is pinned to 0.3.47 in Cargo.lock — 0.3.48 fails to compile
+# the `cookie` crate (E0119 future-incompat) and cookie 0.18.1 is the newest
+# version tauri's tree allows. After any `cargo update`, re-pin with:
+#   cargo update -p time --precise 0.3.47
+# and drop this note once cookie/time resolve the conflict upstream.
 tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"
