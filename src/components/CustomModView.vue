@@ -4,7 +4,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { type WadEntry, type Iwad } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useSettings } from "../composables/useSettings";
-import { useCustomImport, type PickedZip } from "../composables/useCustomImport";
+import { useCustomImport, discardPickedZip, type PickedZip } from "../composables/useCustomImport";
 import { type FileInspection } from "../lib/wadInspect";
 import { basenameOf } from "../lib/platform";
 import {
@@ -127,6 +127,9 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener("mousedown", handleDocClick);
   document.removeEventListener("keydown", handleKeyDown);
+  // Cancel path: a pick-time temp extraction may still be around. (After a
+  // successful import this is a harmless no-op — cleanup is idempotent.)
+  void discardPickedZip(pickedZip.value);
 });
 
 const engineName = computed(() => {
@@ -176,6 +179,8 @@ async function pickFile() {
     ],
   });
   if (typeof picked !== "string") return;
+  // A previous pick may have left a temp extraction behind — discard it.
+  await discardPickedZip(pickedZip.value);
   sourcePath.value = picked;
   inspection.value = null;
   pickedZip.value = null;

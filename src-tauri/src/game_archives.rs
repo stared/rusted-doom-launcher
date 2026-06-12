@@ -204,6 +204,30 @@ pub fn create_temp_dir() -> Result<std::path::PathBuf, String> {
     Ok(dir)
 }
 
+/// Remove a temp directory previously created by create_temp_dir. Refuses
+/// anything that isn't a launcher-owned directory directly under the system
+/// temp dir — this is reachable from the webview. Tolerates an already
+/// removed directory so double-cleanup is harmless.
+pub fn cleanup_temp_dir(path: &str) -> Result<(), String> {
+    let p = Path::new(path);
+    let parent_ok = p.parent() == Some(std::env::temp_dir().as_path());
+    let name_ok = p
+        .file_name()
+        .map(|n| n.to_string_lossy().starts_with("rusted-doom-launcher-"))
+        .unwrap_or(false);
+    if !parent_ok || !name_ok {
+        return Err(format!(
+            "Refusing to remove {}: not a launcher temp directory",
+            path
+        ));
+    }
+    match std::fs::remove_dir_all(p) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(format!("Failed to remove {}: {}", path, e)),
+    }
+}
+
 /// Stream a zip entry into a fresh temp directory and return its path.
 /// Used at pick time in the custom-mod importer so inspection and the
 /// eventual copy into the library work from a real, seekable file.
@@ -351,6 +375,21 @@ mod tests {
         let temp = extract_zip_entry_to_temp(&zip, "inner/mod.pk3").unwrap();
         assert!(temp.ends_with("mod.pk3"), "{}", temp);
         assert_eq!(std::fs::read(&temp).unwrap(), b"PK\x03\x04abc");
+    }
+
+    #[test]
+    fn cleanup_removes_only_launcher_temp_dirs() {
+        let dir = create_temp_dir().unwrap();
+        std::fs::write(dir.join("file.wad"), b"PWAD").unwrap();
+        cleanup_temp_dir(dir.to_str().unwrap()).unwrap();
+        assert!(!dir.exists());
+        // Idempotent: removing again is fine.
+        cleanup_temp_dir(dir.to_str().unwrap()).unwrap();
+
+        // Not launcher-owned, not under temp root: refused.
+        assert!(cleanup_temp_dir("/etc").is_err());
+        let foreign = std::env::temp_dir().join("some-other-dir");
+        assert!(cleanup_temp_dir(foreign.to_str().unwrap()).is_err());
     }
 
     #[test]

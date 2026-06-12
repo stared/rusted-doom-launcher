@@ -12,6 +12,12 @@ export function basenameOf(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
 }
 
+/** Containing directory, handling both / and \ separators. */
+export function dirnameOf(path: string): string {
+  const idx = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  return idx > 0 ? path.slice(0, idx) : path;
+}
+
 /** Filename without its last extension ("a.tar.gz" -> "a.tar"). */
 export function stripExtension(filename: string): string {
   const dot = filename.lastIndexOf(".");

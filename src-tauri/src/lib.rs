@@ -87,6 +87,12 @@ async fn make_temp_dir() -> Result<String, String> {
     gog_import::make_temp_dir()
 }
 
+/// Remove a launcher-owned temp directory (validated in game_archives).
+#[tauri::command]
+async fn cleanup_temp_dir(path: String) -> Result<(), String> {
+    game_archives::cleanup_temp_dir(&path)
+}
+
 /// Move wanted WADs out of a GOG extraction temp dir into the iwads
 /// folder, flat and lowercase, regardless of the installer's layout.
 #[tauri::command]
@@ -517,6 +523,7 @@ pub fn run() {
             list_zip_entries,
             read_zip_entry,
             make_temp_dir,
+            cleanup_temp_dir,
             collect_known_wads
         ]);
 

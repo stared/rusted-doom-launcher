@@ -6,7 +6,7 @@ import { useDownload } from "./useDownload";
 import { useCustomWads } from "./useCustomWads";
 import { inspectGameFile, parseInfoText, type FileInspection, type Titlepic } from "../lib/wadInspect";
 import { findGameFileEntries, selectPrimaryGameFile, type ZipEntryInfo } from "../lib/zipExtract";
-import { basenameOf, stripExtension } from "../lib/platform";
+import { basenameOf, dirnameOf, stripExtension } from "../lib/platform";
 import { kebab, makeUniqueSlug } from "../lib/slug";
 
 /** Inner game file stream-extracted from a picked .zip at pick time. */
@@ -54,6 +54,21 @@ function titlepicToDataUrl(titlepic: Titlepic | null): string {
   let bin = "";
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return `data:image/png;base64,${btoa(bin)}`;
+}
+
+/**
+ * Remove the temp directory backing a pick-time zip extraction. Idempotent
+ * (the Rust side tolerates an already-removed dir), so callers can discard
+ * eagerly on re-pick, after import, and again on unmount. Cleanup failure is
+ * logged, never surfaced — a leftover temp dir must not block an import.
+ */
+export async function discardPickedZip(zip: PickedZip | null): Promise<void> {
+  if (!zip) return;
+  try {
+    await invoke("cleanup_temp_dir", { path: dirnameOf(zip.tempPath) });
+  } catch (e) {
+    console.warn("[useCustomImport] temp cleanup failed:", e);
+  }
 }
 
 export function useCustomImport() {
@@ -244,6 +259,10 @@ export function useCustomImport() {
       externalPath,
     });
     await addCustomWad(entry);
+
+    // The pick-time temp extraction has served its purpose in every mode
+    // (copied to the library, or bypassed by an external reference).
+    await discardPickedZip(pickedZip);
 
     return entry;
   }

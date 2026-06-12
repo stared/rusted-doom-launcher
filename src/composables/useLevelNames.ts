@@ -3,6 +3,7 @@ import { readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-f
 import { extractLevelNames, parseLevelNamesFromContent } from "../lib/wadParser";
 import { invoke } from "@tauri-apps/api/core";
 import { isNotFoundError } from "../lib/errors";
+import { dirnameOf } from "../lib/platform";
 import { useLibrary } from "./useLibrary";
 import { getDownloadRecord } from "./downloadState";
 import type { ZipEntryInfo } from "../lib/zipExtract";
@@ -107,11 +108,15 @@ export function useLevelNames() {
                 zipPath: filePath,
                 entryPath: entry.path,
               });
-              const levels = await extractLevelNames(tempPath);
-              for (const [mapId, levelName] of levels) {
-                if (!allLevels.has(mapId)) {
-                  allLevels.set(mapId, levelName);
+              try {
+                const levels = await extractLevelNames(tempPath);
+                for (const [mapId, levelName] of levels) {
+                  if (!allLevels.has(mapId)) {
+                    allLevels.set(mapId, levelName);
+                  }
                 }
+              } finally {
+                await invoke("cleanup_temp_dir", { path: dirnameOf(tempPath) });
               }
             } catch (e) {
               console.warn(`Failed to parse ${entry.path}:`, e);
