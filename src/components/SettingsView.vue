@@ -7,6 +7,7 @@ import { mkdir } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
 import { Check, X } from "lucide-vue-next";
 import { useSettings } from "../composables/useSettings";
+import { useGogImport } from "../composables/useGogImport";
 import { useGZDoom } from "../composables/useGZDoom";
 import { useLibrary } from "../composables/useLibrary";
 import { useDownload } from "../composables/useDownload";
@@ -14,7 +15,8 @@ import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
 import { shortenPath, getOs } from "../lib/platform";
 
-const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath, checkInnoextract, importFromGOG, innoextractInstallHint } = useSettings();
+const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath } = useSettings();
+const { checkInnoextract, importFromGOG, innoextractInstallHint } = useGogImport();
 const { availableIwads, detectIwads } = useGZDoom();
 const { wads } = useWads();
 const { iwadsDir } = useLibrary();
