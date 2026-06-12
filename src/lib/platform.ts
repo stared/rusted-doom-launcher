@@ -7,6 +7,17 @@ export function getOs(): OsName {
   return "linux";
 }
 
+/** Final path segment, handling both / and \ separators. */
+export function basenameOf(path: string): string {
+  return path.split(/[\\/]/).pop() ?? path;
+}
+
+/** Filename without its last extension ("a.tar.gz" -> "a.tar"). */
+export function stripExtension(filename: string): string {
+  const dot = filename.lastIndexOf(".");
+  return dot > 0 ? filename.slice(0, dot) : filename;
+}
+
 export function shortenPath(path: string | null): string {
   if (!path) return "Not found";
   const unixHome = path.match(/^\/(?:Users|home)\/[^/]+/)?.[0];
