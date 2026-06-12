@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { readTextFile, writeTextFile, exists, mkdir } from "@tauri-apps/plugin-fs";
-import { extractLevelNames, extractLevelNamesFromData, parseLevelNamesFromContent } from "../lib/wadParser";
+import { extractLevelNames, parseLevelNamesFromContent } from "../lib/wadParser";
 import { invoke } from "@tauri-apps/api/core";
 import { isNotFoundError } from "../lib/errors";
 import { useLibrary } from "./useLibrary";
@@ -97,11 +97,17 @@ export function useLevelNames() {
             return new Uint8Array(buf);
           };
 
-          // Find WAD files inside the ZIP
+          // Find WAD files inside the ZIP. Stream each to a temp file and
+          // parse it by byte ranges — a megawad entry can be 100+ MB and
+          // must not transit the webview whole.
           for (const entry of entries) {
             if (!entry.path.toLowerCase().endsWith(".wad")) continue;
             try {
-              const levels = extractLevelNamesFromData(await readEntry(entry.path));
+              const tempPath = await invoke<string>("extract_zip_entry_to_temp", {
+                zipPath: filePath,
+                entryPath: entry.path,
+              });
+              const levels = await extractLevelNames(tempPath);
               for (const [mapId, levelName] of levels) {
                 if (!allLevels.has(mapId)) {
                   allLevels.set(mapId, levelName);
