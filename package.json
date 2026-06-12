@@ -10,8 +10,10 @@
     "build": "pnpm gen:version && vue-tsc -b && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run src",
+    "test:watch": "vitest src",
+    "test:content": "vitest run content",
+    "test:all": "vitest run"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.1.1",
