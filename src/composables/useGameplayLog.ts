@@ -175,7 +175,7 @@ export function useGameplayLog() {
         if (parsed.success) {
           logs.push(parsed.data);
         } else {
-          console.warn(`Invalid gameplay log ${filename}:`, parsed.error.format());
+          console.warn(`Invalid gameplay log ${filename}:`, parsed.error.issues);
         }
       } catch (e) {
         console.error(`Error reading gameplay log ${filename}:`, e);

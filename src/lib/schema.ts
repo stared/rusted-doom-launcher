@@ -41,14 +41,14 @@ export const WadEntrySchema = z.object({
   })),
   downloads: z.array(z.object({
     type: z.enum(["idgames", "moddb", "github", "direct"]),
-    url: z.string().url().refine(
+    url: z.url().refine(
       (url) => !url.includes("example.com") && !url.includes("placeholder"),
       { message: "Download URL cannot be a placeholder" }
     ),
     filename: z.string().min(1),
   })),
   thumbnail: z.string(),
-  screenshots: z.array(z.object({ url: z.string().url(), caption: z.string() })),
+  screenshots: z.array(z.object({ url: z.url(), caption: z.string() })),
   youtubeVideos: z.array(YouTubeVideoSchema),
   awards: z.array(z.object({
     type: z.enum(["cacoward", "runner-up", "mention"]),
@@ -56,7 +56,7 @@ export const WadEntrySchema = z.object({
   })),
   tags: z.array(z.string()),
   difficulty: z.enum(["easy", "medium", "hard", "slaughter", "unknown"]),
-  urls: z.array(z.string().url()),
+  urls: z.array(z.url()),
   notes: z.string(),
   // Extra GZDoom args appended after the assembled -iwad/-file chain.
   // List, not a string — one token per element matches argv exactly.
@@ -78,7 +78,7 @@ export const LauncherDownloadsSchema = z.object({
   downloads: z.record(z.string(), z.object({
     filename: z.string().min(1),
     wadFilename: z.string().optional(),
-    downloadedAt: z.string().datetime(),
+    downloadedAt: z.iso.datetime(),
     size: z.number().int().nonnegative(),
     // When set, the actual file lives outside the library and we should
     // launch directly from this absolute path and never delete it. Used

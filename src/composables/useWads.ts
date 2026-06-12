@@ -11,7 +11,7 @@ for (const [path, module] of Object.entries(wadModules)) {
   if (result.success) {
     catalogWads.push(result.data);
   } else {
-    console.error(`WAD validation failed for ${path}:`, result.error.format());
+    console.error(`WAD validation failed for ${path}:`, result.error.issues);
   }
 }
 const catalogSlugs = new Set(catalogWads.map(w => w.slug));

@@ -21,7 +21,7 @@
     "fflate": "^0.8.2",
     "lucide-vue-next": "^0.562.0",
     "vue": "^3.5.35",
-    "zod": "^3.23.8"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.2",

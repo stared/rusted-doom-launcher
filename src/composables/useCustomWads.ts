@@ -24,7 +24,7 @@ export function useCustomWads() {
       if (result.success) {
         parsed.push(result.data);
       } else {
-        console.error("[useCustomWads] Invalid custom-wads.json entry:", result.error.format(), entry);
+        console.error("[useCustomWads] Invalid custom-wads.json entry:", result.error.issues, entry);
       }
     }
     customWads.value = parsed;
