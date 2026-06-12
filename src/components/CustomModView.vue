@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { type WadEntry, type Iwad } from "../lib/schema";
+import { IWAD_PICKER_OPTIONS } from "../lib/constants";
 import { useDownload } from "../composables/useDownload";
 import { useSettings } from "../composables/useSettings";
 import { useCustomImport, discardPickedZip, type PickedZip } from "../composables/useCustomImport";
@@ -26,17 +27,6 @@ const emit = defineEmits<{
   cancel: [];
   added: [wad: WadEntry];
 }>();
-
-const IWADS: { value: Iwad; label: string }[] = [
-  { value: "doom2", label: "Doom II" },
-  { value: "doom", label: "Doom" },
-  { value: "plutonia", label: "Plutonia" },
-  { value: "tnt", label: "TNT: Evilution" },
-  { value: "heretic", label: "Heretic" },
-  { value: "hexen", label: "Hexen" },
-  { value: "freedoom2", label: "Freedoom Phase 2" },
-  { value: "freedoom1", label: "Freedoom Phase 1" },
-];
 
 const TYPES: { value: WadEntry["type"]; label: string }[] = [
   { value: "megawad",          label: "Megawad — full game replacement (15+ maps)" },
@@ -426,7 +416,7 @@ async function onSubmit() {
             v-model="iwad"
             class="w-full appearance-none rounded border border-zinc-700 bg-zinc-900 pl-3 pr-9 py-2 text-sm text-zinc-100 focus:border-red-600 focus:outline-none"
           >
-            <option v-for="i in IWADS" :key="i.value" :value="i.value">{{ i.label }}</option>
+            <option v-for="i in IWAD_PICKER_OPTIONS" :key="i.value" :value="i.value">{{ i.label }}</option>
           </select>
           <svg
             class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500"

@@ -2,14 +2,12 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { readDir, mkdir } from "@tauri-apps/plugin-fs";
-import type { Iwad } from "../lib/schema";
+import { IWADS, type Iwad } from "../lib/schema";
 import type { SkillLevel } from "../lib/statsSchema";
 import { useSettings } from "./useSettings";
 import { useGameplayLog } from "./useGameplayLog";
 import { useLibrary } from "./useLibrary";
 import { isExistsError } from "../lib/errors";
-
-const IWADS: Iwad[] = ["doom", "doom2", "plutonia", "tnt", "heretic", "hexen", "freedoom1", "freedoom2"];
 
 // Session tracking for gameplay log
 interface SessionInfo {

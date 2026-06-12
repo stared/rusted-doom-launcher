@@ -22,8 +22,9 @@ export const TYPE_LABELS: Record<WadEntry["type"], string> = {
   deathmatch: "Deathmatch",
 };
 
-/** Human-readable labels for IWADs. */
-export const IWAD_LABELS: Record<string, string> = {
+/** Human-readable labels for IWADs. Keyed by Iwad so adding an id to the
+ * schema enum fails compilation here until a label exists. */
+export const IWAD_LABELS: Record<Iwad, string> = {
   doom: "Doom",
   doom2: "Doom II",
   plutonia: "Plutonia",
@@ -33,6 +34,19 @@ export const IWAD_LABELS: Record<string, string> = {
   freedoom1: "Freedoom 1",
   freedoom2: "Freedoom 2",
 };
+
+/** IWAD select options for the custom-import form: long-form labels, most
+ * common base games first. */
+export const IWAD_PICKER_OPTIONS: { value: Iwad; label: string }[] = [
+  { value: "doom2", label: "Doom II" },
+  { value: "doom", label: "Doom" },
+  { value: "plutonia", label: "Plutonia" },
+  { value: "tnt", label: "TNT: Evilution" },
+  { value: "heretic", label: "Heretic" },
+  { value: "hexen", label: "Hexen" },
+  { value: "freedoom2", label: "Freedoom Phase 2" },
+  { value: "freedoom1", label: "Freedoom Phase 1" },
+];
 
 /** Static metadata for synthesising playable entries from detected IWADs. */
 export const IWAD_METADATA: Record<Iwad, { authors: string[]; year: number; description: string; thumbnail: string }> = {
