@@ -10,8 +10,6 @@ import AddCustomTile from "./AddCustomTile.vue";
 
 const props = defineProps<{
   wads: WadEntry[];
-  loading: boolean;
-  error: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -84,15 +82,7 @@ const filteredWads = computed(() => {
 
 <template>
   <div>
-    <div v-if="loading" class="flex items-center justify-center py-20">
-      <p class="text-zinc-400">Loading…</p>
-    </div>
-
-    <div v-else-if="error" class="rounded bg-red-900/50 p-4 text-red-200">
-      {{ error }}
-    </div>
-
-    <div v-else-if="wads.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+    <div v-if="wads.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
       <Layers :size="48" :stroke-width="1.5" class="text-zinc-600 mb-4" />
       <p class="text-zinc-500">No gameplay mods in the catalog yet</p>
       <p class="text-zinc-600 text-sm mt-2">Browse Explore for downloadable mods, or import one you already have:</p>

@@ -56,7 +56,7 @@ declare const window: Window & typeof globalThis & { __TAURI_INTERNALS__?: unkno
 
 type View = "main" | "mods" | "explore" | "runs" | "logs" | "settings" | "about" | "addCustom";
 
-const { wads, loading, error } = useWads();
+const { wads } = useWads();
 const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
 const lib = useLibrary();
 
@@ -270,8 +270,6 @@ async function handleDelete(wad: WadEntry) {
       <MainView
         v-if="activeView === 'main'"
         :wads="playableEntries"
-        :loading="loading"
-        :error="error"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
@@ -281,8 +279,6 @@ async function handleDelete(wad: WadEntry) {
       <ModsView
         v-else-if="activeView === 'mods'"
         :wads="modEntries"
-        :loading="loading"
-        :error="error"
         @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
         @delete="handleDelete"
         @toggle-active="handleToggleActive"
