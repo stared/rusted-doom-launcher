@@ -88,39 +88,47 @@ export function useDownload() {
     return downloads.value.downloads[slug] ?? null;
   }
 
+  /**
+   * Resolve an existing download record to a launchable path. Re-extracts
+   * from a still-present zip when the extracted file went missing. Returns
+   * null when there is no record or it's stale (file gone from disk).
+   */
+  async function resolveExistingDownload(wad: WadEntry): Promise<string | null> {
+    const info = downloads.value.downloads[wad.slug];
+    if (!info) return null;
+
+    // External reference (user opted out of "Copy to library") — launch
+    // straight from the picked path. No library-relative resolution.
+    if (info.externalPath && await exists(info.externalPath)) {
+      return info.externalPath;
+    }
+
+    const wadPath = wadFile(info.wadFilename ?? info.filename);
+    if (await exists(wadPath)) {
+      return wadPath;
+    }
+
+    // Extracted file missing but the original zip is still on disk —
+    // re-extract instead of re-downloading.
+    if (info.filename.endsWith(".zip") && await exists(wadFile(info.filename))) {
+      const { wadFilename } = await extractAndWriteGameFiles(wad.slug, wadFile(info.filename));
+      info.wadFilename = wadFilename;
+      await saveState();
+      return wadFile(wadFilename);
+    }
+
+    return null;
+  }
+
   async function downloadWad(wad: WadEntry): Promise<string> {
     // 1. Already on disk? Return the path. This must run BEFORE the URL check
     // because custom-imported WADs (_source === "custom") have empty downloads[]
     // but a valid synthetic download record + file on disk.
-    const info = downloads.value.downloads[wad.slug];
-    if (info) {
-      // External reference (user opted out of "Copy to library") — launch
-      // straight from the picked path. No library-relative resolution.
-      if (info.externalPath && await exists(info.externalPath)) {
-        return info.externalPath;
-      }
-      const wadFileName = info.wadFilename ?? info.filename;
-      const wadPath = wadFile(wadFileName);
+    const resolved = await resolveExistingDownload(wad);
+    if (resolved) return resolved;
 
-      if (await exists(wadPath)) {
-        return wadPath;
-      }
-
-      if (info.wadFilename && info.filename.endsWith('.zip') && await exists(wadFile(info.filename))) {
-        const { wadFilename } = await extractAndWriteGameFiles(wad.slug, wadFile(info.filename));
-        info.wadFilename = wadFilename;
-        await saveState();
-        return wadFile(wadFilename);
-      }
-
-      if (info.filename.endsWith('.zip') && !info.wadFilename && await exists(wadFile(info.filename))) {
-        const { wadFilename } = await extractAndWriteGameFiles(wad.slug, wadFile(info.filename));
-        info.wadFilename = wadFilename;
-        await saveState();
-        return wadFile(wadFilename);
-      }
-
-      // Stale state — file missing on disk. For non-custom entries we'll fall
+    if (downloads.value.downloads[wad.slug]) {
+      // Stale record — file missing on disk. For non-custom entries we'll fall
       // through to re-download; for custom entries that path will fail with a
       // clearer error below.
       delete downloads.value.downloads[wad.slug];
