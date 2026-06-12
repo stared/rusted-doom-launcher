@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { Layers } from "lucide-vue-next";
+import { Layers } from "@lucide/vue";
 import FilterBar from "./FilterBar.vue";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
@@ -8,7 +8,7 @@ import { useSettings } from "../composables/useSettings";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 import AddCustomTile from "./AddCustomTile.vue";
 
-const props = defineProps<{
+const { wads } = defineProps<{
   wads: WadEntry[];
 }>();
 
@@ -49,7 +49,7 @@ const sortOptions = [
 ];
 
 const filteredWads = computed(() => {
-  let result = [...props.wads];
+  let result = wads;
 
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
@@ -59,7 +59,7 @@ const filteredWads = computed(() => {
     );
   }
 
-  result.sort((a, b) => {
+  return result.toSorted((a, b) => {
     switch (sortBy.value) {
       case "active": {
         const aActive = checkDownloaded(a.slug) && isActive(a.slug) ? 1 : 0;
@@ -75,8 +75,6 @@ const filteredWads = computed(() => {
         return 0;
     }
   });
-
-  return result;
 });
 </script>
 

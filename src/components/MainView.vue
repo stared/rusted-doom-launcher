@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { Gamepad2 } from "lucide-vue-next";
+import { Gamepad2 } from "@lucide/vue";
 import FilterBar from "./FilterBar.vue";
 import WadCard from "./WadCard.vue";
 import AddCustomTile from "./AddCustomTile.vue";
@@ -9,7 +9,7 @@ import { useDownload } from "../composables/useDownload";
 import { useStats } from "../composables/useStats";
 import { useWadSummaries } from "../composables/useWadSummaries";
 
-const props = defineProps<{
+const { wads } = defineProps<{
   wads: WadEntry[];
 }>();
 
@@ -41,7 +41,7 @@ const sortOptions = [
 // playable when the IWAD file is on disk (the parent only synthesises an
 // entry once detection succeeds).
 const playableWads = computed(() =>
-  props.wads.filter(w => {
+  wads.filter(w => {
     if (w.type === "iwad") return true;
     const info = getCachedPlaySummary(w.slug);
     const hasSaves = info && info.sessionCount > 0;
@@ -51,7 +51,7 @@ const playableWads = computed(() =>
 
 // Filtered and sorted WADs
 const filteredWads = computed(() => {
-  let result = [...playableWads.value];
+  let result = playableWads.value;
 
   // Search filter
   if (searchQuery.value) {
@@ -63,7 +63,7 @@ const filteredWads = computed(() => {
   }
 
   // Sort
-  result.sort((a, b) => {
+  return result.toSorted((a, b) => {
     const infoA = getCachedPlaySummary(a.slug);
     const infoB = getCachedPlaySummary(b.slug);
 
@@ -89,8 +89,6 @@ const filteredWads = computed(() => {
         return 0;
     }
   });
-
-  return result;
 });
 
 // When search has no results in collection, count matches in Explore
@@ -98,7 +96,7 @@ const exploreMatchCount = computed(() => {
   if (!searchQuery.value || filteredWads.value.length > 0) return 0;
 
   const q = searchQuery.value.toLowerCase();
-  return props.wads.filter(w => {
+  return wads.filter(w => {
     const info = getCachedPlaySummary(w.slug);
     const hasSaves = info && info.sessionCount > 0;
     if (isDownloaded(w.slug) || hasSaves) return false;

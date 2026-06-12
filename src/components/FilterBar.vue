@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import { Search, X, ChevronDown, RotateCcw } from "lucide-vue-next";
+import { Search, X, ChevronDown, RotateCcw } from "@lucide/vue";
 
 export type SortOption = {
   value: string;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Skull } from "lucide-vue-next";
+import { Skull } from "@lucide/vue";
 import { open } from "@tauri-apps/plugin-shell";
 import { APP_VERSION, GIT_HASH, GIT_DATE } from "../lib/version";
 </script>

@@ -5,7 +5,7 @@ import { open as openShell } from "@tauri-apps/plugin-shell";
 import { invoke } from "@tauri-apps/api/core";
 import { mkdir } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
-import { Check, X } from "lucide-vue-next";
+import { Check, X } from "@lucide/vue";
 import { useSettings } from "../composables/useSettings";
 import { useGogImport } from "../composables/useGogImport";
 import { useGZDoom } from "../composables/useGZDoom";

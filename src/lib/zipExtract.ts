@@ -57,7 +57,7 @@ export function selectPrimaryGameFile<T extends GameFileInfo>(files: T[]): {
   }
 
   // Sort by size descending to find largest
-  const sorted = [...files].sort((a, b) => b.size - a.size);
+  const sorted = files.toSorted((a, b) => b.size - a.size);
   const primary = sorted[0];
   const additional = sorted.slice(1).sort((a, b) => a.name.localeCompare(b.name));
 

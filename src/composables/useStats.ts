@@ -231,7 +231,7 @@ export function useStats() {
           }
           sessions.push(session);
         } else {
-          console.warn(`Invalid session file ${filename}:`, parsed.error.format());
+          console.warn(`Invalid session file ${filename}:`, parsed.error.issues);
         }
       } catch (e) {
         console.error(`Error reading session file ${filename}:`, e);

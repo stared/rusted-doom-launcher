@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, useTemplateRef, watch } from "vue";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { type WadEntry, type Iwad } from "../lib/schema";
 import { IWAD_PICKER_OPTIONS } from "../lib/constants";
@@ -64,7 +64,7 @@ const inspecting = ref(false);
 const pickedZip = ref<PickedZip | null>(null);
 
 const pickerOpen = ref(false);
-const pickerRef = ref<HTMLElement | null>(null);
+const pickerRef = useTemplateRef("pickerRef");
 
 function handleDocClick(e: MouseEvent) {
   if (!pickerOpen.value) return;
@@ -217,7 +217,7 @@ const inspectionSummary = computed<string>(() => {
 // what the card thumbnail will look like before submit. Revoked when the
 // inspection changes.
 const titlepicPreviewUrl = ref<string>("");
-watch(inspection, (info, prev) => {
+watch(inspection, (info) => {
   if (titlepicPreviewUrl.value) {
     URL.revokeObjectURL(titlepicPreviewUrl.value);
     titlepicPreviewUrl.value = "";
@@ -226,8 +226,6 @@ watch(inspection, (info, prev) => {
     const blob = new Blob([new Uint8Array(info.titlepic.png)], { type: "image/png" });
     titlepicPreviewUrl.value = URL.createObjectURL(blob);
   }
-  // prev unused, just here to keep the watcher signature happy.
-  void prev;
 });
 onUnmounted(() => {
   if (titlepicPreviewUrl.value) URL.revokeObjectURL(titlepicPreviewUrl.value);

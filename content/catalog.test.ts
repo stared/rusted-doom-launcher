@@ -9,7 +9,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
-import { safeValidateWadEntry } from "../src/lib/schema";
+import { WadEntrySchema } from "../src/lib/schema";
 import { GOG_EXPANSIONS } from "../src/lib/gogContent";
 
 const CHECK_YOUTUBE = !!process.env.CHECK_YOUTUBE;
@@ -45,7 +45,7 @@ describe("WAD catalog", () => {
       const data = JSON.parse(content);
 
       it("should validate against WadEntrySchema", () => {
-        const result = safeValidateWadEntry(data);
+        const result = WadEntrySchema.safeParse(data);
         if (!result.success) {
           console.error(`Validation errors in ${filename}:`, result.error.issues);
         }

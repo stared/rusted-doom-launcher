@@ -38,7 +38,7 @@ export interface CustomEntryFields {
 function validateEntry(entry: WadEntry, context: string): WadEntry {
   const parsed = WadEntrySchema.safeParse(entry);
   if (!parsed.success) {
-    console.error(`[useCustomImport] ${context} failed schema:`, parsed.error.format());
+    console.error(`[useCustomImport] ${context} failed schema:`, parsed.error.issues);
     throw new Error(`Internal error: ${context} doesn't match schema. See console.`);
   }
   return parsed.data;
