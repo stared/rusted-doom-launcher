@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { readDir, readTextFile, writeTextFile, mkdir, exists, stat } from "@tauri-apps/plugin-fs";
-import { isNotFoundError } from "../lib/errors";
+import { isExistsError, isNotFoundError } from "../lib/errors";
 import {
   PlaySessionSchema,
   SKILL_FROM_NUMBER,
@@ -101,11 +101,11 @@ export function useStats() {
       return 0;
     }
 
-    // Ensure stats directory exists
+    // Ensure stats directory exists ("already exists" is the only acceptable failure)
     try {
       await mkdir(statsDirPath, { recursive: true });
     } catch (e) {
-      if (!isNotFoundError(e)) {
+      if (!isExistsError(e)) {
         console.error(`Error creating stats dir for ${slug}:`, e);
         return 0;
       }

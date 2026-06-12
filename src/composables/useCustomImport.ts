@@ -196,12 +196,15 @@ export function useCustomImport() {
       // for a bare .wad/.pk3 we point at it directly.
       externalPath = sourcePath;
       externalFilename = basenameOf(sourcePath);
+      // If the picked file can't even be stat'ed, the in-place reference is
+      // already broken — fail now, not at launch time.
+      let st;
       try {
-        const st = await stat(sourcePath);
-        actualSize = st.size;
-      } catch {
-        actualSize = pickedZip?.size ?? 0;
+        st = await stat(sourcePath);
+      } catch (e) {
+        throw new Error(`Can't read the picked file at ${sourcePath}: ${e}`);
       }
+      actualSize = st.size;
     } else if (pickedZip) {
       if (!sourceIsTarget && await exists(targetPath)) {
         throw new Error(`A file named "${sourceFilename}" already exists in the library. Rename it or remove it before importing.`);
