@@ -199,16 +199,31 @@ impl GZDoomSession {
     }
 }
 
+/// Sanity check that a configured engine path names a GZDoom-family binary
+/// before we exec it. This guards against misconfiguration (picking the
+/// wrong file in Settings), not a hostile webview — it is not a security
+/// boundary. The executable's basename must name the engine; a mere
+/// substring anywhere in the path (/tmp/gzdoom-stuff/other) doesn't pass.
+fn validate_engine_path(engine_path: &str) -> Result<(), String> {
+    let stem = Path::new(engine_path)
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    if stem.contains("gzdoom") || stem.contains("uzdoom") {
+        Ok(())
+    } else {
+        Err(format!(
+            "Invalid engine path: expected a GZDoom/UZDoom executable, got '{}'",
+            engine_path
+        ))
+    }
+}
+
 /// Get the version of GZDoom/UZDoom from the app bundle's Info.plist.
 /// Returns the version string (e.g., "g4.14.2") or an error.
 #[tauri::command]
 async fn get_engine_version(engine_path: String) -> Result<String, String> {
-    // Security: Validate the path looks like a doom engine
-    let path_lower = engine_path.to_lowercase();
-    if !path_lower.contains("gzdoom") && !path_lower.contains("uzdoom") {
-        return Err("Invalid path: must be GZDoom or UZDoom".to_string());
-    }
-
+    validate_engine_path(&engine_path)?;
     get_engine_version_impl(&engine_path)
 }
 
@@ -373,11 +388,7 @@ async fn launch_gzdoom(
     gzdoom_path: String,
     args: Vec<String>,
 ) -> Result<(), String> {
-    // Security: Validate the path looks like a doom engine
-    let path_lower = gzdoom_path.to_lowercase();
-    if !path_lower.contains("gzdoom") && !path_lower.contains("uzdoom") {
-        return Err("Invalid path: must be GZDoom or UZDoom".to_string());
-    }
+    validate_engine_path(&gzdoom_path)?;
 
     // Create a new session (replaces any previous one)
     let session = Arc::new(Mutex::new(GZDoomSession::new()));
@@ -454,6 +465,21 @@ async fn get_gzdoom_log(log: State<'_, GzdoomLog>) -> Result<Option<Vec<(u64, St
             }
         }
         None => Ok(None), // No session started
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_engine_path;
+
+    #[test]
+    fn accepts_engine_basenames_rejects_substring_paths() {
+        assert!(validate_engine_path("/Applications/GZDoom.app/Contents/MacOS/gzdoom").is_ok());
+        assert!(validate_engine_path("C:\\Program Files\\UZDoom\\uzdoom.exe").is_ok());
+        assert!(validate_engine_path("/opt/homebrew/bin/gzdoom-4.11").is_ok());
+        // "gzdoom" in a parent directory is not enough.
+        assert!(validate_engine_path("/tmp/gzdoom-evil/malware").is_err());
+        assert!(validate_engine_path("/usr/bin/doom").is_err());
     }
 }
 
