@@ -19,10 +19,10 @@
       "filename": "tde-lutz.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/the-dying-end.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/d/dd/The_Dying_End_MAP29.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/the-dying-end/00_the_dying_end_map29.webp",
       "caption": "The big marble structure in the middle."
     },
     {

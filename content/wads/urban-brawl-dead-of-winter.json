@@ -19,14 +19,14 @@
       "filename": "action2.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/5/50/Action_Doom_2_Title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/urban-brawl-dead-of-winter.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/c/c1/Action_doom_2.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/urban-brawl-dead-of-winter/00_action_doom_2.webp",
       "caption": "Urban Brawl's cel-shaded graphics"
     },
     {
-      "url": "https://doomwiki.org/w/images/8/82/Action_doom_2_box.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/urban-brawl-dead-of-winter/01_action_doom_2_box.webp",
       "caption": "Urban Brawl - Special Edition"
     }
   ],

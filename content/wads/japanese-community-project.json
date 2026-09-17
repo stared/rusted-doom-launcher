@@ -19,14 +19,14 @@
       "filename": "jpcp.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/2/25/Jpcp-title-screen.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/japanese-community-project.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/3/3b/Jpcp-endgame-screen.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/japanese-community-project/00_jpcp-endgame-screen.webp",
       "caption": "End game background."
     },
     {
-      "url": "https://doomwiki.org/w/images/0/01/CREDIT_JPCP.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/japanese-community-project/01_credit_jpcp.webp",
       "caption": "Credits Screen."
     }
   ],

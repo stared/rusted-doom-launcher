@@ -19,10 +19,10 @@
       "filename": "tcontrol.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/total-control.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/f/f1/Total_Control_MAP01.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/total-control/00_total_control_map01.webp",
       "caption": "Eastern quadrant of the base"
     },
     {

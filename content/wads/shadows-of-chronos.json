@@ -19,10 +19,10 @@
       "filename": "kaiser_28.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/shadows-of-chronos.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/d/dc/Shadows_of_Chronos_MAP05.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/shadows-of-chronos/00_shadows_of_chronos_map05.webp",
       "caption": "Starting room of the Forest of Time."
     }
   ],

@@ -19,18 +19,18 @@
       "filename": "btsx_e1.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/c/c7/BTSXE1.jpg",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/back-to-saturn-x.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/b/bd/BTSXE2.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/back-to-saturn-x/00_btsxe2.webp",
       "caption": "Title screen"
     },
     {
-      "url": "https://doomwiki.org/w/images/b/b3/BTSXE1_Official.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/back-to-saturn-x/01_btsxe1_official.webp",
       "caption": "The modified title screen."
     },
     {
-      "url": "https://doomwiki.org/w/images/2/26/BTSXE2_Official.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/back-to-saturn-x/02_btsxe2_official.webp",
       "caption": "The modified title screen."
     }
   ],

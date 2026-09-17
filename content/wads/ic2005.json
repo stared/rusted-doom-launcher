@@ -19,7 +19,7 @@
       "filename": "ic2005.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/b/bf/IC2005_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/ic2005.webp",
   "screenshots": [
     {
       "url": "https://doomwiki.org/w/images/5/50/IC2005_map.png",
@@ -46,7 +46,7 @@
       "caption": "The switch room"
     },
     {
-      "url": "https://doomwiki.org/w/images/7/78/IC2005-cacodemons.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/ic2005/06_ic2005-cacodemons.webp",
       "caption": "Cacodemons and the blue key"
     },
     {

@@ -19,22 +19,22 @@
       "filename": "eviternity.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/b/bc/Eviternity_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/eviternity.webp",
   "screenshots": [
     {
       "url": "https://doomwiki.org/w/images/5/5d/Eviternity_Nightmare_Demon.png",
       "caption": "Nightmare demon"
     },
     {
-      "url": "https://doomwiki.org/w/images/2/2d/Eviternity_Former_Captain.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/eviternity/01_eviternity_former_captain.webp",
       "caption": "Former captain"
     },
     {
-      "url": "https://doomwiki.org/w/images/0/02/Eviternity_Astral_Cacodemon.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/eviternity/02_eviternity_astral_cacodemon.webp",
       "caption": "Astral cacodemon"
     },
     {
-      "url": "https://doomwiki.org/w/images/6/69/Eviternity_Annihilator.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/eviternity/03_eviternity_annihilator.webp",
       "caption": "Annihilator"
     },
     {
@@ -58,7 +58,7 @@
       "caption": "MAP17: Segregation"
     },
     {
-      "url": "https://doomwiki.org/w/images/f/f8/Eviternity_Chapter5.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/eviternity/09_eviternity_chapter5.webp",
       "caption": "MAP21: Imperishable"
     },
     {

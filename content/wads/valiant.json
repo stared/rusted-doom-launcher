@@ -19,10 +19,10 @@
       "filename": "valiant.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/c/c7/Valiant_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/valiant.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/6/6e/Valiant_super_pistol.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/valiant/00_valiant_super_pistol.webp",
       "caption": "Super pistol"
     },
     {
@@ -30,7 +30,7 @@
       "caption": "Super chaingun"
     },
     {
-      "url": "https://doomwiki.org/w/images/9/99/Valiant_doom_wiki_screen_shot_1.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/valiant/02_valiant_doom_wiki_screen_shot_1.webp",
       "caption": "Super imp a.k.a. devil"
     },
     {
@@ -50,11 +50,11 @@
       "caption": "Cybruiser"
     },
     {
-      "url": "https://doomwiki.org/w/images/3/31/Valiant_doom_wiki_screen_shot_3.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/valiant/07_valiant_doom_wiki_screen_shot_3.webp",
       "caption": "Arachnorb"
     },
     {
-      "url": "https://doomwiki.org/w/images/8/89/Valiant_doom_wiki_screen_shot_8.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/valiant/08_valiant_doom_wiki_screen_shot_8.webp",
       "caption": "Lightning orb"
     },
     {

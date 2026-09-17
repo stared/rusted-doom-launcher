@@ -19,10 +19,10 @@
       "filename": "d2twid.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/doom-2-the-way-id-did.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/2/2b/D2twid_MAP01.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/doom-2-the-way-id-did/00_d2twid_map01.webp",
       "caption": "Starting area of MAP01."
     }
   ],

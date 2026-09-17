@@ -19,10 +19,10 @@
       "filename": "jenesis.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/c/cb/Jenesis_titlepic.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/jenesis.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/c/c8/Jenesis_shot1.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/jenesis/00_jenesis_shot1.webp",
       "caption": "Screenshot of MAP06: Radioactive Ocean from Jenesis, Part 1."
     },
     {

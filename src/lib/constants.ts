@@ -59,3 +59,14 @@ export const IWAD_METADATA: Record<Iwad, { authors: string[]; year: number; desc
   freedoom1: { authors: ["Freedoom Project"], year: 2003, description: "Freedoom Phase 1 — a free replacement for the Ultimate Doom IWAD.", thumbnail: freedoom1Cover },
   freedoom2: { authors: ["Freedoom Project"], year: 2003, description: "Freedoom Phase 2 — a free replacement for the Doom II IWAD.", thumbnail: freedoom2Cover },
 };
+
+const CDN_PREFIX = "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets";
+
+/** Resolve an artwork or screenshot URL, mapping jsDelivr CDN URLs to local files in dev mode. */
+export function resolveArtworkUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  if (import.meta.env.DEV && url.startsWith(CDN_PREFIX)) {
+    return url.replace(CDN_PREFIX, "/content/assets");
+  }
+  return url;
+}

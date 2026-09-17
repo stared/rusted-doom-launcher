@@ -3,11 +3,11 @@
   "title": "Plasmaplant",
   "authors": [
     {
-      "name": "Sverre Andr\u00e9 Kvernmo"
+      "name": "Sverre André Kvernmo"
     }
   ],
   "year": 2013,
-  "description": "Plasmaplant is a single-level map for Doom II created by Sverre Andr\u00e9 Kvernmo. Occupying the MAP01 slot, the level features a visual theme dominated by the color blue and heavy lighting contrast. Gameplay incorporates key-based progression, hidden secret passages, and the heavy use of stealth monsters.",
+  "description": "Plasmaplant is a single-level map for Doom II created by Sverre André Kvernmo. Occupying the MAP01 slot, the level features a visual theme dominated by the color blue and heavy lighting contrast. Gameplay incorporates key-based progression, hidden secret passages, and the heavy use of stealth monsters.",
   "iwad": "doom2",
   "type": "megawad",
   "sourcePort": "gzdoom",
@@ -19,10 +19,10 @@
       "filename": "plasmap.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/plasmaplant.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/9/98/Plasmaplant_MAP01.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/plasmaplant/00_plasmaplant_map01.webp",
       "caption": "The path to the exit, showcasing the map's unique visual style."
     },
     {

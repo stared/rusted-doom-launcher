@@ -19,7 +19,7 @@
       "filename": "cheogsh.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/c/c6/Cheogsh_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/cheogsh.webp",
   "screenshots": [
     {
       "url": "https://doomwiki.org/w/images/d/d0/Cheogsh_map.png",
@@ -50,7 +50,7 @@
       "caption": "Hell warriors and satyrs"
     },
     {
-      "url": "https://doomwiki.org/w/images/3/3c/Cheogsh_secret4.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/cheogsh/07_cheogsh_secret4.webp",
       "caption": "Secret #4"
     },
     {
@@ -78,7 +78,7 @@
       "caption": "The activated pentagram"
     },
     {
-      "url": "https://doomwiki.org/w/images/c/cc/Cheogsh_Cheogsh.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/cheogsh/14_cheogsh_cheogsh.webp",
       "caption": "The demon Cheogsh"
     },
     {

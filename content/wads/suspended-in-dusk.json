@@ -19,10 +19,10 @@
       "filename": "sid.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/suspended-in-dusk.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/f/ff/Suspended_in_Dusk_crate.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/suspended-in-dusk/00_suspended_in_dusk_crate.webp",
       "caption": "A crate suspended in dusk"
     }
   ],

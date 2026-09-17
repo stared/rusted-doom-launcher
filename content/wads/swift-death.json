@@ -19,14 +19,14 @@
       "filename": "swideath.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/5/57/Swift_Death_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/swift-death.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/a/a6/Swlogo.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/swift-death/00_swlogo.webp",
       "caption": "Logo of Swift Death"
     },
     {
-      "url": "https://doomwiki.org/w/images/7/77/Swscn.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/swift-death/01_swscn.webp",
       "caption": "MAP28 in Swift Death"
     }
   ],

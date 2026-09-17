@@ -19,10 +19,10 @@
       "filename": "dripfeed.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/drip-feed.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/9/9e/Drip_Feed_MAP30.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/drip-feed/00_drip_feed_map30.webp",
       "caption": "The outer area of the citadel."
     },
     {

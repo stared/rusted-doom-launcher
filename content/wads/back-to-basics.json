@@ -19,10 +19,10 @@
       "filename": "b2b.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/back-to-basics.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/5/56/Back_to_Basics_E2M9.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/back-to-basics/00_back_to_basics_e2m9.webp",
       "caption": "The floating fortresses in E2M9"
     }
   ],

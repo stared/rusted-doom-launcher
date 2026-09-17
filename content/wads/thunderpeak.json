@@ -3,11 +3,11 @@
   "title": "Thunderpeak",
   "authors": [
     {
-      "name": "Bj\u00f6rn Ostmann"
+      "name": "Björn Ostmann"
     }
   ],
   "year": 2008,
-  "description": "Thunderpeak is a two-map set created by Bj\u00f6rn Ostmann comprising \"Thunderpeak Powerplant\" and \"Termination\". Set in a UAC powerplant facility, the maps feature combat against standard demons alongside foes like Catharsi, Cybruisers, and Suicide Bombers. The release uses the custom music track \"Grand Design\" by Simon Judd.",
+  "description": "Thunderpeak is a two-map set created by Björn Ostmann comprising \"Thunderpeak Powerplant\" and \"Termination\". Set in a UAC powerplant facility, the maps feature combat against standard demons alongside foes like Catharsi, Cybruisers, and Suicide Bombers. The release uses the custom music track \"Grand Design\" by Simon Judd.",
   "iwad": "doom2",
   "type": "megawad",
   "sourcePort": "boom",
@@ -19,7 +19,7 @@
       "filename": "thunpeak.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/thunderpeak.webp",
   "screenshots": [
     {
       "url": "https://doomwiki.org/w/images/3/37/ZPack_E1M8_map.png",

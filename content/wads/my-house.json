@@ -22,10 +22,10 @@
       "filename": "myhouse-20250428.pk3"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/c/ce/Myhousepk3_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/my-house.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/6/61/Myhouse_1.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/my-house/00_myhouse_1.webp",
       "caption": "The opening shot of the House's exterior."
     },
     {
@@ -37,7 +37,7 @@
       "caption": "The downstairs TV room."
     },
     {
-      "url": "https://doomwiki.org/w/images/3/38/Myhouse_4.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/my-house/03_myhouse_4.webp",
       "caption": "The upstairs master bedroom, with the yellow keycard in shot."
     }
   ],

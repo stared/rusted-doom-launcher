@@ -19,10 +19,10 @@
       "filename": "sabord.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/strife-absolute-order.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/9/97/Absolute_Order_MAP02.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/strife-absolute-order/00_absolute_order_map02.webp",
       "caption": "The starting town."
     }
   ],

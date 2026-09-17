@@ -22,7 +22,7 @@
       "filename": "Project_Brutality-0.4.1.pk3"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/f/ff/Project_Brutality_v3.0_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/project-brutality.webp",
   "screenshots": [],
   "youtubeVideos": [],
   "awards": [],
@@ -33,7 +33,7 @@
     "action"
   ],
   "difficulty": "medium",
-  "notes": "[GitHub](https://github.com/pa1nki113r/Project_Brutality) • [ModDB](https://www.moddb.com/mods/project-brutality) • Release 0.4.1. Requires GZDoom/UZDoom 4.14.2 or newer.",
+  "notes": "[GitHub](https://github.com/pa1nki113r/Project_Brutality) \u2022 [ModDB](https://www.moddb.com/mods/project-brutality) \u2022 Release 0.4.1. Requires GZDoom/UZDoom 4.14.2 or newer.",
   "_schemaVersion": 1,
   "_source": "manual",
   "urls": [

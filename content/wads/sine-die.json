@@ -19,10 +19,10 @@
       "filename": "sinedie.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/sine-die.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/f/f2/Sine_Die_MAP01.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/sine-die/00_sine_die_map01.webp",
       "caption": "Inside the facility."
     }
   ],

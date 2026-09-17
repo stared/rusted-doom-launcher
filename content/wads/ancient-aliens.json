@@ -19,18 +19,18 @@
       "filename": "aaliens.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/1/1c/AncientAliens-Title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/ancient-aliens.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/8/8b/AncientAliens-Credits.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/ancient-aliens/00_ancientaliens-credits.webp",
       "caption": "Credits"
     },
     {
-      "url": "https://doomwiki.org/w/images/4/42/AncientAliens-FirstMap.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/ancient-aliens/01_ancientaliens-firstmap.webp",
       "caption": "The beginning"
     },
     {
-      "url": "https://doomwiki.org/w/images/a/ad/AncientAliens-Intermission.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/ancient-aliens/02_ancientaliens-intermission.webp",
       "caption": "Intermission screen"
     }
   ],

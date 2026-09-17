@@ -19,10 +19,10 @@
       "filename": "brutalv21.pk3"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/f/f9/Brutal_Doom_logo.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/brutal-doom.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/4/45/Bdfatal.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/brutal-doom/00_bdfatal.webp",
       "caption": "A fatality being executed on a Chaingunner."
     }
   ],

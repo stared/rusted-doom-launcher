@@ -7,6 +7,7 @@ import { useDownload } from "../composables/useDownload";
 import { useSettings } from "../composables/useSettings";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 import AddCustomTile from "./AddCustomTile.vue";
+import { resolveArtworkUrl } from "../lib/constants";
 
 const { wads } = defineProps<{
   wads: WadEntry[];
@@ -23,9 +24,17 @@ const emit = defineEmits<{
 const { isDownloaded: checkDownloaded } = useDownload();
 const { settings } = useSettings();
 
+const failedThumbnails = ref<Set<string>>(new Set());
+
+function handleThumbnailError(slug: string) {
+  failedThumbnails.value.add(slug);
+}
+
 function thumbnailFor(wad: WadEntry): string | null {
-  if (wad.thumbnail) return wad.thumbnail;
-  if (wad.screenshots.length > 0) return wad.screenshots[0].url;
+  if (failedThumbnails.value.has(wad.slug)) return null;
+  if (wad.thumbnail) return resolveArtworkUrl(wad.thumbnail);
+  const validScreenshot = wad.screenshots.find(s => s.url && !s.url.includes("doomwiki.org"));
+  if (validScreenshot) return resolveArtworkUrl(validScreenshot.url);
   return null;
 }
 
@@ -120,6 +129,7 @@ const filteredWads = computed(() => {
               :src="thumbnailFor(wad) ?? ''"
               :alt="wad.title"
               class="absolute inset-0 w-full h-full object-cover"
+              @error="handleThumbnailError(wad.slug)"
             />
             <div
               v-else

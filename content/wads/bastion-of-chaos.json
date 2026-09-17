@@ -19,10 +19,10 @@
       "filename": "bastion_v0.97.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/1/16/Bastion_of_Chaos_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/bastion-of-chaos.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/9/97/Bastion_of_Chaos_map.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/bastion-of-chaos/00_bastion_of_chaos_map.webp",
       "caption": "Map of Bastion of Chaos"
     }
   ],

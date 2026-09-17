@@ -19,14 +19,14 @@
       "filename": "hedrox.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/hedrox.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/c/ca/HeDRoX_MAP01.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/hedrox/00_hedrox_map01.webp",
       "caption": "A corridor showcasing the unusual architecture"
     },
     {
-      "url": "https://doomwiki.org/w/images/9/93/HeDRoX_map.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/hedrox/01_hedrox_map.webp",
       "caption": "Map of HeDRoX"
     }
   ],

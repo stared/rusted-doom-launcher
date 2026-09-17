@@ -19,18 +19,18 @@
       "filename": "SIGIL_V1_23.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/3/32/SIGIL_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/sigil.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/2/2b/SIGIL_logo.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/sigil/00_sigil_logo.webp",
       "caption": "Logo of SIGIL."
     },
     {
-      "url": "https://doomwiki.org/w/images/c/c9/SIGIL-beast-box-front.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/sigil/01_sigil-beast-box-front.webp",
       "caption": "Front cover of Beast Box package."
     },
     {
-      "url": "https://doomwiki.org/w/images/7/7e/SIGIL-Box.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/sigil/02_sigil-box.webp",
       "caption": "Front cover of standard package."
     },
     {
@@ -38,11 +38,11 @@
       "caption": "Internal shot of Beast Box; clockwise from top-left: floppy disk shaped USB flash drive; collectible coin; Romero's head figurine; book package"
     },
     {
-      "url": "https://doomwiki.org/w/images/7/7d/SIGIL-beast-box-tshirt.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/sigil/04_sigil-beast-box-tshirt.webp",
       "caption": "XL-sized SIGIL t-shirt included with Beast Box"
     },
     {
-      "url": "https://doomwiki.org/w/images/7/7f/SIGIL-Disc-1.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/sigil/05_sigil-disc-1.webp",
       "caption": "SIGIL disc 1"
     },
     {
@@ -50,7 +50,7 @@
       "caption": "SIGIL disc 2"
     },
     {
-      "url": "https://doomwiki.org/w/images/f/f0/Sigil_Text_Screen.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/sigil/07_sigil_text_screen.webp",
       "caption": "Text screen at end of episode"
     }
   ],

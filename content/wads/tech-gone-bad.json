@@ -19,10 +19,10 @@
       "filename": "e1m8b.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/tech-gone-bad.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/e/e1/E1m8b-start.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/tech-gone-bad/00_e1m8b-start.webp",
       "caption": "Start of Tech Gone Bad"
     },
     {

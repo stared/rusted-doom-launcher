@@ -9,6 +9,7 @@ import { SKILL_FULL_NAMES } from "../lib/statsSchema";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 import WadLinks from "./WadLinks.vue";
 import { getWadLinks } from "../lib/wadLinks";
+import { resolveArtworkUrl } from "../lib/constants";
 
 const { isDownloaded: checkDownloaded } = useDownload();
 const { getCachedPlaySummary } = useStats();
@@ -58,11 +59,18 @@ function playLevel(levelname: string) {
 // State
 const showStatsModal = ref(false);
 const levelNamesLoaded = ref(false);
+const failedThumbnail = ref(false);
 
-// Get thumbnail image URL (prefer dedicated thumbnail, fall back to first screenshot)
+watch(() => props.wad.slug, () => {
+  failedThumbnail.value = false;
+});
+
+// Get thumbnail image URL (prefer dedicated thumbnail, fall back to first valid screenshot)
 const thumbnailUrl = computed(() => {
-  if (props.wad.thumbnail) return props.wad.thumbnail;
-  if (props.wad.screenshots.length > 0) return props.wad.screenshots[0].url;
+  if (failedThumbnail.value) return null;
+  if (props.wad.thumbnail) return resolveArtworkUrl(props.wad.thumbnail);
+  const validScreenshot = props.wad.screenshots.find(s => s.url && !s.url.includes("doomwiki.org"));
+  if (validScreenshot) return resolveArtworkUrl(validScreenshot.url);
   return null;
 });
 
@@ -86,6 +94,7 @@ watch(showStatsModal, async (isOpen) => {
         :src="thumbnailUrl"
         :alt="wad.title"
         class="absolute inset-0 w-full h-full object-cover"
+        @error="failedThumbnail = true"
       />
 
       <!-- Fallback for WADs without thumbnail or screenshots -->

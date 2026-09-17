@@ -19,10 +19,10 @@
       "filename": "unhallowed.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/unhallowed.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/0/0d/Unh-cacos.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/unhallowed/00_unh-cacos.webp",
       "caption": "Cacodemons join the party, as the corpses pile up."
     },
     {
@@ -34,7 +34,7 @@
       "caption": "Fighting a horde of imps and their cyberdemon boss"
     },
     {
-      "url": "https://doomwiki.org/w/images/3/36/Unh-horde.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/unhallowed/03_unh-horde.webp",
       "caption": "A horde of imps and Hell knights"
     },
     {
@@ -42,7 +42,7 @@
       "caption": "Time to BFG some revenants"
     },
     {
-      "url": "https://doomwiki.org/w/images/f/f4/Unh-bfg-revs2.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/unhallowed/05_unh-bfg-revs2.webp",
       "caption": "Scorching another swarm of revenants"
     }
   ],

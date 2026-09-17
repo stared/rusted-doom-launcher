@@ -19,10 +19,10 @@
       "filename": "ch133.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/b/b8/Chosen_Title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/chosen.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/9/9d/Chosen-sphinx.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/chosen/00_chosen-sphinx.webp",
       "caption": "Battling a sphinx"
     }
   ],

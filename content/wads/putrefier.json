@@ -19,10 +19,10 @@
       "filename": "ma_put.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/putrefier.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/2/2d/Putrefier_MAP01.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/putrefier/00_putrefier_map01.webp",
       "caption": "Outside the facility."
     },
     {

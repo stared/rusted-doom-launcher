@@ -19,7 +19,7 @@
       "filename": "zdmcmp1.zip"
     }
   ],
-  "thumbnail": "https://doomwiki.org/w/images/6/61/ZDCMP1_title.png",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/the-zdoom-community-map-project.webp",
   "screenshots": [
     {
       "url": "https://doomwiki.org/w/images/b/b1/ZDCMP1_map.png",
@@ -66,7 +66,7 @@
       "caption": "The columns room and secret #4"
     },
     {
-      "url": "https://doomwiki.org/w/images/1/19/Zdmcmp1-trap.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/the-zdoom-community-map-project/11_zdmcmp1-trap.webp",
       "caption": "A trap"
     },
     {
@@ -102,7 +102,7 @@
       "caption": "The forklift"
     },
     {
-      "url": "https://doomwiki.org/w/images/1/14/Zdmcmp1-newimps.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/the-zdoom-community-map-project/20_zdmcmp1-newimps.webp",
       "caption": "One dark imp and one stone imp"
     },
     {
@@ -202,7 +202,7 @@
       "caption": "The megaarmor"
     },
     {
-      "url": "https://doomwiki.org/w/images/4/4f/Zdmcmp1-river.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/the-zdoom-community-map-project/45_zdmcmp1-river.webp",
       "caption": "The river"
     },
     {

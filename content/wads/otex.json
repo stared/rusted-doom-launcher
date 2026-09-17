@@ -3,7 +3,7 @@
   "title": "OTEX Texture Pack",
   "authors": [
     {
-      "name": "Ola Bj\u00f6rling (ukiro)"
+      "name": "Ola Björling (ukiro)"
     }
   ],
   "year": 2019,
@@ -19,10 +19,10 @@
       "filename": "otex_1_1.zip"
     }
   ],
-  "thumbnail": "",
+  "thumbnail": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/thumbnails/otex.webp",
   "screenshots": [
     {
-      "url": "https://doomwiki.org/w/images/f/f8/Eviternity_Chapter5.png",
+      "url": "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets/screenshots/otex/00_eviternity_chapter5.webp",
       "caption": "A screenshot of MAP21 of Eviternity, which uses OTEX"
     }
   ],
@@ -34,7 +34,7 @@
     "mapping"
   ],
   "difficulty": "unknown",
-  "notes": "[Official site](https://doom.ukiro.com/) \u2022 Resource pack for mappers, not playable standalone.",
+  "notes": "[Official site](https://doom.ukiro.com/) • Resource pack for mappers, not playable standalone.",
   "_schemaVersion": 1,
   "_source": "manual",
   "urls": [
