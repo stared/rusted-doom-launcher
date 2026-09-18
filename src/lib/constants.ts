@@ -1,5 +1,6 @@
 /** Shared display-label constants. */
 
+import { reactive } from "vue";
 import type { Iwad, WadEntry } from "./schema";
 import doomCover from "../assets/iwads/doom.jpg";
 import doom2Cover from "../assets/iwads/doom2.jpg";
@@ -59,3 +60,39 @@ export const IWAD_METADATA: Record<Iwad, { authors: string[]; year: number; desc
   freedoom1: { authors: ["Freedoom Project"], year: 2003, description: "Freedoom Phase 1 — a free replacement for the Ultimate Doom IWAD.", thumbnail: freedoom1Cover },
   freedoom2: { authors: ["Freedoom Project"], year: 2003, description: "Freedoom Phase 2 — a free replacement for the Doom II IWAD.", thumbnail: freedoom2Cover },
 };
+
+const CDN_PREFIX = "https://cdn.jsdelivr.net/gh/stared/rusted-doom-launcher@main/content/assets";
+
+/** Resolve an artwork or screenshot URL, mapping jsDelivr CDN URLs to local files in dev mode. */
+export function resolveArtworkUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  if (import.meta.env.DEV && url.startsWith(CDN_PREFIX)) {
+    return url.replace(CDN_PREFIX, "/content/assets");
+  }
+  return url;
+}
+
+/** Determine if an image aspect ratio deviates significantly from standard 16:9 card aspect (~1.78).
+ * Ratios between 1.30 and 2.20 (standard 4:3, 16:10, and 16:9 Doom artwork) are within tolerance.
+ * Extreme panoramic banners (> 2.20) or tall/square images (< 1.30) are outliers. */
+export function isOutlierAspect(width: number, height: number): boolean {
+  if (!width || !height || height <= 0) return false;
+  const aspect = width / height;
+  return aspect < 1.30 || aspect > 2.20;
+}
+
+const outlierAspectMap = reactive<Record<string, boolean>>({});
+
+/** Record the natural dimensions of an image URL and return whether it is an outlier. */
+export function markImageAspect(url: string, width: number, height: number): boolean {
+  if (!url) return false;
+  const outlier = isOutlierAspect(width, height);
+  outlierAspectMap[url] = outlier;
+  return outlier;
+}
+
+/** Check if an image URL has been identified as having an outlier aspect ratio. */
+export function isImageOutlier(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return outlierAspectMap[url] === true;
+}

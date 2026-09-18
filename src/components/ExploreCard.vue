@@ -4,6 +4,7 @@ import type { WadEntry } from "../lib/schema";
 import { useWadSummaries } from "../composables/useWadSummaries";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 import WadLinks from "./WadLinks.vue";
+import { resolveArtworkUrl, isImageOutlier, markImageAspect } from "../lib/constants";
 
 // Slideshow interval in milliseconds
 const SLIDESHOW_INTERVAL_MS = 2000;
@@ -36,9 +37,9 @@ const difficultyConfig = computed(() => {
 // All available images: thumbnail first, then screenshots
 const allImages = computed(() => {
   const images: string[] = [];
-  if (props.wad.thumbnail) images.push(props.wad.thumbnail);
+  if (props.wad.thumbnail) images.push(resolveArtworkUrl(props.wad.thumbnail));
   for (const s of props.wad.screenshots) {
-    images.push(s.url);
+    images.push(resolveArtworkUrl(s.url));
   }
   return images;
 });
@@ -78,22 +79,39 @@ const authorDisplay = computed(() => {
   if (names.length === 2) return names.join(" & ");
   return `${names[0]} +${names.length - 1}`;
 });
+
+function onImageLoad(e: Event, url: string) {
+  const img = e.target as HTMLImageElement;
+  if (img && img.naturalWidth && img.naturalHeight) {
+    markImageAspect(url, img.naturalWidth, img.naturalHeight);
+  }
+}
 </script>
 
 <template>
   <div class="flex h-full flex-col overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
     <!-- Image area with overlay -->
     <div
-      class="relative aspect-video overflow-hidden"
+      class="relative aspect-video overflow-hidden bg-zinc-950"
       @mouseenter="startSlideshow"
       @mouseleave="stopSlideshow"
     >
+      <!-- Blurred backdrop for outlier aspect ratios -->
+      <img
+        v-if="currentImage && isImageOutlier(currentImage)"
+        :src="currentImage"
+        class="absolute inset-0 w-full h-full object-cover blur-xl opacity-30 scale-110 pointer-events-none"
+        aria-hidden="true"
+      />
+
       <!-- Screenshot/thumbnail with slideshow -->
       <img
         v-if="currentImage"
         :src="currentImage"
         :alt="wad.title"
-        class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+        class="absolute inset-0 w-full h-full transition-opacity duration-300"
+        :class="isImageOutlier(currentImage) ? 'object-contain' : 'object-cover'"
+        @load="onImageLoad($event, currentImage)"
       />
 
       <!-- Fallback for no image -->

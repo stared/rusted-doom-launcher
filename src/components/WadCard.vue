@@ -9,6 +9,7 @@ import { SKILL_FULL_NAMES } from "../lib/statsSchema";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 import WadLinks from "./WadLinks.vue";
 import { getWadLinks } from "../lib/wadLinks";
+import { resolveArtworkUrl, isImageOutlier, markImageAspect } from "../lib/constants";
 
 const { isDownloaded: checkDownloaded } = useDownload();
 const { getCachedPlaySummary } = useStats();
@@ -61,8 +62,8 @@ const levelNamesLoaded = ref(false);
 
 // Get thumbnail image URL (prefer dedicated thumbnail, fall back to first screenshot)
 const thumbnailUrl = computed(() => {
-  if (props.wad.thumbnail) return props.wad.thumbnail;
-  if (props.wad.screenshots.length > 0) return props.wad.screenshots[0].url;
+  if (props.wad.thumbnail) return resolveArtworkUrl(props.wad.thumbnail);
+  if (props.wad.screenshots.length > 0) return resolveArtworkUrl(props.wad.screenshots[0].url);
   return null;
 });
 
@@ -74,18 +75,35 @@ watch(showStatsModal, async (isOpen) => {
   }
 });
 
+function onImageLoad(e: Event, url: string) {
+  const img = e.target as HTMLImageElement;
+  if (img && img.naturalWidth && img.naturalHeight) {
+    markImageAspect(url, img.naturalWidth, img.naturalHeight);
+  }
+}
+
 </script>
 
 <template>
   <div class="flex h-full flex-col overflow-hidden rounded-lg bg-zinc-800 shadow-lg">
     <!-- 16:9 aspect ratio thumbnail area -->
     <div class="relative aspect-video overflow-hidden bg-zinc-900">
+      <!-- Blurred backdrop for outlier aspect ratios -->
+      <img
+        v-if="thumbnailUrl && isImageOutlier(thumbnailUrl)"
+        :src="thumbnailUrl"
+        class="absolute inset-0 w-full h-full object-cover blur-xl opacity-30 scale-110 pointer-events-none"
+        aria-hidden="true"
+      />
+
       <!-- Screenshot/thumbnail image -->
       <img
         v-if="thumbnailUrl"
         :src="thumbnailUrl"
         :alt="wad.title"
-        class="absolute inset-0 w-full h-full object-cover"
+        class="absolute inset-0 w-full h-full transition-opacity duration-300"
+        :class="isImageOutlier(thumbnailUrl) ? 'object-contain' : 'object-cover'"
+        @load="onImageLoad($event, thumbnailUrl)"
       />
 
       <!-- Fallback for WADs without thumbnail or screenshots -->
