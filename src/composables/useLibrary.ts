@@ -36,6 +36,10 @@ export function useLibrary() {
     levelNamesPath: (slug: string) => p("level-names", `${slug}.json`),
     /** level-names/ directory */
     levelNamesDir: () => p("level-names"),
+    /** thumbnails/{slug}.png — Cached thumbnail images */
+    thumbnailPath: (slug: string) => p("thumbnails", `${slug}.png`),
+    /** thumbnails/ directory */
+    thumbnailsDir: () => p("thumbnails"),
     /** Path to a specific IWAD file */
     iwadFile: (filename: string) => p("iwads", filename),
     /** Path to a downloaded WAD/ZIP file in library root */

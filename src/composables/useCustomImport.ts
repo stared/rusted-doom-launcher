@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { stat, exists } from "@tauri-apps/plugin-fs";
+import { stat, exists, mkdir, writeFile } from "@tauri-apps/plugin-fs";
 import { WadEntrySchema, type WadEntry, type Iwad } from "../lib/schema";
 import { useLibrary } from "./useLibrary";
 import { useDownload } from "./useDownload";
@@ -262,6 +262,16 @@ export function useCustomImport() {
       externalPath,
     });
     await addCustomWad(entry);
+
+    if (titlepic) {
+      try {
+        const { thumbnailPath, thumbnailsDir } = useLibrary();
+        await mkdir(thumbnailsDir(), { recursive: true });
+        await writeFile(thumbnailPath(slug), titlepic.png);
+      } catch (e) {
+        console.warn(`[useCustomImport] Failed to write cached thumbnail for ${slug}:`, e);
+      }
+    }
 
     // The pick-time temp extraction has served its purpose in every mode
     // (copied to the library, or bypassed by an external reference).

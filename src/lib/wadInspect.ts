@@ -91,7 +91,7 @@ function startsWithPng(data: Uint8Array): boolean {
 
 // Decode a Doom posted-column picture into an RGB Uint8Array.
 // Returns null if the bytes don't look like a valid picture.
-function decodeDoomPicture(data: Uint8Array): { rgb: Uint8Array; width: number; height: number } | null {
+function decodeDoomPicture(data: Uint8Array, customPalette?: Uint8Array): { rgb: Uint8Array; width: number; height: number } | null {
   if (data.length < 8) return null;
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const width = view.getUint16(0, true);
@@ -100,7 +100,7 @@ function decodeDoomPicture(data: Uint8Array): { rgb: Uint8Array; width: number; 
   if (width === 0 || height === 0 || width > 4096 || height > 4096) return null;
   if (8 + width * 4 > data.length) return null;
 
-  const palette = getPalette();
+  const palette = customPalette && customPalette.length >= 768 ? customPalette : getPalette();
   const rgb = new Uint8Array(width * height * 3);
 
   for (let x = 0; x < width; x++) {
@@ -158,7 +158,7 @@ async function encodeRgbToPng(rgb: Uint8Array, width: number, height: number): P
 // Reads a candidate title-screen lump (from a WAD or PK3 entry) and returns
 // PNG bytes ready to drop on disk. Two paths: PNG passthrough when the entry
 // is already PNG (modern PK3s), and Doom posted-column decode otherwise.
-async function imageBytesToPng(data: Uint8Array): Promise<Titlepic | null> {
+async function imageBytesToPng(data: Uint8Array, customPalette?: Uint8Array): Promise<Titlepic | null> {
   if (startsWithPng(data)) {
     // Read width/height from the PNG IHDR for the caller's info; otherwise we'd
     // have to decode the PNG just to know its dimensions.
@@ -168,7 +168,7 @@ async function imageBytesToPng(data: Uint8Array): Promise<Titlepic | null> {
     const height = view.getUint32(20, false);
     return { png: data, width, height };
   }
-  const decoded = decodeDoomPicture(data);
+  const decoded = decodeDoomPicture(data, customPalette);
   if (!decoded) return null;
   const png = await encodeRgbToPng(decoded.rgb, decoded.width, decoded.height);
   return { png, width: decoded.width, height: decoded.height };
@@ -242,15 +242,25 @@ async function inspectWadFromFile(path: string): Promise<FileInspection> {
     if (m) firstMapTitle = m[1];
   }
 
+  let customPalette: Uint8Array | undefined;
+  const playpalLump = lumps.find(l => l.name === "PLAYPAL");
+  if (playpalLump && playpalLump.size >= 768) {
+    try {
+      customPalette = await readRange(path, playpalLump.offset, 768);
+    } catch {
+      // ignore
+    }
+  }
+
   let titlepic: Titlepic | null = null;
-  // Try TITLEPIC first, then INTERPIC as fallback; modern megawads sometimes
-  // skip TITLEPIC but still have an interpic.
-  for (const lumpName of ["TITLEPIC", "INTERPIC"]) {
+  // Try TITLEPIC first, then TITLE (Heretic/Hexen), then INTERPIC as fallback;
+  // modern megawads sometimes skip TITLEPIC but still have an interpic.
+  for (const lumpName of ["TITLEPIC", "TITLE", "INTERPIC"]) {
     const lump = lumps.find(l => l.name === lumpName);
     if (lump) {
       const bytes = await readRange(path, lump.offset, lump.size);
       try {
-        titlepic = await imageBytesToPng(bytes);
+        titlepic = await imageBytesToPng(bytes, customPalette);
         if (titlepic) break;
       } catch (e) {
         console.warn(`[wadInspect] ${lumpName} decode failed:`, e);
@@ -351,7 +361,7 @@ async function inspectPk3Entries(refs: Pk3EntryRef[]): Promise<FileInspection> {
   // Look for TITLEPIC/INTERPIC under any common path: graphics/, root, or as
   // a bare entry with no folder. Modern PK3s ship PNG; old ones ship Doom-format.
   let titlepic: Titlepic | null = null;
-  const candidatePaths = ["TITLEPIC", "INTERPIC"];
+  const candidatePaths = ["TITLEPIC", "TITLE", "INTERPIC"];
   for (const candidate of candidatePaths) {
     const entry = refs.find(r => {
       const base = (r.path.split("/").pop() ?? "").toUpperCase();

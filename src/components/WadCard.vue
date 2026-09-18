@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { exists, readFile } from "@tauri-apps/plugin-fs";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useStats } from "../composables/useStats";
 import { useLevelNames } from "../composables/useLevelNames";
+import { useLibrary } from "../composables/useLibrary";
 import { formatTics } from "../lib/format";
 import { SKILL_FULL_NAMES } from "../lib/statsSchema";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
@@ -13,6 +15,7 @@ import { getWadLinks } from "../lib/wadLinks";
 const { isDownloaded: checkDownloaded } = useDownload();
 const { getCachedPlaySummary } = useStats();
 const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
+const { thumbnailPath } = useLibrary();
 
 const TYPE_LABELS: Record<WadEntry["type"], string> = {
   iwad: "Base game",
@@ -58,13 +61,52 @@ function playLevel(levelname: string) {
 // State
 const showStatsModal = ref(false);
 const levelNamesLoaded = ref(false);
+const localChecked = ref(false);
+const localThumbnail = ref<string | null>(null);
+const failedThumbnail = ref(false);
 
-// Get thumbnail image URL (prefer dedicated thumbnail, fall back to first screenshot)
+async function checkLocalThumbnail() {
+  try {
+    const path = thumbnailPath(props.wad.slug);
+    if (await exists(path)) {
+      const bytes = await readFile(path);
+      const blob = new Blob([bytes], { type: "image/png" });
+      localThumbnail.value = URL.createObjectURL(blob);
+    }
+  } catch {
+    // ignore
+  } finally {
+    localChecked.value = true;
+  }
+}
+
+onMounted(() => {
+  checkLocalThumbnail();
+});
+
+watch(() => props.wad.slug, () => {
+  localChecked.value = false;
+  localThumbnail.value = null;
+  failedThumbnail.value = false;
+  checkLocalThumbnail();
+});
+
+// Get thumbnail image URL (prefer local cached thumbnail, fall back to dedicated thumbnail, then first screenshot)
 const thumbnailUrl = computed(() => {
+  if (localThumbnail.value) return localThumbnail.value;
+  if (failedThumbnail.value) return null;
   if (props.wad.thumbnail) return props.wad.thumbnail;
   if (props.wad.screenshots.length > 0) return props.wad.screenshots[0].url;
   return null;
 });
+
+function handleImageError() {
+  if (localThumbnail.value) {
+    localThumbnail.value = null;
+  } else {
+    failedThumbnail.value = true;
+  }
+}
 
 // Load level names when stats modal opens
 watch(showStatsModal, async (isOpen) => {
@@ -86,6 +128,7 @@ watch(showStatsModal, async (isOpen) => {
         :src="thumbnailUrl"
         :alt="wad.title"
         class="absolute inset-0 w-full h-full object-cover"
+        @error="handleImageError"
       />
 
       <!-- Fallback for WADs without thumbnail or screenshots -->

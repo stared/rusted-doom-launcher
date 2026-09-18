@@ -43,19 +43,43 @@ const allImages = computed(() => {
   return images;
 });
 
+// Track failed images to gracefully fall back
+const failedImages = ref<Set<string>>(new Set());
+
+const availableImages = computed(() => {
+  return allImages.value.filter(img => !failedImages.value.has(img));
+});
+
 // Slideshow state
 const currentImageIndex = ref(0);
 let slideshowInterval: ReturnType<typeof setInterval> | null = null;
 
 const currentImage = computed(() => {
-  if (allImages.value.length === 0) return null;
-  return allImages.value[currentImageIndex.value];
+  if (availableImages.value.length === 0) return null;
+  return availableImages.value[currentImageIndex.value % availableImages.value.length];
 });
 
+function handleImageError() {
+  const failedUrl = currentImage.value;
+  if (failedUrl) {
+    failedImages.value.add(failedUrl);
+  }
+  if (availableImages.value.length <= 1) {
+    stopSlideshow();
+  } else {
+    currentImageIndex.value = 0;
+  }
+}
+
 function startSlideshow() {
-  if (allImages.value.length <= 1) return;
+  if (availableImages.value.length <= 1) return;
+  if (slideshowInterval) clearInterval(slideshowInterval);
   slideshowInterval = setInterval(() => {
-    currentImageIndex.value = (currentImageIndex.value + 1) % allImages.value.length;
+    if (availableImages.value.length <= 1) {
+      stopSlideshow();
+      return;
+    }
+    currentImageIndex.value = (currentImageIndex.value + 1) % availableImages.value.length;
   }, SLIDESHOW_INTERVAL_MS);
 }
 
@@ -94,6 +118,7 @@ const authorDisplay = computed(() => {
         :src="currentImage"
         :alt="wad.title"
         class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+        @error="handleImageError"
       />
 
       <!-- Fallback for no image -->
