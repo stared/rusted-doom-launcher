@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 use crate::game_archives::create_temp_dir;
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectedWad {
     pub name: String,

@@ -8,6 +8,7 @@ use tauri::{Emitter, Manager, State};
 pub mod game_archives;
 pub mod gog_import;
 pub mod launcher_downloads;
+pub mod steam_import;
 
 #[tauri::command]
 async fn read_launcher_downloads(library_path: String) -> Result<launcher_downloads::LauncherDownloads, String> {
@@ -102,6 +103,43 @@ async fn collect_known_wads(
     wanted: Vec<String>,
 ) -> Result<Vec<gog_import::CollectedWad>, String> {
     gog_import::collect_known_wads(&src_dir, &dest_dir, &wanted)
+}
+
+/// Full status detection for Steam, user, libraries, candidate dirs, and existing WADs.
+#[tauri::command]
+async fn detect_steam_installation(
+    custom_steam_path: Option<String>,
+    wanted: Vec<String>,
+) -> Result<steam_import::SteamStatus, String> {
+    Ok(steam_import::detect_steam(custom_steam_path.as_deref(), &wanted))
+}
+
+/// Inspect Steam's content_log.txt for download status of depot 2281.
+#[tauri::command]
+async fn check_steam_log_status(steam_root: String) -> Result<steam_import::SteamLogStatus, String> {
+    Ok(steam_import::inspect_steam_content_log(std::path::Path::new(&steam_root)))
+}
+
+/// Non-destructively copy wanted WADs from `source_dir` into `dest_dir`.
+#[tauri::command]
+async fn import_steam_wads(
+    source_dir: String,
+    dest_dir: String,
+    wanted: Vec<String>,
+) -> Result<steam_import::SteamImportResult, String> {
+    steam_import::import_steam_wads(&source_dir, &dest_dir, &wanted)
+}
+
+/// Safely remove staging depot cache (`steamapps/content/app_2280`).
+#[tauri::command]
+async fn cleanup_steam_staging(staging_dir: String) -> Result<(), String> {
+    steam_import::cleanup_steam_staging(&staging_dir)
+}
+
+/// Open the Steam client directly to its internal console tab (`steam://nav/console`).
+#[tauri::command]
+async fn open_steam_console() -> Result<(), String> {
+    steam_import::open_steam_console()
 }
 
 /// Look for an idgames-style metadata sidecar next to a user-picked file.
@@ -524,7 +562,12 @@ pub fn run() {
             read_zip_entry,
             make_temp_dir,
             cleanup_temp_dir,
-            collect_known_wads
+            collect_known_wads,
+            detect_steam_installation,
+            check_steam_log_status,
+            import_steam_wads,
+            cleanup_steam_staging,
+            open_steam_console,
         ]);
 
     // MCP bridge for Claude Code debugging (dev mode only)

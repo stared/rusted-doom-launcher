@@ -14,6 +14,7 @@ import { useDownload } from "../composables/useDownload";
 import { useWads } from "../composables/useWads";
 import type { Iwad } from "../lib/schema";
 import { shortenPath, getOs } from "../lib/platform";
+import SteamImportModal from "./SteamImportModal.vue";
 
 const { settings, isFirstRun, migratedIwads, setGZDoomPath, setLibraryPath } = useSettings();
 const { checkInnoextract, importFromGOG, innoextractInstallHint } = useGogImport();
@@ -55,6 +56,12 @@ const hasInnoextract = ref(false);
 const gogImporting = ref(false);
 const gogImportResult = ref<{ success: boolean; message: string } | null>(null);
 const refreshingIwads = ref(false);
+const showSteamModal = ref(false);
+
+async function onSteamImported() {
+  await detectIwads();
+  await registerOwnedExpansions();
+}
 
 async function fetchEngineVersion() {
   if (!settings.value.gzdoomPath) {
@@ -320,6 +327,31 @@ function getEngineName(path: string | null): string {
         </div>
       </div>
 
+      <!-- Import from Steam -->
+      <div class="rounded-lg bg-zinc-800/50 p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-zinc-300">Import IWADs from Steam</label>
+            <p class="text-sm text-zinc-500 mt-1">
+              Import base games & expansions from DOOM + DOOM II on Steam
+            </p>
+          </div>
+          <button
+            class="rounded bg-zinc-700 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-600"
+            @click="showSteamModal = true"
+          >
+            Import from Steam
+          </button>
+        </div>
+      </div>
+
     </div>
+
+    <!-- Steam Import Wizard Modal -->
+    <SteamImportModal
+      v-if="showSteamModal"
+      @close="showSteamModal = false"
+      @imported="onSteamImported"
+    />
   </div>
 </template>
