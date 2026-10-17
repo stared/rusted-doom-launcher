@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useStats } from "../composables/useStats";
@@ -9,10 +9,17 @@ import { SKILL_FULL_NAMES } from "../lib/statsSchema";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 import WadLinks from "./WadLinks.vue";
 import { getWadLinks } from "../lib/wadLinks";
+import { useRemoteImage } from "../composables/useRemoteImage";
+import { useWadRatings } from "../composables/useWadRatings";
+import WadRating from "./WadRating.vue";
+import ArchiveViewer from "./ArchiveViewer.vue";
+import { useLibrary } from "../composables/useLibrary";
 
-const { isDownloaded: checkDownloaded } = useDownload();
+const { isDownloaded: checkDownloaded, getDownloadInfo } = useDownload();
+const { wadFile } = useLibrary();
 const { getCachedPlaySummary } = useStats();
 const { loadLevelNames, getCachedLevelNames, getLevelDisplayName } = useLevelNames();
+const { getRating, setRating } = useWadRatings();
 
 const TYPE_LABELS: Record<WadEntry["type"], string> = {
   iwad: "Base game",
@@ -36,6 +43,15 @@ const props = defineProps<{
 const isDownloaded = computed(() => checkDownloaded(props.wad.slug));
 const saveInfo = computed(() => getCachedPlaySummary(props.wad.slug));
 const hasLinks = computed(() => getWadLinks(props.wad).length > 0);
+const rating = computed(() => getRating(props.wad.slug, props.wad.rating));
+
+async function updateRating(value: number) {
+  try {
+    await setRating(props.wad.slug, value);
+  } catch (error) {
+    console.error("[WadCard] Failed to save rating:", error);
+  }
+}
 
 // Level completion progress
 const totalLevels = computed(() => {
@@ -48,7 +64,12 @@ const completionPercent = computed(() => {
   return Math.min(100, Math.round((saveInfo.value.mapsPlayed / totalLevels.value) * 100));
 });
 
-const emit = defineEmits<{ play: [wad: WadEntry, extraArgs?: string[]]; delete: [wad: WadEntry]; edit: [wad: WadEntry] }>();
+const emit = defineEmits<{
+  play: [wad: WadEntry, extraArgs?: string[]];
+  delete: [wad: WadEntry];
+  edit: [wad: WadEntry];
+  tagClick: [tag: string];
+}>();
 
 function playLevel(levelname: string) {
   showStatsModal.value = false;
@@ -58,6 +79,14 @@ function playLevel(levelname: string) {
 // State
 const showStatsModal = ref(false);
 const levelNamesLoaded = ref(false);
+const showArchiveViewer = ref(false);
+
+const archivePath = computed(() => {
+  const info = getDownloadInfo(props.wad.slug);
+  if (!info) return "";
+  const path = info.externalPath || wadFile(info.filename);
+  return /\.(zip|pk3)$/i.test(path) ? path : "";
+});
 
 // Get thumbnail image URL (prefer dedicated thumbnail, fall back to first screenshot)
 const thumbnailUrl = computed(() => {
@@ -65,6 +94,35 @@ const thumbnailUrl = computed(() => {
   if (props.wad.screenshots.length > 0) return props.wad.screenshots[0].url;
   return null;
 });
+
+// A large imported library can contain many cards. Do not contact image hosts
+// until a thumbnail is close to the viewport.
+const thumbnailArea = ref<HTMLElement | null>(null);
+const shouldLoadThumbnail = ref(false);
+let thumbnailObserver: IntersectionObserver | null = null;
+const thumbnailToLoad = computed(() => shouldLoadThumbnail.value ? thumbnailUrl.value : null);
+
+onMounted(() => {
+  if (!thumbnailArea.value || typeof IntersectionObserver === "undefined") {
+    shouldLoadThumbnail.value = true;
+    return;
+  }
+
+  thumbnailObserver = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) {
+      shouldLoadThumbnail.value = true;
+      thumbnailObserver?.disconnect();
+      thumbnailObserver = null;
+    }
+  }, { rootMargin: "0px" });
+  thumbnailObserver.observe(thumbnailArea.value);
+});
+
+onUnmounted(() => {
+  thumbnailObserver?.disconnect();
+});
+
+const { resolvedUrl: resolvedThumbnailUrl, markError: markImageError, isError: isImageError } = useRemoteImage(thumbnailToLoad);
 
 // Load level names when stats modal opens
 watch(showStatsModal, async (isOpen) => {
@@ -79,16 +137,17 @@ watch(showStatsModal, async (isOpen) => {
 <template>
   <div class="flex h-full flex-col overflow-hidden rounded-lg bg-zinc-800 shadow-lg">
     <!-- 16:9 aspect ratio thumbnail area -->
-    <div class="relative aspect-video overflow-hidden bg-zinc-900">
+    <div ref="thumbnailArea" class="relative aspect-video overflow-hidden bg-zinc-900">
       <!-- Screenshot/thumbnail image -->
       <img
-        v-if="thumbnailUrl"
-        :src="thumbnailUrl"
+        v-if="resolvedThumbnailUrl && !isImageError"
+        :src="resolvedThumbnailUrl"
         :alt="wad.title"
         class="absolute inset-0 w-full h-full object-cover"
+        @error="markImageError"
       />
 
-      <!-- Fallback for WADs without thumbnail or screenshots -->
+      <!-- Fallback for WADs without thumbnail or screenshots or on error -->
       <div
         v-else
         class="absolute inset-0 flex items-center justify-center bg-red-900 px-4 text-center"
@@ -100,6 +159,7 @@ watch(showStatsModal, async (isOpen) => {
     <div class="flex flex-1 flex-col p-3">
       <h3 class="truncate font-semibold text-zinc-100">{{ wad.title }}</h3>
       <p class="truncate text-sm text-zinc-400">{{ wad.authors.map(a => a.name).join(", ") }} • {{ wad.year }} • {{ TYPE_LABELS[wad.type] }}<template v-if="wad.difficulty !== 'unknown'"> • {{ DIFFICULTY_CONFIG[wad.difficulty].label }}</template></p>
+      <WadRating class="mt-1" :rating="rating" @change="updateRating" />
 
       <!-- Save/Progress info (clickable to show details) -->
       <button
@@ -130,6 +190,26 @@ watch(showStatsModal, async (isOpen) => {
       <!-- Bottom-anchored badge/links + actions: keeps the play button aligned
            across cards regardless of how much content sits above -->
       <div class="mt-auto">
+        <!-- Tag pills -->
+        <div v-if="wad.tags && wad.tags.length > 0" class="flex flex-wrap gap-1 mb-2">
+          <button
+            v-for="t in wad.tags.slice(0, 3)"
+            :key="t"
+            type="button"
+            class="px-1.5 py-0.5 rounded text-[10px] bg-zinc-900/80 text-zinc-300 border border-zinc-700/60 hover:border-red-500/60 hover:text-red-300 transition-colors"
+            @click.stop="emit('tagClick', t)"
+          >
+            {{ t }}
+          </button>
+          <span
+            v-if="wad.tags.length > 3"
+            class="px-1.5 py-0.5 rounded text-[10px] text-zinc-500"
+            :title="wad.tags.slice(3).join(', ')"
+          >
+            +{{ wad.tags.length - 3 }}
+          </span>
+        </div>
+
         <div
           v-if="wad._source === 'custom' || hasLinks"
           class="flex flex-nowrap items-center gap-1"
@@ -150,6 +230,12 @@ watch(showStatsModal, async (isOpen) => {
             download-label="▶ Download & Play"
             @play="emit('play', wad)"
           />
+          <button
+            v-if="archivePath"
+            class="rounded bg-zinc-700 px-2 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-600 hover:text-zinc-100"
+            title="View archive files"
+            @click="showArchiveViewer = true"
+          >Files</button>
           <button
             v-if="wad._source === 'custom'"
             class="rounded bg-zinc-700 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-zinc-600 hover:text-zinc-100"
@@ -175,6 +261,13 @@ watch(showStatsModal, async (isOpen) => {
       </div>
     </div>
   </div>
+
+  <ArchiveViewer
+    :open="showArchiveViewer"
+    :archive-path="archivePath"
+    :title="wad.title"
+    @close="showArchiveViewer = false"
+  />
 
   <!-- Stats Modal -->
   <Teleport to="body">

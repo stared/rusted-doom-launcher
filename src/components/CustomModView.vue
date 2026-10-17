@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, useTemplateRef, watch } from "vue";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { Tag, Plus, X, Copy, Check } from "@lucide/vue";
 import { type WadEntry, type Iwad } from "../lib/schema";
 import { IWAD_PICKER_OPTIONS } from "../lib/constants";
 import { useDownload } from "../composables/useDownload";
 import { useSettings } from "../composables/useSettings";
+import { useCustomWads } from "../composables/useCustomWads";
+import { useWadRatings } from "../composables/useWadRatings";
+import { useLibrary } from "../composables/useLibrary";
+import { useGZDoom } from "../composables/useGZDoom";
 import { useCustomImport, discardPickedZip, type PickedZip } from "../composables/useCustomImport";
 import { type FileInspection } from "../lib/wadInspect";
 import { basenameOf } from "../lib/platform";
@@ -39,7 +44,25 @@ const TYPES: { value: WadEntry["type"]; label: string }[] = [
 
 const { getDownloadInfo } = useDownload();
 const { settings } = useSettings();
+const { wadFile, iwadFile } = useLibrary();
+const { getIwadFilename } = useGZDoom();
+const { customWads } = useCustomWads();
+const { getRating, setRating } = useWadRatings();
 const { inspectPick, importCustomWad, updateCustomEntry } = useCustomImport();
+
+const suggestedTags = computed(() => {
+  const set = new Set<string>();
+  for (const w of customWads.value) {
+    if (w.tags) {
+      for (const t of w.tags) {
+        if (!tags.value.includes(t)) {
+          set.add(t);
+        }
+      }
+    }
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+});
 
 const editing = computed(() => props.editWad != null);
 
@@ -53,14 +76,17 @@ const author = ref<string>("");
 const year = ref<number>(new Date().getFullYear());
 const entryType = ref<WadEntry["type"]>(props.defaultType);
 const iwad = ref<Iwad>("doom2");
+const tags = ref<string[]>([]);
+const rating = ref<number>(0);
+const tagInput = ref<string>("");
 const rows = ref<ArgRow[]>([]);
 const errorMsg = ref<string>("");
 const submitting = ref(false);
 const inspection = ref<FileInspection | null>(null);
 const inspecting = ref(false);
-// When user picks a .zip bundle, the inner game file is stream-extracted
-// to a temp file at pick time; inspection and the eventual copy into the
-// library both work from that file. innerName is the basename we'll save as.
+// When a ZIP is picked its primary game file is stream-extracted to a temp
+// file for inspection. The complete bundle is extracted to the library on
+// import; innerName identifies its primary launch file.
 const pickedZip = ref<PickedZip | null>(null);
 
 const pickerOpen = ref(false);
@@ -75,6 +101,18 @@ function handleDocClick(e: MouseEvent) {
 }
 function handleKeyDown(e: KeyboardEvent) {
   if (e.key === "Escape" && pickerOpen.value) pickerOpen.value = false;
+}
+
+function addTag(tagText?: string) {
+  const t = (tagText ?? tagInput.value).trim();
+  if (t && !tags.value.includes(t)) {
+    tags.value.push(t);
+  }
+  tagInput.value = "";
+}
+
+function removeTag(tagToRemove: string) {
+  tags.value = tags.value.filter(t => t !== tagToRemove);
 }
 
 onMounted(() => {
@@ -96,6 +134,8 @@ onMounted(() => {
     year.value = w.year;
     entryType.value = w.type;
     iwad.value = w.iwad;
+    tags.value = [...(w.tags ?? [])];
+    rating.value = getRating(w.slug, w.rating);
     rows.value = rowsFromTokens(w.extraArgs);
   } else {
     sourcePath.value = "";
@@ -104,6 +144,8 @@ onMounted(() => {
     year.value = new Date().getFullYear();
     entryType.value = props.defaultType;
     iwad.value = "doom2";
+    tags.value = [];
+    rating.value = 0;
     rows.value = [];
     copyToLibrary.value = true;
   }
@@ -120,6 +162,7 @@ onUnmounted(() => {
   // Cancel path: a pick-time temp extraction may still be around. (After a
   // successful import this is a harmless no-op — cleanup is idempotent.)
   void discardPickedZip(pickedZip.value);
+  if (copiedCommandTimer) clearTimeout(copiedCommandTimer);
 });
 
 const engineName = computed(() => {
@@ -135,21 +178,53 @@ const heading = computed(() => editing.value ? "Edit custom WAD or mod" : "Add c
 
 const cleanedArgs = computed<string[]>(() => rowsToTokens(rows.value));
 
-const effectiveFilename = computed<string>(() => {
-  // When the user opts out of copying, the launch will use the path they
-  // picked verbatim — show that in the command preview so it matches
-  // reality (including the .zip extension if they picked one).
-  if (!copyToLibrary.value && sourcePath.value) return sourcePath.value;
-  if (pickedZip.value) return pickedZip.value.innerName;
-  return sourcePath.value ? basenameOf(sourcePath.value) : "";
+const commandFilePath = computed(() => {
+  if (!sourcePath.value) return "<file>";
+  if (!copyToLibrary.value) return sourcePath.value;
+  return wadFile(pickedZip.value?.innerName ?? basenameOf(sourcePath.value));
 });
 
-const commandPreview = computed(() => {
-  const iwadFile = `${iwad.value}.wad`;
-  const fileToken = effectiveFilename.value || "<file>";
-  const parts = [engineName.value, "-iwad", iwadFile, "-file", fileToken, ...cleanedArgs.value];
-  return parts.join(" ");
+function quoteCommandToken(value: string): string {
+  return /[\s"]/u.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value;
+}
+
+const commandPreviewGroups = computed(() => {
+  const enginePath = settings.value.gzdoomPath || engineName.value;
+  // Preserve the detected filename's case. Linux treats DOOM2.WAD and
+  // doom2.wad as separate paths, and both IWAD and custom WAD need absolute
+  // paths to make the copied command work from any shell directory.
+  const detectedIwad = getIwadFilename(iwad.value) ?? `${iwad.value}.wad`;
+  const extraGroups = rows.value
+    .map(row => rowsToTokens([row]))
+    .filter(tokens => tokens.length > 0);
+  return [[enginePath], ["-iwad", iwadFile(detectedIwad)], ["-file", commandFilePath.value], ...extraGroups];
 });
+
+const commandPreviewParts = computed(() => commandPreviewGroups.value.flat().map(quoteCommandToken));
+
+// The copy action must remain a single argv-compatible line. The preview is
+// only formatted for reading, using shell continuations between argument rows.
+const commandPreview = computed(() => commandPreviewParts.value.join(" "));
+const commandPreviewDisplay = computed(() => {
+  const lines = commandPreviewGroups.value
+    .map((group, index) => `${index > 0 ? "  " : ""}${group.map(quoteCommandToken).join(" ")}`);
+  return lines.map((line, index) => index < lines.length - 1 ? `${line} \\` : line).join("\n");
+});
+
+const copiedCommand = ref(false);
+let copiedCommandTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function copyCommand() {
+  try {
+    await navigator.clipboard.writeText(commandPreview.value);
+    copiedCommand.value = true;
+    if (copiedCommandTimer) clearTimeout(copiedCommandTimer);
+    copiedCommandTimer = setTimeout(() => { copiedCommand.value = false; }, 1800);
+  } catch (error) {
+    console.error("[CustomModView] Failed to copy command:", error);
+    errorMsg.value = "Couldn't copy the command. Select and copy it manually.";
+  }
+}
 
 const canSubmit = computed(() =>
   sourcePath.value.length > 0 && title.value.trim().length > 0 && !submitting.value
@@ -290,9 +365,12 @@ async function onSubmit() {
       iwad: iwad.value,
       type: entryType.value,
       extraArgs: cleanedArgs.value,
+      tags: tags.value,
+      rating: rating.value,
     };
     if (editing.value && props.editWad) {
       const updated = await updateCustomEntry(props.editWad, fields);
+      await setRating(updated.slug, rating.value);
       emit("added", updated);
       return;
     }
@@ -302,6 +380,7 @@ async function onSubmit() {
       copyToLibrary: copyToLibrary.value,
       fields,
       titlepic: inspection.value?.titlepic ?? null,
+      urls: inspection.value?.urls ?? [],
     });
     emit("added", entry);
   } catch (e) {
@@ -341,7 +420,7 @@ async function onSubmit() {
         <p v-else-if="inspecting" class="text-xs text-zinc-500">Inspecting file…</p>
         <p v-else-if="inspectionSummary" class="text-xs text-zinc-400">Detected: {{ inspectionSummary }}</p>
 
-        <label v-if="!editing && sourcePath" class="flex items-center gap-2 pt-1">
+        <label v-if="!editing && sourcePath && !pickedZip" class="flex items-center gap-2 pt-1">
           <input
             type="checkbox"
             v-model="copyToLibrary"
@@ -349,6 +428,9 @@ async function onSubmit() {
           />
           <span class="text-sm text-zinc-300">Copy file to library</span>
         </label>
+        <p v-else-if="!editing && pickedZip" class="pt-1 text-xs text-zinc-500">
+          ZIP archive will be extracted to the library so the contained WAD/PK3 can be launched.
+        </p>
 
         <img v-if="titlepicPreviewUrl" :src="titlepicPreviewUrl" alt="Title screen" class="mt-2 max-h-40 rounded border border-zinc-800" />
       </div>
@@ -423,6 +505,86 @@ async function onSubmit() {
           >
             <path d="M3 4.5L6 7.5L9 4.5"/>
           </svg>
+        </div>
+      </div>
+
+      <!-- Tags / Categories -->
+      <div class="space-y-1.5">
+        <label class="text-sm font-medium text-zinc-300">Rating</label>
+        <div class="flex items-center gap-1" role="radiogroup" aria-label="Rating">
+          <button
+            v-for="star in 5"
+            :key="star"
+            type="button"
+            class="text-2xl leading-none transition-colors"
+            :class="star <= rating ? 'text-amber-400' : 'text-zinc-600 hover:text-amber-300'"
+            :aria-label="`${star} of 5 stars`"
+            :aria-checked="star === rating"
+            role="radio"
+            @click="rating = rating === star ? 0 : star"
+          >★</button>
+          <button
+            v-if="rating"
+            type="button"
+            class="ml-2 text-xs text-zinc-500 hover:text-zinc-300"
+            @click="rating = 0"
+          >Clear</button>
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-sm font-medium text-zinc-300 flex items-center gap-1.5">
+          <Tag :size="14" class="text-zinc-400" />
+          <span>Tags & Categories</span>
+        </label>
+        <div class="space-y-2">
+          <div v-if="tags.length > 0" class="flex flex-wrap gap-1.5">
+            <span
+              v-for="t in tags"
+              :key="t"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-800 text-zinc-200 border border-zinc-700"
+            >
+              {{ t }}
+              <button
+                type="button"
+                class="text-zinc-400 hover:text-zinc-100 ml-0.5"
+                @click="removeTag(t)"
+              >
+                <X :size="12" />
+              </button>
+            </span>
+          </div>
+          <div class="flex gap-2">
+            <input
+              v-model="tagInput"
+              type="text"
+              class="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-600 focus:outline-none"
+              placeholder="Add tag (e.g. Slaughter, Cacoward, Favorites)..."
+              @keydown.enter.prevent="addTag()"
+            />
+            <button
+              type="button"
+              class="rounded bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-700 transition-colors flex items-center gap-1"
+              @click="addTag()"
+            >
+              <Plus :size="14" />
+              Add
+            </button>
+          </div>
+
+          <!-- Existing Tag Suggestions -->
+          <div v-if="suggestedTags.length > 0" class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="text-[11px] text-zinc-500">Suggestions:</span>
+            <button
+              v-for="sug in suggestedTags"
+              :key="sug"
+              type="button"
+              class="px-2 py-0.5 rounded text-[11px] bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 border border-zinc-700/60 transition-colors cursor-pointer"
+              @click="addTag(sug)"
+            >
+              + {{ sug }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -599,8 +761,20 @@ async function onSubmit() {
 
       <!-- Command preview -->
       <div class="space-y-1.5">
-        <label class="text-sm font-medium text-zinc-300">Command preview</label>
-        <pre class="overflow-x-auto rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-300">{{ commandPreview }}</pre>
+        <div class="flex items-center justify-between gap-3">
+          <label class="text-sm font-medium text-zinc-300">Command preview</label>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-xs font-medium text-zinc-200 hover:bg-zinc-700"
+            :title="copiedCommand ? 'Copied' : 'Copy command with full paths'"
+            @click="copyCommand"
+          >
+            <Check v-if="copiedCommand" :size="14" class="text-emerald-400" />
+            <Copy v-else :size="14" />
+            {{ copiedCommand ? "Copied" : "Copy" }}
+          </button>
+        </div>
+        <pre class="overflow-x-auto rounded border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-300">{{ commandPreviewDisplay }}</pre>
       </div>
     </div>
 

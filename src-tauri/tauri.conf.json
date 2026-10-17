@@ -4,7 +4,7 @@
   "version": "../package.json",
   "identifier": "rusted-doom-launcher",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "pnpm dev:web",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
@@ -14,10 +14,15 @@
     "windows": [
       {
         "title": "Rusted Doom Launcher",
-        "width": 1200,
-        "height": 800,
+        "width": 1100,
+        "height": 700,
+        "minWidth": 800,
+        "minHeight": 500,
+        "center": true,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "theme": "Dark",
+        "backgroundColor": [9, 9, 11, 255]
       }
     ],
     "security": {

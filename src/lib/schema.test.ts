@@ -57,6 +57,13 @@ describe("WAD Entry Schema", () => {
         WadEntrySchema.parse({ ...baseWad, year: 1992 })
       ).toThrow();
     });
+
+    it("should only accept ratings from zero through five", () => {
+      const wad = { ...baseWad, year: 2020 };
+      expect(WadEntrySchema.parse({ ...wad, rating: 5 }).rating).toBe(5);
+      expect(WadEntrySchema.parse(wad).rating).toBe(0);
+      expect(() => WadEntrySchema.parse({ ...wad, rating: 6 })).toThrow();
+    });
   });
 
   describe("slug validation", () => {

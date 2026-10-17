@@ -103,6 +103,20 @@ export function useDownload() {
       return info.externalPath;
     }
 
+    const archivePath = wadFile(info.filename);
+    if (info.filename.toLowerCase().endsWith(".zip") && await exists(archivePath)) {
+      // Older versions recorded the ZIP itself as wadFilename. A ZIP is a
+      // distribution container, so repair that record before launch instead
+      // of passing it to GZDoom/UZDoom as -file.
+      if (!info.wadFilename || info.wadFilename.toLowerCase() === info.filename.toLowerCase()) {
+        const { wadFilename, additionalFiles } = await extractAndWriteGameFiles(wad.slug, archivePath);
+        info.wadFilename = wadFilename;
+        info.additionalFilenames = additionalFiles;
+        await saveState();
+        return wadFile(wadFilename);
+      }
+    }
+
     const wadPath = wadFile(info.wadFilename ?? info.filename);
     if (await exists(wadPath)) {
       return wadPath;
@@ -110,9 +124,10 @@ export function useDownload() {
 
     // Extracted file missing but the original zip is still on disk —
     // re-extract instead of re-downloading.
-    if (info.filename.endsWith(".zip") && await exists(wadFile(info.filename))) {
-      const { wadFilename } = await extractAndWriteGameFiles(wad.slug, wadFile(info.filename));
+    if (info.filename.toLowerCase().endsWith(".zip") && await exists(archivePath)) {
+      const { wadFilename, additionalFiles } = await extractAndWriteGameFiles(wad.slug, archivePath);
       info.wadFilename = wadFilename;
+      info.additionalFilenames = additionalFiles;
       await saveState();
       return wadFile(wadFilename);
     }
@@ -183,16 +198,16 @@ export function useDownload() {
       const isZip = filename.toLowerCase().endsWith('.zip');
 
       if (isZip) {
-        const { wadFilename } = await extractAndWriteGameFiles(wad.slug, path);
+        const { wadFilename, additionalFiles } = await extractAndWriteGameFiles(wad.slug, path);
         downloads.value.downloads[wad.slug] = {
-          filename, wadFilename, downloadedAt: new Date().toISOString(), size: fileStat.size, externalPath: "",
+          filename, wadFilename, additionalFilenames: additionalFiles, downloadedAt: new Date().toISOString(), size: fileStat.size, externalPath: "",
         };
         await saveState();
         await loadLevelNames(wad.slug);
         return wadFile(wadFilename);
       } else {
         downloads.value.downloads[wad.slug] = {
-          filename, wadFilename: filename, downloadedAt: new Date().toISOString(), size: fileStat.size, externalPath: "",
+          filename, wadFilename: filename, additionalFilenames: [], downloadedAt: new Date().toISOString(), size: fileStat.size, externalPath: "",
         };
         await saveState();
         await loadLevelNames(wad.slug);
@@ -211,7 +226,9 @@ export function useDownload() {
       const depWad = allWads.find(w => w.slug === dep.slug);
       if (depWad) depPaths.push(await downloadWad(depWad));
     }
-    return { wadPath: await downloadWad(wad), depPaths };
+    const wadPath = await downloadWad(wad);
+    const ownFiles = downloads.value.downloads[wad.slug]?.additionalFilenames ?? [];
+    return { wadPath, depPaths: [...depPaths, ...ownFiles.map(wadFile)] };
   }
 
   async function deleteWad(slug: string) {
@@ -238,6 +255,13 @@ export function useDownload() {
         console.error(`Failed to delete ${info.wadFilename}:`, e);
       }
     }
+    for (const filename of info.additionalFilenames) {
+      try {
+        await remove(wadFile(filename));
+      } catch (e) {
+        console.error(`Failed to delete ${filename}:`, e);
+      }
+    }
     delete downloads.value.downloads[slug];
     await saveState();
   }
@@ -259,6 +283,7 @@ export function useDownload() {
       downloads.value.downloads[expansion.slug] = {
         filename: expansion.file,
         wadFilename: expansion.file,
+        additionalFilenames: [],
         downloadedAt: new Date().toISOString(),
         size: fileStat.size,
         externalPath: path,
@@ -280,11 +305,12 @@ export function useDownload() {
    */
   async function registerSyntheticDownload(
     slug: string,
-    info: { filename: string; wadFilename: string; size: number; externalPath?: string }
+    info: { filename: string; wadFilename: string; additionalFilenames?: string[]; size: number; externalPath?: string }
   ) {
     downloads.value.downloads[slug] = {
       filename: info.filename,
       wadFilename: info.wadFilename,
+      additionalFilenames: info.additionalFilenames ?? [],
       downloadedAt: new Date().toISOString(),
       size: info.size,
       externalPath: info.externalPath ?? "",

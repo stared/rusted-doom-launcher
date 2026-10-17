@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from "vue";
+import { invoke } from "@tauri-apps/api/core";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar.vue";
 import MainView from "./components/MainView.vue";
@@ -10,6 +11,7 @@ import GameplayLogView from "./components/GameplayLogView.vue";
 import SettingsView from "./components/SettingsView.vue";
 import AboutView from "./components/AboutView.vue";
 import CustomModView from "./components/CustomModView.vue";
+import DoomLauncherImportModal from "./components/DoomLauncherImportModal.vue";
 import { useWads } from "./composables/useWads";
 import { useGZDoom } from "./composables/useGZDoom";
 import { useDownload } from "./composables/useDownload";
@@ -18,6 +20,7 @@ import { useLibrary } from "./composables/useLibrary";
 import { useSettings } from "./composables/useSettings";
 import { useLevelNames } from "./composables/useLevelNames";
 import { useStats } from "./composables/useStats";
+import { useWadRatings } from "./composables/useWadRatings";
 import type { Iwad, WadEntry } from "./lib/schema";
 import { IWAD_LABELS, IWAD_METADATA } from "./lib/constants";
 import { getErrorMessage } from "./lib/errors";
@@ -41,6 +44,7 @@ function synthIwadEntry(iwad: Iwad): WadEntry {
     youtubeVideos: [],
     awards: [],
     tags: [],
+    rating: 0,
     difficulty: "unknown",
     urls: [],
     notes: "",
@@ -61,16 +65,27 @@ const { detectIwads, availableIwads, launch, isRunning } = useGZDoom();
 const lib = useLibrary();
 
 const { loadState: loadDownloadState, downloadWithDeps, downloadWad, deleteWad, isDownloaded, getDownloadInfo, registerOwnedExpansions } = useDownload();
+const { loadState: loadWadRatings } = useWadRatings();
 
 const iwadEntries = computed<WadEntry[]>(() => availableIwads.value.map(synthIwadEntry));
 // Entries with no download URL (official expansions sourced from GOG
 // installers) only appear once their file is owned/imported.
-const obtainable = (w: WadEntry) => w.downloads.length > 0 || isDownloaded(w.slug);
+const obtainable = (w: WadEntry) => w.downloads.length > 0 || isDownloaded(w.slug) || w._source === "custom";
 const playableEntries = computed<WadEntry[]>(() =>
   [...iwadEntries.value, ...wads.value.filter(w => w.type !== "gameplay-mod" && w.type !== "resource-pack" && obtainable(w))]
 );
 const modEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type === "gameplay-mod"));
-const exploreEntries = computed<WadEntry[]>(() => wads.value.filter(w => w.type !== "resource-pack" && obtainable(w)));
+// Explore is the downloadable catalog. Locally imported WADs are managed in
+// Play (or Mods for gameplay mods), where their custom metadata can be edited.
+const exploreEntries = computed<WadEntry[]>(() =>
+  wads.value.filter(w => w._source !== "custom" && w.type !== "resource-pack" && obtainable(w))
+);
+// History only exists for WADs present in the user's library. Passing the
+// whole catalog to Runs/Logs makes those views probe hundreds of absent
+// directories whenever they are opened.
+const historyEntries = computed<WadEntry[]>(() =>
+  wads.value.filter(w => isDownloaded(w.slug) || w._source === "custom")
+);
 const { hasSlug: isCustomSlug, removeCustomWad, loadState: loadCustomWads } = useCustomWads();
 const { settings, isFirstRun, initSettings, toggleActiveMod, pruneActiveMods } = useSettings();
 const { loadAllLevelNames } = useLevelNames();
@@ -79,6 +94,19 @@ const { captureStats, loadAllPlaySummaries, refreshPlaySummary } = useStats();
 const activeView = ref<View>("main");
 const errorMsg = ref("");
 const exploreInitialQuery = ref("");
+const dlImportModalOpen = ref(false);
+
+async function handleDoomLauncherImported() {
+  appInitialized.value = false;
+  try {
+    await loadCustomWads();
+    await loadDownloadState();
+    await loadWadRatings();
+    await loadWadData(wads.value);
+  } finally {
+    appInitialized.value = true;
+  }
+}
 
 // Custom-mod importer: full-screen view, not a modal. We remember which view
 // the user came from so Cancel / submit returns there.
@@ -112,9 +140,15 @@ const lastPlayedSlug = ref<string | null>(null);
 const appInitialized = ref(false);
 
 async function loadWadData(entries: WadEntry[]) {
-  if (entries.length === 0) return;
-  const slugs = entries.map(w => w.slug);
+  // The catalog has hundreds of entries, but only files in the user's
+  // library can have saves, gameplay logs, or persisted level names. Doing
+  // filesystem IPC for every catalog entry kept the Play view behind its
+  // loading screen for several seconds on every start.
+  const libraryEntries = entries.filter(w => isDownloaded(w.slug) || w._source === "custom");
+  if (libraryEntries.length === 0) return;
+  const slugs = libraryEntries.map(w => w.slug);
   await loadAllLevelNames(slugs);
+  await Promise.all(slugs.map(s => captureStats(s)));
   await loadAllPlaySummaries(slugs);
 }
 
@@ -124,14 +158,25 @@ onMounted(async () => {
     return;
   }
   try {
+    try {
+      await invoke("ensure_window_fits_screen");
+    } catch (e) {
+      console.warn("[App] Failed to ensure window fits screen:", e);
+    }
     await initSettings();
     await loadDownloadState();
+    await loadWadRatings();
     await registerOwnedExpansions();
     await loadCustomWads();
     await pruneActiveMods(s => wads.value.some(w => w.slug === s) && isDownloaded(s));
     await detectIwads();
-    await loadWadData(wads.value);
     appInitialized.value = true;
+
+    // Show the library immediately. Save capture and history hydration update
+    // the reactive card data when complete, without delaying the Play page.
+    void loadWadData(wads.value).catch(e => {
+      console.error("[App] Failed to load play data:", e);
+    });
 
     // On first run, open Settings so user can verify configuration
     if (isFirstRun.value) {
@@ -152,8 +197,9 @@ watch(wads, async (newWads) => {
 // Refresh save info and capture stats when game closes
 watch(isRunning, async (running, wasRunning) => {
   if (wasRunning && !running && lastPlayedSlug.value) {
-    await refreshPlaySummary(lastPlayedSlug.value);
-    await captureStats(lastPlayedSlug.value);
+    const slug = lastPlayedSlug.value;
+    await captureStats(slug);
+    await refreshPlaySummary(slug);
   }
 });
 
@@ -165,9 +211,11 @@ function activeModPaths(launchedSlug: string): string[] {
   const knownSlugs = new Set(wads.value.map(w => w.slug));
   return settings.value.activeMods
     .filter(s => s !== launchedSlug && knownSlugs.has(s) && isDownloaded(s))
-    .map(s => {
+    .flatMap(s => {
       const info = getDownloadInfo(s);
-      return info ? lib.wadFile(info.wadFilename ?? info.filename) : null;
+      if (!info) return [];
+      const primary = info.externalPath || lib.wadFile(info.wadFilename ?? info.filename);
+      return [...info.additionalFilenames.map(lib.wadFile), primary];
     })
     .filter((p): p is string => !!p);
 }
@@ -266,50 +314,74 @@ async function handleDelete(wad: WadEntry) {
         <button class="ml-4 text-red-400 hover:text-red-300" @click="errorMsg = ''">Dismiss</button>
       </div>
 
+      <!-- Initial Loading Screen -->
+      <div
+        v-if="!appInitialized"
+        class="flex h-full min-h-[200px] flex-col items-center justify-center space-y-4"
+      >
+        <div class="h-10 w-10 animate-spin rounded-full border-4 border-red-500 border-t-transparent"></div>
+        <p class="text-sm font-medium text-zinc-400">Loading library and play data...</p>
+      </div>
+
       <!-- Views -->
-      <MainView
-        v-if="activeView === 'main'"
-        :wads="playableEntries"
-        @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
-        @delete="handleDelete"
-        @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
-        @add-custom="openCustomImporter"
-        @edit="openCustomEditor"
-      />
-      <ModsView
-        v-else-if="activeView === 'mods'"
-        :wads="modEntries"
-        @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
-        @delete="handleDelete"
-        @toggle-active="handleToggleActive"
-        @add-custom="openCustomImporter"
-        @edit="openCustomEditor"
-      />
-      <CustomModView
-        v-else-if="activeView === 'addCustom'"
-        :default-type="customDefaultType"
-        :edit-wad="editingCustomWad"
-        @cancel="closeCustomImporter"
-        @added="closeCustomImporter"
-      />
-      <ExploreView
-        v-else-if="activeView === 'explore'"
-        :wads="exploreEntries"
-        :initial-query="exploreInitialQuery"
-        @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
-        @delete="handleDelete"
-      />
-      <RunsView
-        v-else-if="activeView === 'runs'"
-        :wads="wads"
-      />
-      <GameplayLogView
-        v-else-if="activeView === 'logs'"
-        :wads="wads"
-      />
-      <SettingsView v-else-if="activeView === 'settings'" />
-      <AboutView v-else-if="activeView === 'about'" />
+      <template v-else>
+        <KeepAlive>
+          <MainView
+            v-if="activeView === 'main'"
+            :wads="playableEntries"
+            @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
+            @delete="handleDelete"
+            @navigate="(view, query) => { activeView = view; exploreInitialQuery = query ?? ''; }"
+            @add-custom="openCustomImporter"
+            @edit="openCustomEditor"
+            @import-doom-launcher="dlImportModalOpen = true"
+          />
+        </KeepAlive>
+        <ModsView
+          v-if="activeView === 'mods'"
+          :wads="modEntries"
+          @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
+          @delete="handleDelete"
+          @toggle-active="handleToggleActive"
+          @add-custom="openCustomImporter"
+          @edit="openCustomEditor"
+        />
+        <CustomModView
+          v-if="activeView === 'addCustom'"
+          :default-type="customDefaultType"
+          :edit-wad="editingCustomWad"
+          @cancel="closeCustomImporter"
+          @added="closeCustomImporter"
+        />
+        <ExploreView
+          v-if="activeView === 'explore'"
+          :wads="exploreEntries"
+          :initial-query="exploreInitialQuery"
+          @play="(wad: WadEntry, args?: string[]) => handlePlay(wad, args)"
+          @delete="handleDelete"
+        />
+        <RunsView
+          v-if="activeView === 'runs'"
+          :wads="historyEntries"
+        />
+        <GameplayLogView
+          v-if="activeView === 'logs'"
+          :wads="historyEntries"
+        />
+        <SettingsView
+          v-if="activeView === 'settings'"
+          @open-doom-launcher-import="dlImportModalOpen = true"
+        />
+        <AboutView v-if="activeView === 'about'" />
+      </template>
     </main>
+
+    <!-- DoomLauncher Import Modal -->
+    <DoomLauncherImportModal
+      :open="dlImportModalOpen"
+      @close="dlImportModalOpen = false"
+      @imported="handleDoomLauncherImported"
+    />
 
     <!-- Game Running Indicator -->
     <div

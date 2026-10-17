@@ -14,6 +14,8 @@ pub struct DownloadInfo {
 	pub filename: String,
 	#[serde(rename = "wadFilename", skip_serializing_if = "Option::is_none", default)]
 	pub wad_filename: Option<String>,
+	#[serde(rename = "additionalFilenames", default)]
+	pub additional_filenames: Vec<String>,
 	#[serde(rename = "downloadedAt")]
 	pub downloaded_at: String,
 	pub size: u64,

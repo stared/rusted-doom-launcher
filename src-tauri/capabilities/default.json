@@ -13,7 +13,8 @@
         "fs:default",
         "fs:allow-app-write-recursive",
         "fs:allow-app-meta-recursive",
-        "upload:default"
+        "upload:default",
+        "window-state:default"
       ]
     },
     {

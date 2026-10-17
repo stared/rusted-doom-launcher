@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { ScrollText, Skull, MapPin, KeyRound, Package, Clock, ChevronDown, ChevronRight } from "@lucide/vue";
-import { useGameplayLog, getDeathCount, getLevelsVisited } from "../composables/useGameplayLog";
-import type { GameplayLog, GameEvent } from "../composables/useGameplayLog";
+import { useGameplayLog, getDeathCount, getLevelsVisited, type GameplayLog, type GameEvent } from "../composables/useGameplayLog";
 import type { WadEntry } from "../lib/schema";
 import { formatMs, getDateKey, formatDateHeader } from "../lib/format";
 
@@ -91,22 +90,20 @@ onMounted(async () => {
   // Collect all sessions with metadata
   const entries: { dateKey: string; date: string; session: SessionEntry }[] = [];
 
-  for (const wad of props.wads) {
+  const wadEntries = await Promise.all(props.wads.map(async wad => {
     const logs = await loadAllGameplayLogs(wad.slug);
-    for (const log of logs) {
-      const dateKey = getDateKey(log.startedAt);
-      entries.push({
-        dateKey,
-        date: log.startedAt,
-        session: {
-          log,
-          wadTitle: wad.title,
-          deathCount: getDeathCount(log),
-          levelsVisited: getLevelsVisited(log),
-        },
-      });
-    }
-  }
+    return logs.map(log => ({
+      dateKey: getDateKey(log.startedAt),
+      date: log.startedAt,
+      session: {
+        log,
+        wadTitle: wad.title,
+        deathCount: getDeathCount(log),
+        levelsVisited: getLevelsVisited(log),
+      },
+    }));
+  }));
+  entries.push(...wadEntries.flat());
 
   // Sort by date, newest first
   entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -124,13 +121,11 @@ onMounted(async () => {
   }
 
   // Convert to final structure
-  const result: DateGroup[] = dateOrder.map(dateKey => ({
+  dateGroups.value = dateOrder.map(dateKey => ({
     date: formatDateHeader(dateKey),
     dateKey,
     sessions: groupedByDate[dateKey],
   }));
-
-  dateGroups.value = result;
   loading.value = false;
 });
 </script>
@@ -176,30 +171,30 @@ onMounted(async () => {
               />
 
               <!-- WAD Title -->
-              <div class="flex-1 min-w-0">
+              <span class="flex-1 min-w-0">
                 <span class="text-zinc-200 font-medium">{{ session.wadTitle }}</span>
-              </div>
+              </span>
 
               <!-- Stats Summary -->
-              <div class="flex items-center gap-6 text-xs font-mono tabular-nums">
+              <span class="flex items-center gap-6 text-xs font-mono tabular-nums">
                 <!-- Deaths -->
-                <div class="flex items-center gap-1.5" title="Deaths">
+                <span class="flex items-center gap-1.5" title="Deaths">
                   <Skull :size="12" class="text-red-400/70" />
                   <span class="text-red-400">{{ session.deathCount }}</span>
-                </div>
+                </span>
 
                 <!-- Levels -->
-                <div class="flex items-center gap-1.5" title="Levels visited">
+                <span class="flex items-center gap-1.5" title="Levels visited">
                   <MapPin :size="12" class="text-emerald-400/70" />
                   <span class="text-emerald-400">{{ session.levelsVisited.length }}</span>
-                </div>
+                </span>
 
                 <!-- Duration -->
-                <div class="flex items-center gap-1.5 text-zinc-400" title="Duration">
+                <span class="flex items-center gap-1.5 text-zinc-400" title="Duration">
                   <Clock :size="12" class="text-zinc-500/70" />
                   <span>{{ formatMs(session.log.durationMs) }}</span>
-                </div>
-              </div>
+                </span>
+              </span>
             </button>
 
             <!-- Expanded Event Timeline (inline, no scroll) -->

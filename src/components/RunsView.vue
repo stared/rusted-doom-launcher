@@ -2,7 +2,6 @@
 import { ref, onMounted } from "vue";
 import { History, Skull, KeyRound, Package, Clock } from "@lucide/vue";
 import { useStats } from "../composables/useStats";
-import { useLevelNames } from "../composables/useLevelNames";
 import { SKILL_FULL_NAMES, type SkillLevel } from "../lib/statsSchema";
 import type { WadEntry } from "../lib/schema";
 import { formatTics, getDateKey, formatDateHeader } from "../lib/format";
@@ -36,7 +35,6 @@ const props = defineProps<{
 }>();
 
 const { loadAllSessions } = useStats();
-const { loadLevelNames } = useLevelNames();
 
 const dateGroups = ref<DateGroup[]>([]);
 const loading = ref(true);
@@ -48,39 +46,31 @@ onMounted(async () => {
   // Collect all level entries with metadata
   const entries: { dateKey: string; date: string; wadSlug: string; wadTitle: string; level: LevelEntry }[] = [];
 
-  for (const wad of props.wads) {
-    // Load level names from WAD file (cached/persisted)
-    const levelNamesMap = await loadLevelNames(wad.slug);
-
+  const wadEntries = await Promise.all(props.wads.map(async wad => {
     const sessions = await loadAllSessions(wad.slug);
-    for (const session of sessions) {
-      const dateKey = getDateKey(session.capturedAt);
-      for (const level of session.levels) {
-        // Get level name from parsed WAD data (empty string if not defined)
-        const levelIdUpper = level.id.toUpperCase();
-        const parsedName = levelNamesMap?.get(levelIdUpper) ?? "";
-
-        entries.push({
-          dateKey,
-          date: session.capturedAt,
-          wadSlug: wad.slug,
-          wadTitle: wad.title,
-          level: {
-            levelId: level.id,
-            levelName: parsedName,
-            skill: session.skill,
-            kills: level.kills,
-            totalKills: level.totalKills,
-            secrets: level.secrets,
-            totalSecrets: level.totalSecrets,
-            items: level.items,
-            totalItems: level.totalItems,
-            timeTics: level.timeTics,
-          },
-        });
-      }
-    }
-  }
+    return sessions.flatMap(session => session.levels.map(level => {
+      return {
+        dateKey: getDateKey(session.capturedAt),
+        date: session.capturedAt,
+        wadSlug: wad.slug,
+        wadTitle: wad.title,
+        level: {
+          levelId: level.id,
+          // loadAllSessions already applies the persisted level-name map.
+          levelName: level.name === level.id ? "" : level.name,
+          skill: session.skill,
+          kills: level.kills,
+          totalKills: level.totalKills,
+          secrets: level.secrets,
+          totalSecrets: level.totalSecrets,
+          items: level.items,
+          totalItems: level.totalItems,
+          timeTics: level.timeTics,
+        },
+      };
+    }));
+  }));
+  entries.push(...wadEntries.flat());
 
   // Sort by date, OLDEST first (so we can track first occurrence)
   entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -117,7 +107,7 @@ onMounted(async () => {
   }
 
   // Convert to final structure - one DateGroup per unique date
-  const result: DateGroup[] = dateOrder.map(dateKey => {
+  dateGroups.value = dateOrder.map(dateKey => {
     const wadMap = groupedByDate[dateKey];
     const wads: WadGroup[] = Object.entries(wadMap).map(([wadTitle, levels]) => ({
       wadTitle,
@@ -130,7 +120,6 @@ onMounted(async () => {
     };
   });
 
-  dateGroups.value = result;
   loading.value = false;
 });
 </script>

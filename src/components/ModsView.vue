@@ -5,7 +5,11 @@ import FilterBar from "./FilterBar.vue";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useSettings } from "../composables/useSettings";
+import { fetchImageDataUrl } from "../composables/useRemoteImage";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
+import WadRating from "./WadRating.vue";
+import WadLinks from "./WadLinks.vue";
+import { useWadRatings } from "../composables/useWadRatings";
 import AddCustomTile from "./AddCustomTile.vue";
 
 const { wads } = defineProps<{
@@ -21,11 +25,40 @@ const emit = defineEmits<{
 }>();
 
 const { isDownloaded: checkDownloaded } = useDownload();
+const { getRating, setRating } = useWadRatings();
+
+async function updateRating(slug: string, value: number) {
+  try {
+    await setRating(slug, value);
+  } catch (error) {
+    console.error("[ModsView] Failed to save rating:", error);
+  }
+}
 const { settings } = useSettings();
+
+const resolvedThumbnails = ref<Record<string, string>>({});
+const failedImages = ref<Set<string>>(new Set());
 
 function thumbnailFor(wad: WadEntry): string | null {
   if (wad.thumbnail) return wad.thumbnail;
   if (wad.screenshots.length > 0) return wad.screenshots[0].url;
+  return null;
+}
+
+function getThumbnail(wad: WadEntry): string | null {
+  if (resolvedThumbnails.value[wad.slug]) return resolvedThumbnails.value[wad.slug];
+  const raw = thumbnailFor(wad);
+  if (!raw) return null;
+  if (raw.startsWith("data:") || raw.startsWith("blob:")) {
+    return raw;
+  }
+  fetchImageDataUrl(raw).then((dataUrl) => {
+    if (dataUrl) {
+      resolvedThumbnails.value[wad.slug] = dataUrl;
+    } else {
+      failedImages.value.add(wad.slug);
+    }
+  });
   return null;
 }
 
@@ -59,7 +92,7 @@ const filteredWads = computed(() => {
     );
   }
 
-  return result.toSorted((a, b) => {
+  return [...result].sort((a, b) => {
     switch (sortBy.value) {
       case "active": {
         const aActive = checkDownloaded(a.slug) && isActive(a.slug) ? 1 : 0;
@@ -106,7 +139,7 @@ const filteredWads = computed(() => {
         <p class="text-zinc-500">No mods match your search</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div v-else class="wad-grid">
         <div
           v-for="wad in filteredWads"
           :key="wad.slug"
@@ -116,10 +149,11 @@ const filteredWads = computed(() => {
           <!-- 16:9 thumbnail -->
           <div class="relative aspect-video overflow-hidden bg-zinc-900">
             <img
-              v-if="thumbnailFor(wad)"
-              :src="thumbnailFor(wad) ?? ''"
+              v-if="getThumbnail(wad) && !failedImages.has(wad.slug)"
+              :src="getThumbnail(wad) ?? ''"
               :alt="wad.title"
               class="absolute inset-0 w-full h-full object-cover"
+              @error="failedImages.add(wad.slug)"
             />
             <div
               v-else
@@ -139,6 +173,8 @@ const filteredWads = computed(() => {
               >Custom</span>
             </h3>
             <p class="truncate text-sm text-zinc-400">{{ authorsLine(wad) }}</p>
+            <WadRating class="mt-1" :rating="getRating(wad.slug, wad.rating)" @change="updateRating(wad.slug, $event)" />
+            <WadLinks class="mt-2" :wad="wad" :include-download-source="false" />
 
             <div class="mt-3 flex gap-2">
               <template v-if="checkDownloaded(wad.slug)">

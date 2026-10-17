@@ -74,6 +74,11 @@ export function useGZDoom() {
     console.log("[detectIwads] Available IWADs:", availableIwads.value);
   }
 
+  /** Filename as detected on disk, preserving case for Linux filesystems. */
+  function getIwadFilename(iwad: Iwad): string | undefined {
+    return iwadFilenames.get(iwad);
+  }
+
   async function launch(
     wadPath: string,
     iwad: Iwad,
@@ -88,6 +93,14 @@ export function useGZDoom() {
     const filename = iwadFilenames.get(iwad);
     if (!filename) throw new Error(`IWAD ${iwad} not detected`);
     const iwadPath = lib.iwadFile(filename);
+
+    // ZIPs are download containers, not engine resources. Passing one to
+    // GZDoom/UZDoom may fail silently and start only the base game, so refuse
+    // to launch if an old or corrupt download record still points at a ZIP.
+    const archivePath = [wadPath, ...depFiles, ...modFiles].find(path => /\.zip$/i.test(path));
+    if (archivePath) {
+      throw new Error(`Can't launch ZIP archive directly: ${archivePath}. Re-import or re-download this mod so its WAD/PK3 is extracted first.`);
+    }
 
     // Create per-WAD save directory if slug provided
     const saveDir = wadSlug ? lib.savesDir(wadSlug) : null;
@@ -133,5 +146,5 @@ export function useGZDoom() {
     isRunning.value = true;
   }
 
-  return { isRunning, availableIwads, detectIwads, launch };
+  return { isRunning, availableIwads, detectIwads, getIwadFilename, launch };
 }

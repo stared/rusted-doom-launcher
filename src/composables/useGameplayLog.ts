@@ -166,23 +166,22 @@ export function useGameplayLog() {
       return [];
     }
 
-    const logs: GameplayLog[] = [];
-
-    for (const filename of files) {
+    const logs = await Promise.all(files.map(async filename => {
       try {
         const content = await readTextFile(`${sessionsDirPath}/${filename}`);
         const parsed = GameplayLogSchema.safeParse(JSON.parse(content));
-        if (parsed.success) {
-          logs.push(parsed.data);
-        } else {
+        if (!parsed.success) {
           console.warn(`Invalid gameplay log ${filename}:`, parsed.error.issues);
+          return null;
         }
+        return parsed.data;
       } catch (e) {
         console.error(`Error reading gameplay log ${filename}:`, e);
+        return null;
       }
-    }
+    }));
 
-    return logs;
+    return logs.filter((log): log is GameplayLog => log !== null);
   }
 
   return {

@@ -1,6 +1,24 @@
 import type { WadEntry } from "./schema";
+import { isKnownWadUrl } from "./knownWadDomains";
 
 export type WadLink = { label: string; url: string };
+export type WadLinkOptions = { includeDownloadSource?: boolean };
+
+/** Sites from older README templates that are known to have HTTPS endpoints. */
+function preferredUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./i, "");
+    if (parsed.protocol === "http:" && ["esselfortium.net", "doomworld.com"].includes(host)) {
+      parsed.protocol = "https:";
+      return parsed.toString();
+    }
+  } catch {
+    // Schema validation will reject malformed catalog URLs; notes may contain
+    // arbitrary prose, so leave those alone here.
+  }
+  return url;
+}
 
 // Reference labels we surface from urls/notes, in display order.
 const REF_ORDER = ["Doomworld", "Cacoward", "DoomWiki"] as const;
@@ -61,11 +79,15 @@ function sourceLink(wad: WadEntry): WadLink | null {
   return { label: "Download", url: dl.url };
 }
 
-// External links shown on a WAD card: Doomworld thread, DoomWiki page, and the
-// download source page. Returns an empty array when none apply (card unchanged).
-export function getWadLinks(wad: WadEntry): WadLink[] {
+// External links shown on a WAD card: Doomworld thread, DoomWiki page, and,
+// where useful, the download source page. Views that already offer a download
+// action can omit the latter to avoid opening an archive directly.
+export function getWadLinks(wad: WadEntry, options: WadLinkOptions = {}): WadLink[] {
   const refs = new Map<string, string>();
-  for (const url of [...wad.urls, ...extractUrls(wad.notes)]) {
+  const allUrls = [...wad.urls, ...extractUrls(wad.notes)]
+    .map(preferredUrl)
+    .filter(url => wad._source !== "custom" || isKnownWadUrl(url));
+  for (const url of allUrls) {
     const label = refLabel(url);
     if (label && !refs.has(label)) refs.set(label, url);
   }
@@ -75,8 +97,24 @@ export function getWadLinks(wad: WadEntry): WadLink[] {
     url: refs.get(label)!,
   }));
 
-  const source = sourceLink(wad);
-  if (source) links.push(source);
+  // Custom WAD READMEs often point to an author's own site. Keep those links
+  // too; the curated labels above remain first for familiar community pages.
+  const seen = new Set(links.map(link => link.url));
+  for (const url of allUrls) {
+    if (seen.has(url) || refLabel(url)) continue;
+    const host = hostOf(url);
+    if (!host) continue;
+    links.push({ label: host.replace(/^www\./i, ""), url });
+    seen.add(url);
+  }
+
+  if (options.includeDownloadSource !== false) {
+    const source = sourceLink(wad);
+    if (source && !seen.has(source.url)) {
+      seen.add(source.url);
+      links.push(source);
+    }
+  }
 
   return links;
 }

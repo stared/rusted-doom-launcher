@@ -55,6 +55,8 @@ export const WadEntrySchema = z.object({
     year: z.number().int().min(1994).max(MAX_YEAR),
   })),
   tags: z.array(z.string()),
+  // Personal rating shown in the launcher. Zero means not rated yet.
+  rating: z.number().int().min(0).max(5).default(0),
   difficulty: z.enum(["easy", "medium", "hard", "slaughter", "unknown"]),
   urls: z.array(z.url()),
   notes: z.string(),
@@ -73,6 +75,9 @@ export const LauncherDownloadsSchema = z.object({
   downloads: z.record(z.string(), z.object({
     filename: z.string().min(1),
     wadFilename: z.string().optional(),
+    // Other WAD/PK3 files extracted from the same ZIP. They are loaded before
+    // wadFilename so a package's main file can override its resources.
+    additionalFilenames: z.array(z.string().min(1)).default([]),
     downloadedAt: z.iso.datetime(),
     size: z.number().int().nonnegative(),
     // When set, the actual file lives outside the library and we should

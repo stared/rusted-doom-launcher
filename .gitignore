@@ -55,6 +55,11 @@ debug.log
 TODO.md
 .aider*
 
+# database files
+*.sqlite
+*.db
+*.sqlite3
+
 # ts -> js compiled files
 vite.config.d.ts
 

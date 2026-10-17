@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { Gamepad2 } from "@lucide/vue";
 import type { WadEntry } from "../lib/schema";
 import { useWadSummaries } from "../composables/useWadSummaries";
+import { useRemoteImage } from "../composables/useRemoteImage";
 import DownloadPlayButton from "./DownloadPlayButton.vue";
 import WadLinks from "./WadLinks.vue";
+import WadRating from "./WadRating.vue";
+import { useWadRatings } from "../composables/useWadRatings";
 
 // Slideshow interval in milliseconds
 const SLIDESHOW_INTERVAL_MS = 2000;
 
 const { getDifficulty, getVibe } = useWadSummaries();
+const { getRating, setRating } = useWadRatings();
 
 const props = defineProps<{
   wad: WadEntry;
@@ -19,6 +24,15 @@ const emit = defineEmits<{ play: [wad: WadEntry] }>();
 // Get difficulty from summaries
 const difficulty = computed(() => getDifficulty(props.wad.slug));
 const vibe = computed(() => getVibe(props.wad.slug));
+const rating = computed(() => getRating(props.wad.slug, props.wad.rating));
+
+async function updateRating(value: number) {
+  try {
+    await setRating(props.wad.slug, value);
+  } catch (error) {
+    console.error("[ExploreCard] Failed to save rating:", error);
+  }
+}
 
 // Difficulty color and label based on 1-10 scale
 const difficultyConfig = computed(() => {
@@ -52,6 +66,32 @@ const currentImage = computed(() => {
   return allImages.value[currentImageIndex.value];
 });
 
+// Fetching every remote image in the catalog at once overwhelms WebKit. Start
+// only when the card is close to the viewport; cards stay loaded after that so
+// hovering can still cycle their screenshots without another fetch.
+const imageArea = ref<HTMLElement | null>(null);
+const shouldLoadImages = ref(false);
+let imageObserver: IntersectionObserver | null = null;
+const imageToLoad = computed(() => shouldLoadImages.value ? currentImage.value : null);
+
+onMounted(() => {
+  if (!imageArea.value || typeof IntersectionObserver === "undefined") {
+    shouldLoadImages.value = true;
+    return;
+  }
+
+  imageObserver = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) {
+      shouldLoadImages.value = true;
+      imageObserver?.disconnect();
+      imageObserver = null;
+    }
+  }, { rootMargin: "0px" });
+  imageObserver.observe(imageArea.value);
+});
+
+const { resolvedUrl: resolvedCurrentImage, markError: markImageError, isError: isImageError } = useRemoteImage(imageToLoad);
+
 function startSlideshow() {
   if (allImages.value.length <= 1) return;
   slideshowInterval = setInterval(() => {
@@ -69,6 +109,7 @@ function stopSlideshow() {
 
 onUnmounted(() => {
   stopSlideshow();
+  imageObserver?.disconnect();
 });
 
 // Author display (truncated if too long)
@@ -81,27 +122,32 @@ const authorDisplay = computed(() => {
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
+  <div class="flex flex-col overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
     <!-- Image area with overlay -->
     <div
+      ref="imageArea"
       class="relative aspect-video overflow-hidden"
       @mouseenter="startSlideshow"
       @mouseleave="stopSlideshow"
     >
       <!-- Screenshot/thumbnail with slideshow -->
       <img
-        v-if="currentImage"
-        :src="currentImage"
+        v-if="resolvedCurrentImage && !isImageError"
+        :src="resolvedCurrentImage"
         :alt="wad.title"
+        loading="lazy"
         class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+        @error="markImageError"
       />
 
-      <!-- Fallback for no image -->
+      <!-- Fallback for no image or on load error -->
       <div
         v-else
-        class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-900 to-zinc-900 px-4 text-center"
+        class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-950 via-zinc-900 to-zinc-950 px-4 text-center"
       >
-        <span class="text-2xl text-red-200 font-bold leading-tight line-clamp-3 opacity-80">{{ wad.title }}</span>
+        <div class="flex h-12 w-12 items-center justify-center rounded-full border border-red-900/40 bg-red-950/30 text-red-500/40">
+          <Gamepad2 :size="24" />
+        </div>
       </div>
 
       <!-- Gradient overlay for text readability -->
@@ -110,7 +156,7 @@ const authorDisplay = computed(() => {
       <!-- Difficulty badge (top right) -->
       <div
         v-if="difficultyConfig"
-        class="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded bg-black/70 backdrop-blur-sm"
+        class="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded bg-black/80"
       >
         <span :class="['text-xs font-bold uppercase tracking-wide', difficultyConfig.textColor]">
           {{ difficultyConfig.label }}
@@ -122,10 +168,10 @@ const authorDisplay = computed(() => {
 
       <!-- Title overlay (bottom) -->
       <div class="absolute bottom-0 left-0 right-0 p-3">
-        <h3 class="text-lg font-bold text-white drop-shadow-lg leading-tight">
+        <h3 class="text-lg font-bold text-white leading-tight line-clamp-2">
           {{ wad.title }}
         </h3>
-        <p class="text-xs text-zinc-300 mt-0.5">
+        <p class="text-xs text-zinc-300 mt-0.5 truncate">
           {{ authorDisplay }} · {{ wad.year }}
         </p>
       </div>
@@ -133,6 +179,7 @@ const authorDisplay = computed(() => {
 
     <!-- Content area -->
     <div class="flex flex-1 flex-col p-3">
+      <WadRating class="mb-2" :rating="rating" @change="updateRating" />
       <!-- Vibe text - the hook -->
       <p
         v-if="vibe"

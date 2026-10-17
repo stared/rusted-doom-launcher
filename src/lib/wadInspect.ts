@@ -32,6 +32,7 @@
 // Everything below is the minimum that earns its keep on the audit corpus.
 import { invoke } from "@tauri-apps/api/core";
 import type { Iwad, WadEntry } from "./schema";
+import { isKnownWadUrl } from "./knownWadDomains";
 
 function decodeText(data: Uint8Array): string {
   return new TextDecoder("utf-8", { fatal: false }).decode(data);
@@ -49,6 +50,8 @@ export interface FileInspection {
   firstMapTitle: string;
   author: string;
   year: number;             // 0 if not found
+  /** Reference pages mentioned in bundled README / idgames text. */
+  urls: string[];
   hasGameplayCode: boolean;
   suggestedType: WadEntry["type"];
   suggestedIwad: Iwad;
@@ -126,7 +129,7 @@ function decodeDoomPicture(data: Uint8Array): { rgb: Uint8Array; width: number; 
         if (y >= 0 && y < height) {
           const idx = data[i + n];
           const base = (y * width + x) * 3;
-          rgb[base + 0] = palette[idx * 3 + 0];
+          rgb[base] = palette[idx * 3];
           rgb[base + 1] = palette[idx * 3 + 1];
           rgb[base + 2] = palette[idx * 3 + 2];
         }
@@ -145,7 +148,7 @@ async function encodeRgbToPng(rgb: Uint8Array, width: number, height: number): P
   if (!ctx) throw new Error("OffscreenCanvas 2D context unavailable");
   const imageData = ctx.createImageData(width, height);
   for (let i = 0; i < width * height; i++) {
-    imageData.data[i * 4 + 0] = rgb[i * 3 + 0];
+    imageData.data[i * 4] = rgb[i * 3];
     imageData.data[i * 4 + 1] = rgb[i * 3 + 1];
     imageData.data[i * 4 + 2] = rgb[i * 3 + 2];
     imageData.data[i * 4 + 3] = 255;
@@ -184,6 +187,8 @@ const MAP_NAME_RE = /^(MAP\d{2}|E[1-9]M[1-9])$/;
 const TXT_TITLE_RE = /^\s*Title\s*:\s*(.+?)\s*$/im;
 const TXT_AUTHOR_RE = /^\s*Authors?\s*:\s*(.+?)\s*$/im;
 const TXT_DATE_RE = /^\s*(?:Release\s*date|Date)\s*:\s*(.+?)\s*$/im;
+const WHERE_TO_GET_RE = /^\s*\*+\s*Where to get the file that this text file describes\s*\*+\s*$/im;
+const SECTION_HEADER_RE = /^\s*\*+\s*[^\n]*\s*\*+\s*$/m;
 
 const MAPINFO_MAP_NAME_RE = /^\s*map\s+\S+\s+"([^"]+)"/im;
 
@@ -266,6 +271,7 @@ async function inspectWadFromFile(path: string): Promise<FileInspection> {
     firstMapTitle,
     author: "",
     year: 0,
+    urls: [],
     hasGameplayCode,
     suggestedType: suggestType(mapNames.length, hasGameplayCode),
     suggestedIwad: guessIwad(mapNames),
@@ -318,6 +324,7 @@ async function inspectPk3Entries(refs: Pk3EntryRef[]): Promise<FileInspection> {
   let firstMapTitle = "";
   let author = "";
   let year = 0;
+  const urls = new Set<string>();
 
   // MAPINFO/ZMAPINFO — used only for the human-readable map name.
   const mapInfoEntry = refs.find(r => {
@@ -342,6 +349,7 @@ async function inspectPk3Entries(refs: Pk3EntryRef[]): Promise<FileInspection> {
     if (!/\.(txt|md|nfo)$/i.test(base)) continue;
     const text = decodeText(await ref.read());
     const parsed = parseInfoText(text);
+    for (const url of parsed.urls) urls.add(url);
     if (!author && parsed.author) author = parsed.author;
     if (!year && parsed.year) year = parsed.year;
     if (!firstMapTitle && parsed.title) firstMapTitle = parsed.title;
@@ -376,6 +384,7 @@ async function inspectPk3Entries(refs: Pk3EntryRef[]): Promise<FileInspection> {
     firstMapTitle,
     author,
     year,
+    urls: [...urls],
     hasGameplayCode,
     suggestedType: suggestType(mapNames.length, hasGameplayCode),
     suggestedIwad: guessIwad(mapNames),
@@ -387,7 +396,7 @@ async function inspectPk3Entries(refs: Pk3EntryRef[]): Promise<FileInspection> {
 // variant spellings (Author vs Authors, Release date vs Date). Year is the
 // last 4-digit year mentioned in the date string — covers "12.06.2020",
 // "2020-07-03", "Jan 5, 2003", and bare "1994".
-export function parseInfoText(text: string): { title: string; author: string; year: number } {
+export function parseInfoText(text: string): { title: string; author: string; year: number; urls: string[] } {
   const titleMatch = text.match(TXT_TITLE_RE);
   const authorMatch = text.match(TXT_AUTHOR_RE);
   const dateMatch = text.match(TXT_DATE_RE);
@@ -404,7 +413,32 @@ export function parseInfoText(text: string): { title: string; author: string; ye
     title: titleMatch ? titleMatch[1].trim() : "",
     author: authorMatch ? authorMatch[1].trim() : "",
     year,
+    // The idgames template separates download locations from author/community
+    // links. Only retain URLs below its "Where to get" heading, otherwise a
+    // personal home page becomes a misleading download/source link.
+    urls: Array.from(new Set(
+      (downloadSection(text).match(/https?:\/\/[^\s<>"']+/gi) ?? [])
+        .map(url => url.replace(/[).,;:!?]+$/, ""))
+        .filter(url => {
+          try {
+            new URL(url);
+            return true;
+          } catch {
+            return false;
+          }
+        })
+        .filter(isKnownWadUrl)
+    )),
   };
+}
+
+/** Return the body of the standard idgames download-location section. */
+function downloadSection(text: string): string {
+  const match = WHERE_TO_GET_RE.exec(text);
+  if (!match || match.index === undefined) return "";
+  const rest = text.slice(match.index + match[0].length);
+  const nextHeading = SECTION_HEADER_RE.exec(rest);
+  return nextHeading?.index === undefined ? rest : rest.slice(0, nextHeading.index);
 }
 
 function suggestType(mapCount: number, hasGameplayCode: boolean): WadEntry["type"] {

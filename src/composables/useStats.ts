@@ -11,6 +11,7 @@ import {
 import { parseSaveFile } from "../lib/saveParser";
 import { useLibrary } from "./useLibrary";
 import { useLevelNames } from "./useLevelNames";
+import { useGameplayLog, getLevelsVisited, type GameplayLog } from "./useGameplayLog";
 
 /** Aggregated level stats with skill from session. */
 export interface AggregatedLevel extends LevelPlayStats {
@@ -28,6 +29,11 @@ export interface WadPlaySummary {
 
 // Singleton cache
 const summaryCache = ref<Map<string, WadPlaySummary>>(new Map());
+// Runs and the Play summary both consume the same session files. Keep their
+// parsed form process-wide and share in-flight reads so switching tabs never
+// starts a second full scan of the history.
+const sessionsCache = new Map<string, PlaySession[]>();
+const sessionsLoading = new Map<string, Promise<PlaySession[]>>();
 
 // Parse level name from GZDoom info.json Comment field
 // Format: "MAP13 - Polychromatic Terrace" or "E1M1 - Hangar"
@@ -73,6 +79,7 @@ function generateSessionHash(session: Omit<PlaySession, "capturedAt">): string {
 export function useStats() {
   const { statsDir, savesDir } = useLibrary();
   const { getCachedLevelNames, loadLevelNames, mergeLevelNames } = useLevelNames();
+  const { loadAllGameplayLogs } = useGameplayLog();
 
   // Check if a session with this content hash already exists
   async function sessionHashExists(statsDir: string, hash: string): Promise<boolean> {
@@ -186,11 +193,17 @@ export function useStats() {
       await mergeLevelNames(slug, discoveredNames);
     }
 
+    if (capturedCount > 0) {
+      sessionsCache.delete(slug);
+      summaryCache.value.delete(slug);
+    }
+
     return capturedCount;
   }
 
-  // Load all play sessions for a WAD
-  async function loadAllSessions(slug: string): Promise<PlaySession[]> {
+  // Read all play sessions for a WAD from disk. The public loader below adds
+  // caching and in-flight request sharing.
+  async function readAllSessions(slug: string): Promise<PlaySession[]> {
     const statsDirPath = statsDir(slug);
 
     try {
@@ -213,36 +226,56 @@ export function useStats() {
     // Level names from central store (WAD MAPINFO + save file Comments)
     const levelNames = getCachedLevelNames(slug) ?? await loadLevelNames(slug);
 
-    const sessions: PlaySession[] = [];
-    for (const filename of files) {
+    const sessions = await Promise.all(files.map(async filename => {
       try {
         const content = await readTextFile(`${statsDirPath}/${filename}`);
         const parsed = PlaySessionSchema.safeParse(JSON.parse(content));
-        if (parsed.success) {
-          const session = parsed.data;
-          // Apply display names from central level names store
-          if (levelNames) {
-            for (const level of session.levels) {
-              if (level.name === level.id) {
-                const name = levelNames.get(level.id);
-                if (name) level.name = name;
-              }
+        if (!parsed.success) {
+          console.warn(`Invalid session file ${filename}:`, parsed.error.issues);
+          return null;
+        }
+        const session = parsed.data;
+        // Apply display names from central level names store.
+        if (levelNames) {
+          for (const level of session.levels) {
+            if (level.name === level.id) {
+              const name = levelNames.get(level.id);
+              if (name) level.name = name;
             }
           }
-          sessions.push(session);
-        } else {
-          console.warn(`Invalid session file ${filename}:`, parsed.error.issues);
         }
+        return session;
       } catch (e) {
         console.error(`Error reading session file ${filename}:`, e);
+        return null;
       }
-    }
+    }));
 
-    return sessions;
+    return sessions.filter((session): session is PlaySession => session !== null);
   }
 
-  /** Build a WadPlaySummary from sessions (best-per-level aggregation). */
-  function buildSummary(slug: string, sessions: PlaySession[]): WadPlaySummary {
+  // Load all play sessions for a WAD, reusing a completed or ongoing read.
+  async function loadAllSessions(slug: string): Promise<PlaySession[]> {
+    const cached = sessionsCache.get(slug);
+    if (cached) return cached;
+
+    const ongoing = sessionsLoading.get(slug);
+    if (ongoing) return ongoing;
+
+    const loading = readAllSessions(slug).then(sessions => {
+      sessionsCache.set(slug, sessions);
+      return sessions;
+    });
+    sessionsLoading.set(slug, loading);
+    try {
+      return await loading;
+    } finally {
+      sessionsLoading.delete(slug);
+    }
+  }
+
+  /** Build a WadPlaySummary from sessions and gameplay logs (best-per-level aggregation). */
+  function buildSummary(slug: string, sessions: PlaySession[], logs: GameplayLog[] = []): WadPlaySummary {
     // Best level stats per level+skill combo
     const bestByKey = new Map<string, AggregatedLevel>();
     for (const session of sessions) {
@@ -266,13 +299,22 @@ export function useStats() {
     });
 
     const uniqueLevels = new Set(levels.map(l => l.id));
-    const lastPlayed = sessions.length > 0
-      ? new Date(Math.max(...sessions.map(s => new Date(s.capturedAt).getTime())))
-      : null;
+    for (const log of logs) {
+      for (const mapId of getLevelsVisited(log)) {
+        uniqueLevels.add(mapId.toUpperCase());
+      }
+    }
+
+    const sessionTimestamps = sessions.map(s => new Date(s.capturedAt).getTime()).filter(t => !isNaN(t));
+    const logTimestamps = logs.map(l => new Date(l.endedAt || l.startedAt).getTime()).filter(t => !isNaN(t));
+    const allTimestamps = [...sessionTimestamps, ...logTimestamps];
+    const lastPlayed = allTimestamps.length > 0 ? new Date(Math.max(...allTimestamps)) : null;
+
+    const totalSessions = Math.max(sessions.length, logs.length);
 
     return {
       slug,
-      sessionCount: sessions.length,
+      sessionCount: totalSessions,
       mapsPlayed: uniqueLevels.size,
       lastPlayed,
       levels,
@@ -284,9 +326,12 @@ export function useStats() {
     if (summaryCache.value.has(slug)) {
       return summaryCache.value.get(slug)!;
     }
-    const sessions = await loadAllSessions(slug);
-    if (sessions.length === 0) return null;
-    const summary = buildSummary(slug, sessions);
+    const [sessions, logs] = await Promise.all([
+      loadAllSessions(slug),
+      loadAllGameplayLogs(slug),
+    ]);
+    if (sessions.length === 0 && logs.length === 0) return null;
+    const summary = buildSummary(slug, sessions, logs);
     summaryCache.value.set(slug, summary);
     return summary;
   }
@@ -296,7 +341,27 @@ export function useStats() {
   }
 
   async function loadAllPlaySummaries(slugs: string[]): Promise<void> {
-    await Promise.all(slugs.map(slug => getPlaySummary(slug)));
+    const results = await Promise.all(
+      slugs.map(async (slug) => {
+        if (summaryCache.value.has(slug)) {
+          return [slug, summaryCache.value.get(slug)!] as const;
+        }
+        const [sessions, logs] = await Promise.all([
+          loadAllSessions(slug),
+          loadAllGameplayLogs(slug),
+        ]);
+        if (sessions.length === 0 && logs.length === 0) return [slug, null] as const;
+        const summary = buildSummary(slug, sessions, logs);
+        return [slug, summary] as const;
+      })
+    );
+    const newMap = new Map(summaryCache.value);
+    for (const [slug, summary] of results) {
+      if (summary) {
+        newMap.set(slug, summary);
+      }
+    }
+    summaryCache.value = newMap;
   }
 
   async function refreshPlaySummary(slug: string): Promise<WadPlaySummary | null> {

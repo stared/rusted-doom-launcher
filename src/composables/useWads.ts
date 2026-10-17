@@ -5,7 +5,8 @@ import { useCustomWads } from "./useCustomWads";
 const wadModules = import.meta.glob<{ default: unknown }>("../../content/wads/*.json", { eager: true });
 
 // Catalog is build-time static — parse once at module load.
-const catalogWads: WadEntry[] = [];
+/** Read-only WADs bundled with the application. */
+export const catalogWads: WadEntry[] = [];
 for (const [path, module] of Object.entries(wadModules)) {
   const result = WadEntrySchema.safeParse(module.default);
   if (result.success) {

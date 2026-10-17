@@ -10,6 +10,13 @@ interface Settings {
   gzdoomPath: string | null;  // null = not found
   libraryPath: string;        // Never null after init
   activeMods: string[];       // slugs of gameplay mods layered into every launch
+  doomLauncherImports: DoomLauncherImportMapping[];
+}
+
+export interface DoomLauncherImportMapping {
+  dbPath: string;
+  sourceRoot: string;
+  targetRoot: string;
 }
 
 async function getEngineLocations(): Promise<string[]> {
@@ -62,7 +69,7 @@ interface MigratedIwad {
   from: string;  // source directory path
 }
 
-const settings = ref<Settings>({ gzdoomPath: null, libraryPath: "", activeMods: [] });
+const settings = ref<Settings>({ gzdoomPath: null, libraryPath: "", activeMods: [], doomLauncherImports: [] });
 const migratedIwads = ref<MigratedIwad[]>([]);
 const initialized = ref(false);
 const isFirstRun = ref(false);
@@ -177,6 +184,16 @@ export function useSettings() {
         if (parsed.gzdoomPath) settings.value.gzdoomPath = parsed.gzdoomPath;
         if (parsed.libraryPath) settings.value.libraryPath = parsed.libraryPath;
         if (Array.isArray(parsed.activeMods)) settings.value.activeMods = parsed.activeMods;
+        if (Array.isArray(parsed.doomLauncherImports)) {
+          settings.value.doomLauncherImports = parsed.doomLauncherImports
+            .filter((entry: unknown): entry is DoomLauncherImportMapping =>
+              typeof entry === "object" && entry !== null &&
+              typeof (entry as DoomLauncherImportMapping).dbPath === "string" &&
+              typeof (entry as DoomLauncherImportMapping).sourceRoot === "string" &&
+              typeof (entry as DoomLauncherImportMapping).targetRoot === "string"
+            )
+            .slice(0, 10);
+        }
       }
     } catch (e) {
       if (!isNotFoundError(e)) console.error("Failed to read new settings:", e);
@@ -192,6 +209,16 @@ export function useSettings() {
           if (parsed.gzdoomPath) settings.value.gzdoomPath = parsed.gzdoomPath;
           if (parsed.libraryPath) settings.value.libraryPath = parsed.libraryPath;
           if (Array.isArray(parsed.activeMods)) settings.value.activeMods = parsed.activeMods;
+          if (Array.isArray(parsed.doomLauncherImports)) {
+            settings.value.doomLauncherImports = parsed.doomLauncherImports
+              .filter((entry: unknown): entry is DoomLauncherImportMapping =>
+                typeof entry === "object" && entry !== null &&
+                typeof (entry as DoomLauncherImportMapping).dbPath === "string" &&
+                typeof (entry as DoomLauncherImportMapping).sourceRoot === "string" &&
+                typeof (entry as DoomLauncherImportMapping).targetRoot === "string"
+              )
+              .slice(0, 10);
+          }
           needsMigration = true;
         }
       } catch (e) {
@@ -261,6 +288,21 @@ export function useSettings() {
     await saveSettings();
   }
 
+  /** Remember up to ten database-specific path mappings for the import wizard. */
+  async function rememberDoomLauncherImport(mapping: DoomLauncherImportMapping): Promise<void> {
+    const normalized = {
+      dbPath: mapping.dbPath.trim(),
+      sourceRoot: mapping.sourceRoot.trim(),
+      targetRoot: mapping.targetRoot.trim(),
+    };
+    if (!normalized.dbPath) return;
+    settings.value.doomLauncherImports = [
+      normalized,
+      ...settings.value.doomLauncherImports.filter(entry => entry.dbPath !== normalized.dbPath),
+    ].slice(0, 10);
+    await saveSettings();
+  }
+
   // Caller-supplied predicate: a slug is kept only if it's still a known,
   // launchable mod. Callers should require both a matching WadEntry and a
   // present download — checking download alone leaves orphaned slugs behind.
@@ -278,6 +320,7 @@ export function useSettings() {
     setGZDoomPath,
     setLibraryPath,
     toggleActiveMod,
+    rememberDoomLauncherImport,
     pruneActiveMods,
   };
 }

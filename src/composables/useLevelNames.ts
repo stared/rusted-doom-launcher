@@ -219,7 +219,25 @@ export function useLevelNames() {
    * Load level names for multiple WADs in parallel.
    */
   async function loadAllLevelNames(slugs: string[]): Promise<void> {
-    await Promise.all(slugs.map(slug => loadLevelNames(slug)));
+    const results = await Promise.all(
+      slugs.map(async (slug) => {
+        if (levelNamesCache.value.has(slug)) {
+          return [slug, levelNamesCache.value.get(slug)!] as const;
+        }
+        const stored = await loadFromStorage(slug);
+        if (stored && stored.size > 0) {
+          return [slug, stored] as const;
+        }
+        return [slug, null] as const;
+      })
+    );
+    const newMap = new Map(levelNamesCache.value);
+    for (const [slug, stored] of results) {
+      if (stored) {
+        newMap.set(slug, stored);
+      }
+    }
+    levelNamesCache.value = newMap;
   }
 
   return {

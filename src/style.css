@@ -2,8 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .wad-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2000px]:grid-cols-6;
+  }
+}
+
+html,
 body {
   margin: 0;
+  background-color: #09090b;
+  color: #f4f4f5;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
