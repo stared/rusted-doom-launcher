@@ -15,4 +15,20 @@ describe("getWadLinks", () => {
       { label: "esselfortium.net", url: "https://esselfortium.net/" },
     ]);
   });
+
+  it("can omit a direct download URL when the view has its own download action", () => {
+    const downloadableWad = {
+      ...wad,
+      downloads: [{
+        type: "direct",
+        url: "https://example.invalid/mod.zip",
+        filename: "mod.zip",
+      }],
+    } as unknown as WadEntry;
+
+    expect(getWadLinks(downloadableWad, { includeDownloadSource: false })).toEqual([
+      { label: "doomworld.com", url: "https://www.doomworld.com/" },
+      { label: "esselfortium.net", url: "https://esselfortium.net/" },
+    ]);
+  });
 });

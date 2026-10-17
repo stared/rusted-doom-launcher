@@ -739,8 +739,10 @@ pub fn run() {
             ensure_window_fits_screen
         ]);
 
-    // MCP bridge for Claude Code debugging (dev mode only)
-    #[cfg(debug_assertions)]
+    // The bridge's WebView instrumentation is opt-in because it currently
+    // leaks memory with Tauri 2.12 on WebKitGTK. Enable it explicitly with
+    // `cargo run --features mcp-bridge` while debugging the native bridge.
+    #[cfg(feature = "mcp-bridge")]
     let builder = builder.plugin(tauri_plugin_mcp_bridge::init());
 
     builder

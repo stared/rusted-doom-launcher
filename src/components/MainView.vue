@@ -130,7 +130,7 @@ const filteredWads = computed(() => {
   }
 
   // 4. Sort
-  return result.toSorted((a, b) => {
+  return [...result].sort((a, b) => {
     const infoA = getCachedPlaySummary(a.slug);
     const infoB = getCachedPlaySummary(b.slug);
 

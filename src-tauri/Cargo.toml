@@ -9,6 +9,11 @@ edition = "2024"
 name = "doom_launcher_lib"
 crate-type = ["cdylib", "rlib"]
 
+[features]
+# The bridge injects WebView instrumentation. Tauri 2.12 currently leaks
+# memory with it enabled on WebKitGTK, so keep it opt-in for debugging only.
+mcp-bridge = []
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -25,7 +30,8 @@ tauri-plugin-dialog = "2"
 tauri-plugin-persisted-scope = "2"
 tauri-plugin-upload = "2"
 tauri-plugin-window-state = "2"
-# MCP bridge for Claude Code debugging (hypothesi/tauri-mcp-server)
+# MCP bridge for debugging (hypothesi/tauri-mcp-server). Its initialization is
+# controlled by the optional `mcp-bridge` feature above.
 tauri-plugin-mcp-bridge = "0.11"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

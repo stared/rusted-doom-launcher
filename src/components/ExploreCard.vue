@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { Gamepad2 } from "@lucide/vue";
 import type { WadEntry } from "../lib/schema";
 import { useWadSummaries } from "../composables/useWadSummaries";
@@ -66,7 +66,31 @@ const currentImage = computed(() => {
   return allImages.value[currentImageIndex.value];
 });
 
-const { resolvedUrl: resolvedCurrentImage, markError: markImageError, isError: isImageError } = useRemoteImage(currentImage);
+// Fetching every remote image in the catalog at once overwhelms WebKit. Start
+// only when the card is close to the viewport; cards stay loaded after that so
+// hovering can still cycle their screenshots without another fetch.
+const imageArea = ref<HTMLElement | null>(null);
+const shouldLoadImages = ref(false);
+let imageObserver: IntersectionObserver | null = null;
+const imageToLoad = computed(() => shouldLoadImages.value ? currentImage.value : null);
+
+onMounted(() => {
+  if (!imageArea.value || typeof IntersectionObserver === "undefined") {
+    shouldLoadImages.value = true;
+    return;
+  }
+
+  imageObserver = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) {
+      shouldLoadImages.value = true;
+      imageObserver?.disconnect();
+      imageObserver = null;
+    }
+  }, { rootMargin: "0px" });
+  imageObserver.observe(imageArea.value);
+});
+
+const { resolvedUrl: resolvedCurrentImage, markError: markImageError, isError: isImageError } = useRemoteImage(imageToLoad);
 
 function startSlideshow() {
   if (allImages.value.length <= 1) return;
@@ -85,6 +109,7 @@ function stopSlideshow() {
 
 onUnmounted(() => {
   stopSlideshow();
+  imageObserver?.disconnect();
 });
 
 // Author display (truncated if too long)
@@ -97,9 +122,10 @@ const authorDisplay = computed(() => {
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
+  <div class="flex flex-col overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
     <!-- Image area with overlay -->
     <div
+      ref="imageArea"
       class="relative aspect-video overflow-hidden"
       @mouseenter="startSlideshow"
       @mouseleave="stopSlideshow"
@@ -109,6 +135,7 @@ const authorDisplay = computed(() => {
         v-if="resolvedCurrentImage && !isImageError"
         :src="resolvedCurrentImage"
         :alt="wad.title"
+        loading="lazy"
         class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
         @error="markImageError"
       />
@@ -129,7 +156,7 @@ const authorDisplay = computed(() => {
       <!-- Difficulty badge (top right) -->
       <div
         v-if="difficultyConfig"
-        class="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded bg-black/70 backdrop-blur-sm"
+        class="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded bg-black/80"
       >
         <span :class="['text-xs font-bold uppercase tracking-wide', difficultyConfig.textColor]">
           {{ difficultyConfig.label }}
@@ -141,7 +168,7 @@ const authorDisplay = computed(() => {
 
       <!-- Title overlay (bottom) -->
       <div class="absolute bottom-0 left-0 right-0 p-3">
-        <h3 class="text-lg font-bold text-white drop-shadow-lg leading-tight line-clamp-2">
+        <h3 class="text-lg font-bold text-white leading-tight line-clamp-2">
           {{ wad.title }}
         </h3>
         <p class="text-xs text-zinc-300 mt-0.5 truncate">

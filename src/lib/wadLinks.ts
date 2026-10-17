@@ -2,6 +2,7 @@ import type { WadEntry } from "./schema";
 import { isKnownWadUrl } from "./knownWadDomains";
 
 export type WadLink = { label: string; url: string };
+export type WadLinkOptions = { includeDownloadSource?: boolean };
 
 /** Sites from older README templates that are known to have HTTPS endpoints. */
 function preferredUrl(url: string): string {
@@ -78,9 +79,10 @@ function sourceLink(wad: WadEntry): WadLink | null {
   return { label: "Download", url: dl.url };
 }
 
-// External links shown on a WAD card: Doomworld thread, DoomWiki page, and the
-// download source page. Returns an empty array when none apply (card unchanged).
-export function getWadLinks(wad: WadEntry): WadLink[] {
+// External links shown on a WAD card: Doomworld thread, DoomWiki page, and,
+// where useful, the download source page. Views that already offer a download
+// action can omit the latter to avoid opening an archive directly.
+export function getWadLinks(wad: WadEntry, options: WadLinkOptions = {}): WadLink[] {
   const refs = new Map<string, string>();
   const allUrls = [...wad.urls, ...extractUrls(wad.notes)]
     .map(preferredUrl)
@@ -106,10 +108,12 @@ export function getWadLinks(wad: WadEntry): WadLink[] {
     seen.add(url);
   }
 
-  const source = sourceLink(wad);
-  if (source && !seen.has(source.url)) {
-    seen.add(source.url);
-    links.push(source);
+  if (options.includeDownloadSource !== false) {
+    const source = sourceLink(wad);
+    if (source && !seen.has(source.url)) {
+      seen.add(source.url);
+      links.push(source);
+    }
   }
 
   return links;

@@ -56,10 +56,19 @@ pub async fn fetch_remote_image(app: tauri::AppHandle, url: String) -> Result<St
                 }
             }
         }
-        // If a previous fetch resulted in a permanent failure (e.g. 403/404), avoid re-requesting
+        // Keep failures on disk too. DoomWiki can reject non-browser clients;
+        // retrying every image after every app restart only amplifies a 403.
         let failed_path = path.with_extension("failed");
         if failed_path.is_file() {
-            return Err("Cached failure (preventing repeated remote requests)".into());
+            let retry_after = fs::metadata(&failed_path)
+                .and_then(|metadata| metadata.modified())
+                .ok()
+                .and_then(|modified| modified.elapsed().ok())
+                .is_some_and(|age| age >= Duration::from_secs(7 * 24 * 60 * 60));
+            if !retry_after {
+                return Err("Disk failure cache hit (will retry after 7 days)".into());
+            }
+            let _ = fs::remove_file(failed_path);
         }
     }
 

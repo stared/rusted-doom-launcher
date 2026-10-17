@@ -4,9 +4,16 @@ import { open } from "@tauri-apps/plugin-shell";
 import type { WadEntry } from "../lib/schema";
 import { getWadLinks } from "../lib/wadLinks";
 
-const props = defineProps<{ wad: WadEntry }>();
+const props = withDefaults(defineProps<{
+  wad: WadEntry;
+  includeDownloadSource?: boolean;
+}>(), {
+  includeDownloadSource: true,
+});
 
-const links = computed(() => getWadLinks(props.wad));
+const links = computed(() => getWadLinks(props.wad, {
+  includeDownloadSource: props.includeDownloadSource,
+}));
 
 async function openLink(url: string) {
   try {

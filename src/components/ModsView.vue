@@ -92,7 +92,7 @@ const filteredWads = computed(() => {
     );
   }
 
-  return result.toSorted((a, b) => {
+  return [...result].sort((a, b) => {
     switch (sortBy.value) {
       case "active": {
         const aActive = checkDownloaded(a.slug) && isActive(a.slug) ? 1 : 0;
@@ -174,7 +174,7 @@ const filteredWads = computed(() => {
             </h3>
             <p class="truncate text-sm text-zinc-400">{{ authorsLine(wad) }}</p>
             <WadRating class="mt-1" :rating="getRating(wad.slug, wad.rating)" @change="updateRating(wad.slug, $event)" />
-            <WadLinks class="mt-2" :wad="wad" />
+            <WadLinks class="mt-2" :wad="wad" :include-download-source="false" />
 
             <div class="mt-3 flex gap-2">
               <template v-if="checkDownloaded(wad.slug)">

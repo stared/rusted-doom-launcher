@@ -5,6 +5,35 @@ import { invoke } from "@tauri-apps/api/core";
 const imageCache = new Map<string, string>();
 const failedUrls = new Set<string>();
 const pendingFetches = new Map<string, Promise<string | null>>();
+const MAX_CONCURRENT_IMAGE_FETCHES = 3;
+let activeImageFetches = 0;
+const queuedImageFetches: Array<() => void> = [];
+
+/**
+ * Image data URLs are expensive for WebKit to decode. Limit native fetches so
+ * entering a screen with many cards cannot start dozens of decodes at once.
+ */
+function queueImageFetch<T>(task: () => Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const run = async () => {
+      activeImageFetches++;
+      try {
+        resolve(await task());
+      } catch (error) {
+        reject(error);
+      } finally {
+        activeImageFetches--;
+        queuedImageFetches.shift()?.();
+      }
+    };
+
+    if (activeImageFetches < MAX_CONCURRENT_IMAGE_FETCHES) {
+      void run();
+    } else {
+      queuedImageFetches.push(() => void run());
+    }
+  });
+}
 
 /**
  * Resolves a remote image URL to a local/cached data URL via Tauri backend
@@ -16,6 +45,12 @@ export async function fetchImageDataUrl(url: string): Promise<string | null> {
     return null;
   }
   if (trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
+    return trimmed;
+  }
+  // Vite serves bundled assets directly. Sending a relative application path
+  // to reqwest produces a URL-builder error and needlessly occupies the image
+  // queue.
+  if (trimmed.startsWith("/")) {
     return trimmed;
   }
 
@@ -33,7 +68,9 @@ export async function fetchImageDataUrl(url: string): Promise<string | null> {
 
   const promise = (async () => {
     try {
-      const dataUrl = await invoke<string>("fetch_remote_image", { url: trimmed });
+      const dataUrl = await queueImageFetch(() =>
+        invoke<string>("fetch_remote_image", { url: trimmed })
+      );
       imageCache.set(trimmed, dataUrl);
       return dataUrl;
     } catch {

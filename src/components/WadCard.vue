@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import type { WadEntry } from "../lib/schema";
 import { useDownload } from "../composables/useDownload";
 import { useStats } from "../composables/useStats";
@@ -95,7 +95,34 @@ const thumbnailUrl = computed(() => {
   return null;
 });
 
-const { resolvedUrl: resolvedThumbnailUrl, markError: markImageError, isError: isImageError } = useRemoteImage(thumbnailUrl);
+// A large imported library can contain many cards. Do not contact image hosts
+// until a thumbnail is close to the viewport.
+const thumbnailArea = ref<HTMLElement | null>(null);
+const shouldLoadThumbnail = ref(false);
+let thumbnailObserver: IntersectionObserver | null = null;
+const thumbnailToLoad = computed(() => shouldLoadThumbnail.value ? thumbnailUrl.value : null);
+
+onMounted(() => {
+  if (!thumbnailArea.value || typeof IntersectionObserver === "undefined") {
+    shouldLoadThumbnail.value = true;
+    return;
+  }
+
+  thumbnailObserver = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) {
+      shouldLoadThumbnail.value = true;
+      thumbnailObserver?.disconnect();
+      thumbnailObserver = null;
+    }
+  }, { rootMargin: "0px" });
+  thumbnailObserver.observe(thumbnailArea.value);
+});
+
+onUnmounted(() => {
+  thumbnailObserver?.disconnect();
+});
+
+const { resolvedUrl: resolvedThumbnailUrl, markError: markImageError, isError: isImageError } = useRemoteImage(thumbnailToLoad);
 
 // Load level names when stats modal opens
 watch(showStatsModal, async (isOpen) => {
@@ -110,7 +137,7 @@ watch(showStatsModal, async (isOpen) => {
 <template>
   <div class="flex h-full flex-col overflow-hidden rounded-lg bg-zinc-800 shadow-lg">
     <!-- 16:9 aspect ratio thumbnail area -->
-    <div class="relative aspect-video overflow-hidden bg-zinc-900">
+    <div ref="thumbnailArea" class="relative aspect-video overflow-hidden bg-zinc-900">
       <!-- Screenshot/thumbnail image -->
       <img
         v-if="resolvedThumbnailUrl && !isImageError"

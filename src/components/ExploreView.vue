@@ -23,6 +23,10 @@ const { getDifficulty, getVibe } = useWadSummaries();
 const searchQuery = ref(initialQuery ?? "");
 const sortBy = ref("year-desc");
 const activeFilters = ref<Record<string, string>>({});
+// Rendering the whole catalog at once also starts every card's image work.
+// Keep the first paint small and let the user request the next batch.
+const PAGE_SIZE = 24;
+const visibleCount = ref(PAGE_SIZE);
 
 // Update search when navigating from Play with a query
 watch(() => initialQuery, (newQuery) => {
@@ -121,7 +125,10 @@ const filteredWads = computed(() => {
   }
 
   // Sort
-  return result.toSorted((a, b) => {
+  // WebKitGTK versions bundled by some Linux distributions do not yet expose
+  // ES2023's Array.prototype.toSorted. Copy before sorting so props stay
+  // immutable while keeping the Explore tab compatible with those runtimes.
+  const sorted = [...result].sort((a, b) => {
     switch (sortBy.value) {
       case "year-desc":
         return b.year - a.year;
@@ -143,7 +150,21 @@ const filteredWads = computed(() => {
         return 0;
     }
   });
+  return sorted;
 });
+
+const visibleWads = computed(() => filteredWads.value.slice(0, visibleCount.value));
+const hasMoreWads = computed(() => visibleCount.value < filteredWads.value.length);
+
+function showMore() {
+  visibleCount.value += PAGE_SIZE;
+}
+
+// A new search, filter, or sort should always begin at the top of its result.
+watch([searchQuery, sortBy, activeFilters], () => {
+  visibleCount.value = PAGE_SIZE;
+});
+
 </script>
 
 <template>
@@ -168,11 +189,20 @@ const filteredWads = computed(() => {
 
     <div v-else class="wad-grid">
       <ExploreCard
-        v-for="wad in filteredWads"
+        v-for="wad in visibleWads"
         :key="wad.slug"
         :wad="wad"
         @play="emit('play', $event)"
       />
+    </div>
+
+    <div v-if="hasMoreWads" class="flex justify-center pt-6">
+      <button
+        class="rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-zinc-500 hover:text-zinc-100"
+        @click="showMore"
+      >
+        Show more ({{ filteredWads.length - visibleWads.length }} remaining)
+      </button>
     </div>
   </div>
 </template>
