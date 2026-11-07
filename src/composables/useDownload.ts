@@ -21,6 +21,13 @@ const downloading = ref<Set<string>>(new Set());
 const installing = ref<Set<string>>(new Set());
 const downloadProgress = ref<Record<string, DownloadProgress>>({});
 
+// tauri-plugin-upload sends no User-Agent by default, and some hosts reject
+// UA-less requests outright: the youfailit.net idgames mirror (most catalog
+// downloads) answers them with "429 Too Many Requests" on the very first try.
+const DOWNLOAD_HEADERS = new Map([
+  ["User-Agent", "RustedDoomLauncher (+https://github.com/stared/rusted-doom-launcher)"],
+]);
+
 /**
  * Validate downloaded file has correct format (ZIP/WAD magic bytes).
  * Throws if file is corrupt or wrong format.
@@ -165,7 +172,8 @@ export function useDownload() {
             lastUpdate = now;
             downloadProgress.value = { ...downloadProgress.value, [wad.slug]: { progress: payload.progressTotal, total: payload.total } };
           }
-        }
+        },
+        DOWNLOAD_HEADERS
       );
 
       // Validate the downloaded file before marking as complete
